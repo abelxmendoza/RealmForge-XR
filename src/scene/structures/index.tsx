@@ -5,6 +5,7 @@ import { Building } from './Building'
 import { Wall } from './Wall'
 import { Platform } from './Platform'
 import { Crate, Streetlight, Tree } from './Decor'
+import { EventProp } from './EventProp'
 
 /**
  * Draws one world object. Pure presentation: reads the object, never the store,
@@ -23,6 +24,8 @@ export function Structure({ o }: { o: WorldObject }) {
       return <Streetlight o={o} />
     case 'crate':
       return <Crate o={o} />
+    case 'prop':
+      return <EventProp o={o} />
     case 'wall':
     default:
       return <Wall o={o} />

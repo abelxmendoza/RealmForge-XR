@@ -54,7 +54,21 @@ export const LIMITS = {
   maxHeight: 60,
 } as const
 
-const KINDS: ReadonlySet<ObjectKind> = new Set(['wall', 'building', 'platform', 'tree', 'streetlight', 'crate'])
+const KINDS: ReadonlySet<ObjectKind> = new Set(['wall', 'building', 'platform', 'tree', 'streetlight', 'crate', 'prop'])
+const SIM_ROLES: ReadonlySet<string> = new Set([
+  'decoration',
+  'obstacle',
+  'entrance',
+  'exit',
+  'registration',
+  'booth',
+  'service',
+  'seating',
+  'queue',
+  'stage',
+  'pickup',
+  'delivery',
+])
 const MATERIALS: ReadonlySet<string> = new Set([...WALL_MATERIALS, ...PLATFORM_MATERIALS])
 const STYLES: ReadonlySet<string> = new Set([...Object.keys(BUILDING_STYLES), ...TREE_STYLES])
 const ROOFS: ReadonlySet<string> = new Set(['flat', 'pitched'])
@@ -95,6 +109,10 @@ function pickObject(o: WorldObject): WorldObject {
   if (o.assetId !== undefined) out.assetId = o.assetId
   if (o.destinationRole !== undefined) out.destinationRole = o.destinationRole
   if (o.solid !== undefined) out.solid = o.solid
+  if (o.catalogId !== undefined) out.catalogId = o.catalogId
+  if (o.simulationRole !== undefined) out.simulationRole = o.simulationRole
+  if (o.capacity !== undefined) out.capacity = o.capacity
+  if (o.serviceDuration !== undefined) out.serviceDuration = o.serviceDuration
   return out
 }
 
@@ -198,5 +216,17 @@ function readObject(v: unknown, i: number, warnings: string[]): WorldObject | st
   opt('assetId', isAssetId, (x) => (o.assetId = x as WorldObject['assetId']))
   opt('destinationRole', isDestinationRole, (x) => (o.destinationRole = x as WorldObject['destinationRole']))
   opt('solid', (x) => typeof x === 'boolean', (x) => (o.solid = x as boolean))
+  opt(
+    'catalogId',
+    (x) => typeof x === 'string' && x.length > 0 && x.length <= 64 && ID_RE.test(x),
+    (x) => (o.catalogId = x as string),
+  )
+  opt('simulationRole', (x) => typeof x === 'string' && SIM_ROLES.has(x), (x) => (o.simulationRole = x as WorldObject['simulationRole']))
+  opt('capacity', (x) => finite(x) && (x as number) >= 0 && (x as number) <= 10_000, (x) => (o.capacity = x as number))
+  opt(
+    'serviceDuration',
+    (x) => finite(x) && (x as number) >= 0 && (x as number) <= 600,
+    (x) => (o.serviceDuration = x as number),
+  )
   return o
 }

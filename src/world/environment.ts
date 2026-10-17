@@ -6,6 +6,7 @@ import { emptyEventVenue, jobFair, forgeDistrict, marsOutpost, warehouse } from 
 import { replaceWorld, type ReplaceOptions, type ReplaceResult } from './persistence'
 import { useEditor } from '../editor/settings'
 import { fail, safeConfirm, toErrorMessage } from './errors'
+import { resetAttendeeSimulation } from '../sim/attendee'
 
 /**
  * Multi-environment worldbuilding: appearance + defaults live here; object layouts
@@ -281,6 +282,7 @@ export async function loadEnvironment(id: EnvironmentId | string, opts: LoadEnvi
     if (!result.ok) return result
     useEnvironment.getState().setActive(env.id)
     applyBrushDefaults(env)
+    resetAttendeeSimulation()
     return result
   } catch (error) {
     // Best-effort restore if a late failure left stores half-applied.

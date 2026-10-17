@@ -1,3 +1,4 @@
+import { BRAND } from './theme/brand'
 import { ConfirmationDialog } from './editor/ConfirmationDialog'
 import { ControlsGuide } from './editor/ControlsGuide'
 import { VoicePanel } from './editor/VoicePanel'
@@ -46,6 +47,7 @@ const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'decor', label: 'Decoration', key: '7' },
   { id: 'asset', label: 'Catalog object', key: '8' },
   { id: 'actor', label: 'Actor', key: '9' },
+  { id: 'event', label: 'Event object', key: '0' },
 ]
 
 const STATUS_TEXT = {
@@ -141,7 +143,7 @@ function Hud() {
           ← Home
         </a>
         <div className="hud-logo">
-          <span className="hud-logo-mark" aria-hidden />
+          <img className="hud-logo-img" src={BRAND.logo} width="28" height="28" alt="" aria-hidden />
           <span>
             RealmForge XR
             {dirty ? <span className="dirty-dot" title="Unsaved changes" /> : null}

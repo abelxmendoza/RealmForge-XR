@@ -220,6 +220,7 @@ export const worldActions = {
   listEnvironments,
   getEnvironment,
   isEnvironmentId,
+  normalizeEnvironmentId,
   loadEnvironment: loadEnvironmentAction,
 
   // history

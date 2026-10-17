@@ -13,6 +13,7 @@ import {
   nextWorldName,
   openWorld,
   registerThumbnailCapture,
+  startFromTemplate,
 } from './library'
 import { worldActions } from './actions'
 
@@ -56,7 +57,9 @@ describe('world library', () => {
   it('offers a blank template plus every environment', () => {
     const ids = listTemplates().map((t) => t.id)
     expect(ids[0]).toBe('blank')
-    expect(ids).toEqual(expect.arrayContaining(['forge-district', 'mars-outpost', 'warehouse']))
+    expect(ids).toEqual(
+      expect.arrayContaining(['forge-district', 'mars-outpost', 'warehouse', 'job-fair']),
+    )
   })
 
   it('creates a blank world and saves it to the library', async () => {
@@ -138,7 +141,20 @@ describe('world library', () => {
     expect(captureActiveThumbnail()).toBe(false)
   })
 
+  it('start screen swaps in a template without saving or asking', async () => {
+    useWorld.getState().addObject({ kind: 'wall', position: [0, 0, 0], size: [2, 1, 0.3], rotationY: 0 })
+    expect((await startFromTemplate('warehouse')).ok).toBe(true)
+    expect(useEnvironment.getState().activeId).toBe('warehouse')
+    expect(Object.keys(useWorld.getState().objects).length).toBeGreaterThan(3)
+    expect((await startFromTemplate('blank')).ok).toBe(true)
+    expect(Object.keys(useWorld.getState().objects)).toHaveLength(0)
+    expect(useEnvironment.getState().activeId).toBeNull()
+    expect(listSavedWorlds()).toHaveLength(0)
+    expect(useWorldLibrary.getState().dirty).toBe(false)
+  })
+
   it('is reachable through worldActions for the XR menu and voice', async () => {
+    // blank + forge/mars/warehouse + empty-event-venue + job-fair
     expect(worldActions.listTemplates().length).toBe(5)
     const r = await worldActions.createWorld('From XR', 'warehouse')
     expect(r.ok).toBe(true)

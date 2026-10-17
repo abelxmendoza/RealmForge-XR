@@ -3,6 +3,7 @@ import { WORLD, blocksNavigation, type BuildingStyle, type MaterialId, type Obje
 import { BUILDING_STYLES, DECOR_DEFAULTS, PLATFORM_DEFAULTS } from './catalog'
 import { buildAsset, footprintsOverlap, getAsset } from './assets'
 import type { AssetId } from './assetTypes'
+import { propFromCatalog } from './eventCatalog'
 import { snapAngle, snapFootprint, snapSize } from './snap'
 
 /**
@@ -17,6 +18,8 @@ export interface SpawnSpec {
   style?: BuildingStyle | TreeStyle
   material?: MaterialId
   assetId?: AssetId
+  /** Event catalog id when `kind` is `prop` (booth, desk, stage, …). */
+  catalogId?: string
   /** 1 = default size. Applied to footprint and height. */
   scale?: number
   /** Extra height multiplier ("tall", "short"). */
@@ -81,6 +84,15 @@ export function objectFor(spec: SpawnSpec, at: Vec2): Omit<WorldObject, 'id'> | 
       const base: Vec3 = road ? [16, 0.05, 4] : PLATFORM_DEFAULTS.size
       return { kind: 'platform', position: [at[0], 0, at[1]], size: [base[0] * s, base[1], base[2] * s], rotationY: 0, material: spec.material ?? 'concrete' }
     }
+    case 'prop': {
+      // Event props always come from the catalog (voice vocab or UI picker supplies catalogId).
+      if (!spec.catalogId) return null
+      const base = propFromCatalog(spec.catalogId, [at[0], 0, at[1]], 0)
+      if (!base) return null
+      return { ...base, size: sized(base.size) }
+    }
+    default:
+      return null
   }
 }
 

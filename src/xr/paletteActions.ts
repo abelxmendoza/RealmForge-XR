@@ -1,30 +1,46 @@
 import { worldActions } from '../world/actions'
 import { confirmReplace, requestConfirmation } from '../world/confirmation'
-import { replaceWorld } from '../world/persistence'
+import { replaceWorld, type ReplaceResult, type SaveResult } from '../world/persistence'
 import { useWorld } from '../world/store'
 import { cycleVariant } from '../world/catalog'
 import { createWorld, nextWorldName, type TemplateId } from '../world/library'
+import { fail, failSave, toErrorMessage } from '../world/errors'
 
-export async function loadPaletteEnvironment(id: string) {
+async function guardPaletteReplace(label: string, run: () => Promise<ReplaceResult>): Promise<ReplaceResult> {
   try {
-    return await worldActions.loadEnvironment(id, { confirmReplace })
+    return await run()
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    return { ok: false as const, error: `Environment load crashed: ${message || 'Something went wrong.'}` }
+    return fail(`${label} crashed: ${toErrorMessage(error)}`)
   }
 }
+
+async function guardPaletteSave(label: string, run: () => Promise<SaveResult>): Promise<SaveResult> {
+  try {
+    return await run()
+  } catch (error) {
+    return failSave(`${label} crashed: ${toErrorMessage(error)}`)
+  }
+}
+
+export async function loadPaletteEnvironment(id: string) {
+  return guardPaletteReplace('Environment load', () => worldActions.loadEnvironment(id, { confirmReplace }))
+}
 export async function loadPaletteSave(id: string) {
-  return worldActions.loadSavedWorld(id, { confirmReplace })
+  return guardPaletteReplace('Load save', () => worldActions.loadSavedWorld(id, { confirmReplace }))
 }
 export async function savePaletteWorld() {
-  return worldActions.quickSave(undefined, { confirmOverwrite: (message) => requestConfirmation({ type: 'OVERWRITE_SAVE', message }) })
+  return guardPaletteSave('Save', () =>
+    worldActions.quickSave(undefined, { confirmOverwrite: (message) => requestConfirmation({ type: 'OVERWRITE_SAVE', message }) }),
+  )
 }
 /** Start a new world (auto-named "My world N") and save it to the library straight away. */
 export async function createPaletteWorld(template: TemplateId = 'blank') {
-  return createWorld(nextWorldName(), template, { confirmReplace })
+  return guardPaletteSave('Create world', () => createWorld(nextWorldName(), template, { confirmReplace }))
 }
 export async function blankPaletteWorld() {
-  return replaceWorld({ name: 'Blank world', objects: [], robotEnabled: false, robotStart: [0, 5], goal: null }, { confirmReplace })
+  return guardPaletteReplace('Blank world', () =>
+    replaceWorld({ name: 'Blank world', objects: [], robotEnabled: false, robotStart: [0, 5], goal: null }, { confirmReplace }),
+  )
 }
 export async function deletePaletteSelection() {
   const id = worldActions.getSelectedId()

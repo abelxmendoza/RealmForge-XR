@@ -14,6 +14,7 @@ import { Obstacles } from '../editor/Obstacles'
 import { dragMove, endDrag } from '../editor/drag'
 import { tickDemo } from '../editor/demo'
 import { Robot } from '../agent/Robot'
+import { Attendee, AttendeeRoute } from '../sim/Attendee'
 import { Route } from './Route'
 import { Lighting } from './Lighting'
 import { ThumbnailCapture } from './ThumbnailCapture'
@@ -105,6 +106,8 @@ export function Scene() {
           <Obstacles />
           <Route />
           {robotEnabled && <Robot />}
+          <AttendeeRoute />
+          <Attendee />
           <Actors />
           {mocapOn && mocapInMap && (
             <group position={[robotStart[0], 0, robotStart[1]]}>

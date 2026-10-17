@@ -3,6 +3,7 @@ import type { AssetId } from './assetTypes'
 import { idFor, type WorldSnapshot } from './store'
 import type { BuildingStyle, MaterialId, ObjectKind, Vec3, WorldObject } from './types'
 import { BUILDING_STYLES } from './catalog'
+import { propFromCatalog } from './eventCatalog'
 
 /**
  * Preset worlds. Each call returns fresh objects with new ids, so loading a preset twice
@@ -196,30 +197,101 @@ export function warehouse(): WorldSnapshot {
   return { objects, robotStart: [0, 32], goal: [0, -32.8] }
 }
 
-/** Empty has no authored content, agents, destinations or automatic routes. */
+const prop = (catalogId: string, x: number, z: number, rotationY = 0): WorldObject => {
+  const base = propFromCatalog(catalogId, [x, 0, z], rotationY)
+  if (!base) throw new Error(`Unknown event catalog id: ${catalogId}`)
+  return { id: idFor('prop'), ...base }
+}
+
+/**
+ * Empty Event Venue — mostly empty rectangular interior (~18×14 m inside a 20×20 map)
+ * with perimeter walls, a main entrance (south), and two exits (north + east).
+ * Interior is clear so users can design job fairs and other events.
+ */
 export function emptyEventVenue(): WorldSnapshot {
   return { objects: [], actors: [], robotEnabled: false, robotStart: [0, 0], goal: null }
 }
 
-/** Editable job-fair layout: registration, four employer booths, seating and presentation area. */
+function eventVenueShell(): WorldSnapshot {
+  const wallH = 2.4
+  const thick = 0.35
+  // Interior roughly x∈[-9,9], z∈[-7,7]; openings punched as gaps in walls.
+  const objects: WorldObject[] = [
+    // Floor slab (walkable)
+    slab('concrete', 0, 0, 18.2, 0.04, 14.2),
+
+    // North wall with centre exit gap (±1.2)
+    wall('concrete', -5.1, -7, 7.6, wallH, 0, { solid: true }),
+    wall('concrete', 5.1, -7, 7.6, wallH, 0, { solid: true }),
+    // South wall with main entrance gap
+    wall('concrete', -5.1, 7, 7.6, wallH, 0, { solid: true }),
+    wall('concrete', 5.1, 7, 7.6, wallH, 0, { solid: true }),
+    // West wall solid
+    wall('concrete', -9, 0, 14, wallH, Math.PI / 2, { solid: true }),
+    // East wall with loading / emergency exit gap near z=0
+    wall('concrete', 9, -3.8, 6.2, wallH, Math.PI / 2, { solid: true }),
+    wall('concrete', 9, 3.8, 6.2, wallH, Math.PI / 2, { solid: true }),
+
+    // Corner posts for readability
+    wall('metal', -9, -7, 0.5, wallH + 0.2, 0, { solid: true }),
+    wall('metal', 9, -7, 0.5, wallH + 0.2, 0, { solid: true }),
+    wall('metal', -9, 7, 0.5, wallH + 0.2, 0, { solid: true }),
+    wall('metal', 9, 7, 0.5, wallH + 0.2, 0, { solid: true }),
+
+    prop('entrance-marker', 0, 7.6),
+    prop('exit-marker', 0, -7.6),
+    prop('exit-marker', 9.4, 0),
+    prop('directional-sign', -1.6, 6.2),
+    prop('directional-sign', 1.6, 6.2, Math.PI),
+  ]
+  // Robot / attendee start at main entrance; goal unused for events (attendee sim uses roles).
+  return { objects, robotStart: [0, 7.4], goal: null }
+}
+
+/**
+ * Job Fair template — built from catalog props so every object stays editable.
+ * Layout: registration near entrance, four employer booths, seating, small stage, queue.
+ */
 export function jobFair(): WorldSnapshot {
-  const objects: WorldObject[] = []
-  const desk = (x: number, z: number) => {
-    const asset = buildAsset('workstation', [x, z], 0, false)!
-    objects.push({ ...asset, id: idFor(asset.kind) })
+  const base = eventVenueShell()
+  const extras: WorldObject[] = [
+    prop('registration-desk', 0, 5.2),
+    prop('queue-barrier', -1.4, 5.9, Math.PI / 2),
+    prop('queue-barrier', 1.4, 5.9, Math.PI / 2),
+    prop('directional-sign', 0, 4.2),
+
+    // Employer booths along the sides
+    prop('exhibition-booth', -5.5, 1.5, Math.PI / 2),
+    prop('booth-wall', -5.5, -0.2, Math.PI / 2),
+    prop('exhibition-booth', -5.5, -3.2, Math.PI / 2),
+    prop('exhibition-booth', 5.5, 1.5, -Math.PI / 2),
+    prop('booth-wall', 5.5, -0.2, -Math.PI / 2),
+    prop('exhibition-booth', 5.5, -3.2, -Math.PI / 2),
+
+    // Seating cluster
+    prop('table-rect-m', -1.5, -1),
+    prop('chair-folding', -1.5, -0.1),
+    prop('chair-folding', -1.5, -1.9, Math.PI),
+    prop('table-rect-m', 1.5, -1),
+    prop('chair-folding', 1.5, -0.1),
+    prop('chair-folding', 1.5, -1.9, Math.PI),
+
+    // Stage + backdrop at north
+    prop('stage', 0, -5.2),
+    prop('backdrop', 0, -6.5),
+    prop('mic-stand', 0, -4.4),
+    prop('speaker', -2.8, -5.2),
+    prop('speaker', 2.8, -5.2),
+
+    prop('cocktail-table', 3.5, 3.5),
+    prop('cocktail-table', -3.5, 3.5),
+  ]
+  return {
+    objects: [...base.objects, ...extras],
+    robotEnabled: false,
+    robotStart: [0, 7.4],
+    goal: null,
   }
-  objects.push(slab('concrete', 0, 0, 34, 0.05, 30))
-  desk(0, 11) // registration
-  for (const x of [-10, 10]) for (const z of [-4, 5]) {
-    desk(x, z)
-    objects.push(wall('metal', x, z - 2, 7, 2.4))
-  }
-  objects.push(slab('concrete', 0, -11, 12, 0.6, 5))
-  objects.push(wall('metal', 0, -13, 12, 3))
-  for (const x of [-3, 0, 3]) for (const z of [-4, -7]) {
-    objects.push(obj('crate', x, z, [0.8, 0.5, 0.8], { color: '#65cdd0' }))
-  }
-  return { objects, actors: [], robotEnabled: false, robotStart: [0, 14], goal: null }
 }
 
 /** Desktop inspector list — ids match `EnvironmentId` / `loadEnvironment`. */

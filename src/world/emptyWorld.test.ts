@@ -35,7 +35,7 @@ it('loads Job Fair and Empty as distinct environments without duplicate Empty te
   await loadEnvironment('job-fair', { confirmReplace: () => true })
   const fair = Object.values(useWorld.getState().objects)
   expect(fair.length).toBeGreaterThan(15)
-  expect(fair.filter((o) => o.assetId === 'workstation')).toHaveLength(5)
+  expect(fair.filter((o) => o.kind === 'prop' && o.simulationRole === 'booth')).toHaveLength(4)
   await loadEnvironment('empty-event-venue', { confirmReplace: () => true })
   expect(Object.keys(useWorld.getState().objects)).toHaveLength(0)
   expect(Object.keys(useWorld.getState().actors)).toHaveLength(0)

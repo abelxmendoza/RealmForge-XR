@@ -2,20 +2,27 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { create } from 'zustand'
 import { DEFAULT_APPEARANCE, getEnvironment } from '../world/environment'
 import {
-  createWorld,
-  deleteWorld,
-  duplicateWorld,
   getThumbnail,
   listTemplates,
   filterWorlds,
   nextWorldName,
-  openWorld,
-  renameWorld,
   thumbVersion,
   type TemplateId,
 } from '../world/library'
-import { downloadWorld, importWorld, listSavedWorlds, quickSave, saveWorld, useWorldLibrary } from '../world/persistence'
-import { getConfirmation, requestConfirmation } from '../world/confirmation'
+import { downloadWorld, listSavedWorlds, useWorldLibrary } from '../world/persistence'
+import { confirmReplace, getConfirmation, requestConfirmation } from '../world/confirmation'
+import {
+  isLibraryMenuBusy,
+  menuCreateWorld,
+  menuDeleteWorld,
+  menuDuplicateWorld,
+  menuLibraryImport,
+  menuLibraryQuickSave,
+  menuLibrarySaveAsNew,
+  menuOpenWorld,
+  menuRenameWorld,
+  type LibraryMenuFeedback,
+} from './libraryMenuController'
 
 /** Open/close state for the library palette, so any button or key can open it. */
 export const useLibraryPalette = create<{ open: boolean; set: (open: boolean) => void }>((set) => ({ open: false, set: (open) => set({ open }) }))
@@ -48,7 +55,8 @@ function useLibraryKey() {
   }, [])
 }
 
-const swatch = (id: TemplateId) => {
+/** Preview gradient for a starting point (shared with the start screen). */
+export const swatch = (id: TemplateId) => {
   const a = id === 'blank' ? DEFAULT_APPEARANCE : (getEnvironment(id)?.appearance ?? DEFAULT_APPEARANCE)
   return `linear-gradient(135deg, ${a.lighting.background} 0%, ${a.groundColor} 55%, ${a.tableEdge} 100%)`
 }
@@ -58,8 +66,7 @@ function Palette() {
   const library = useWorldLibrary()
   const [query, setQuery] = useState('')
   const [name, setName] = useState('')
-  const [msg, setMsg] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [feedback, setFeedback] = useState<LibraryMenuFeedback>({ kind: 'idle' })
   const fileInput = useRef<HTMLInputElement>(null)
   const close = () => useLibraryPalette.getState().set(false)
   // Read storage once on open; after that the store's list stays current.
@@ -67,23 +74,31 @@ function Palette() {
   const worlds = filterWorlds(library.worlds, query)
   const suggested = nextWorldName('My world', library.worlds.map((w) => w.name))
   const templates = listTemplates()
+  const busy = feedback.kind === 'busy' || isLibraryMenuBusy()
 
-  const act = async (label: string, fn: () => Promise<{ ok: boolean; error?: string; cancelled?: boolean }> | { ok: boolean; error?: string }, closeAfter = false) => {
-    if (busy) return
-    setBusy(true)
-    try {
-      const r = await fn()
-      if (r.ok) {
-        setMsg(label)
-        if (closeAfter) close()
-      } else if (!('cancelled' in r && r.cancelled)) setMsg(r.error ?? 'Something went wrong.')
-    } finally {
-      setBusy(false)
-    }
+  const apply = (next: LibraryMenuFeedback, closeAfter = false) => {
+    setFeedback(next)
+    if (next.kind === 'ok' && closeAfter) close()
   }
 
-  const create = (template: TemplateId) =>
-    act(`Created "${name.trim() || suggested}".`, () => createWorld(name.trim() || suggested, template), true).then(() => setName(''))
+  const create = async (template: TemplateId) => {
+    if (busy) return
+    setFeedback({ kind: 'busy', action: 'Create' })
+    const { feedback: next } = await menuCreateWorld(name.trim() || suggested, template, confirmReplace)
+    apply(next, next.kind === 'ok')
+    if (next.kind === 'ok') setName('')
+  }
+
+  const status =
+    feedback.kind === 'busy'
+      ? `${feedback.action}…`
+      : feedback.kind === 'ok'
+        ? feedback.message
+        : feedback.kind === 'error'
+          ? feedback.message
+          : feedback.kind === 'cancelled'
+            ? 'Cancelled.'
+            : null
 
   return (
     <div className="library-backdrop" onPointerDown={(e) => e.target === e.currentTarget && close()}>
@@ -99,7 +114,7 @@ function Palette() {
           <h3>Start a new world</h3>
           <p className="hint">Empty has no content. Job Fair includes registration, employer booths, seating and a stage.</p>
           <div className="library-row">
-            <input type="text" placeholder={suggested} value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
+            <input type="text" placeholder={suggested} value={name} maxLength={80} onChange={(e) => setName(e.target.value)} disabled={busy} />
             <span className="hint">Pick a starting point. It's saved to your library straight away.</span>
           </div>
           <div className="templates">
@@ -121,10 +136,26 @@ function Palette() {
             {library.dirty ? <span className="dirty-dot" title="Unsaved changes" /> : null}
           </h3>
           <div className="library-row">
-            <button disabled={busy} onClick={() => void act('Saved.', () => quickSave())}>
+            <button
+              disabled={busy}
+              onClick={() => {
+                if (busy) return
+                setFeedback({ kind: 'busy', action: 'Save' })
+                void menuLibraryQuickSave(undefined, (message) => requestConfirmation({ type: 'OVERWRITE_SAVE', message })).then(({ feedback: next }) =>
+                  apply(next),
+                )
+              }}
+            >
               {library.activeId ? 'Save' : 'Save to library'}
             </button>
-            <button disabled={busy} onClick={() => void act('Saved as a new world.', () => saveWorld(library.activeId ? `${library.activeName} (copy)` : library.activeName))}>
+            <button
+              disabled={busy}
+              onClick={() => {
+                if (busy) return
+                setFeedback({ kind: 'busy', action: 'Save' })
+                void menuLibrarySaveAsNew(library.activeId ? `${library.activeName} (copy)` : library.activeName).then(({ feedback: next }) => apply(next))
+              }}
+            >
               Save as new
             </button>
             <button disabled={busy} onClick={() => downloadWorld()}>Export JSON</button>
@@ -139,7 +170,9 @@ function Palette() {
               onChange={(e) => {
                 const f = e.target.files?.[0]
                 e.target.value = ''
-                if (f) void act(`Imported "${f.name}".`, () => importWorld(f))
+                if (!f || busy) return
+                setFeedback({ kind: 'busy', action: 'Import' })
+                void menuLibraryImport(f, confirmReplace).then(({ feedback: next }) => apply(next))
               }}
             />
           </div>
@@ -148,7 +181,7 @@ function Palette() {
         <section className="grow">
           <h3>
             My worlds <small>({library.worlds.length})</small>
-            <input className="search" type="search" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input className="search" type="search" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} disabled={busy} />
           </h3>
           {worlds.length === 0 ? (
             <p className="hint">{query ? 'No worlds match.' : 'No saved worlds yet. Start one above, or save the current world.'}</p>
@@ -163,25 +196,47 @@ function Palette() {
                   objectCount={w.objectCount}
                   active={w.id === library.activeId}
                   busy={busy}
-                  onOpen={() => void act(`Opened "${w.name}".`, () => openWorld(w.id), true)}
-                  onCopy={() => void act(`Copied "${w.name}".`, () => duplicateWorld(w.id))}
-                  onRename={() => {
-                    const next = window.prompt('Rename world', w.name)
-                    if (next !== null) void act('Renamed.', () => renameWorld(w.id, next))
+                  onOpen={() => {
+                    if (busy) return
+                    setFeedback({ kind: 'busy', action: 'Open' })
+                    void menuOpenWorld(w.id, confirmReplace).then(({ feedback: next }) => apply(next, next.kind === 'ok'))
                   }}
-                  onDelete={() =>
-                    void act(`Deleted "${w.name}".`, async () =>
-                      (await requestConfirmation({ type: 'DELETE', message: `Delete "${w.name}" from your library? This cannot be undone.` }))
-                        ? deleteWorld(w.id)
-                        : { ok: false, cancelled: true },
-                    )
-                  }
+                  onCopy={() => {
+                    if (busy) return
+                    setFeedback({ kind: 'busy', action: 'Copy' })
+                    void menuDuplicateWorld(w.id).then(({ feedback: next }) => apply(next))
+                  }}
+                  onRename={() => {
+                    if (busy) return
+                    const nextName = window.prompt('Rename world', w.name)
+                    if (nextName === null) return
+                    setFeedback({ kind: 'busy', action: 'Rename' })
+                    void menuRenameWorld(w.id, nextName).then(({ feedback: next }) => apply(next))
+                  }}
+                  onDelete={() => {
+                    if (busy) return
+                    void (async () => {
+                      if (
+                        !(await requestConfirmation({
+                          type: 'DELETE',
+                          message: `Delete "${w.name}" from your library? This cannot be undone.`,
+                        }))
+                      )
+                        return
+                      setFeedback({ kind: 'busy', action: 'Delete' })
+                      apply((await menuDeleteWorld(w.id, w.name)).feedback)
+                    })()
+                  }}
                 />
               ))}
             </div>
           )}
         </section>
-        {msg && <p className="hint status-line">{msg}</p>}
+        {status && (
+          <p className={`hint status-line${feedback.kind === 'error' ? ' toast-err' : feedback.kind === 'ok' ? ' toast' : ''}`} role="status" aria-live="polite">
+            {status}
+          </p>
+        )}
       </div>
     </div>
   )

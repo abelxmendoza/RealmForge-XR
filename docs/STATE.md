@@ -18,13 +18,17 @@ Update this when store fields, XR session modes, placement, or schemas change.
 | `selectedId` | Selected object | select / duplicate |
 | `dragging` | Drag in progress | setDragging |
 
-`WorldSnapshot` = `{ objects[], robotStart, goal }` — preset/load payload. Not yet persisted to disk/localStorage.
+`WorldSnapshot` = `{ objects[], robotStart, goal }` — preset/load payload. Persisted via `src/world/persistence.ts` (localStorage library + JSON export/import).
 
 ### Editor settings (`src/editor/settings.ts`)
 
 | Field | Meaning |
 | --- | --- |
 | `snap` | Map-grid / angle / footprint snap on/off (G) |
+| `worldScale` | Presentation scale preset id (tabletop → life) |
+| `rays` | XR pointer rays on/off (default off) |
+| `surface` | `real` transparent grid vs `virtual` solid ground |
+| brush fields | buildingStyle, roof, wall/platform materials, decor, treeStyle, assetId, actors |
 
 ### Navigation (`src/nav/navigation.ts`)
 
@@ -41,7 +45,7 @@ Replans when `geometryVersion` or goal/robot placement changes (see nav module).
 | Constant / field | Meaning | Notes |
 | --- | --- | --- |
 | `WORLD_ROOT.position` | Default miniature pose | `(0, 0.8, -1.1)` when unpinned |
-| `WORLD_ROOT.scale` | Map units → meters | `0.07` (tabletop); never changed by Place city |
+| `WORLD_ROOT.scale` | Presentation scale | From `SCALE_PRESETS[worldScale]`; Place city does not change store metres |
 | `worldRootRef` | Live map `THREE.Group` | Used by `groundPoint()` for ray → map coords |
 | `usePlacement.status` | `free` \| `choosing` \| `pinned` | HUD Place city / Cancel place |
 | `usePlacement.position` / `quaternion` | Room-space pose when not following an anchor | Set on pin |
@@ -57,11 +61,18 @@ Replans when `geometryVersion` or goal/robot placement changes (see nav module).
 | Enter VR | `xrStore.enterVR()` |
 | Meta | `useXRSessionMeta`: `attempt`, `features`, `blend`, `lastError`, `entering` |
 
+### Guide (`src/guide/guideStore.ts`)
+
+| Field | Meaning |
+| --- | --- |
+| `open` / `section` | Shared desktop dialog + XR guide panel |
+
 ### Env
 
 | Var | Status |
 | --- | --- |
-| `KAEDIM_API_TOKEN` | In encrypted `.env`; **unused in code** |
+| `KAEDIM_API_TOKEN` | In encrypted `.env`; unused in app code |
+| AssemblyAI key | Encrypted `.env`; needs `.env.keys` / `DOTENV_PRIVATE_KEY` for live mic |
 
 ## Current harness state (`/xr-test/` — vanilla)
 
@@ -82,13 +93,12 @@ Nav helpers: `blocksNavigation`, `navObstacles`. Breaking kind/field changes mus
 
 ## State change log
 
+### 2026-10-17 (cleanup)
+
+- Persistence, environments, Quest XR, control palette confirms, forge theme, controls guide on `main`.
+- Editor settings expanded (scale, rays, surface, assets, actors). `WORLD.half` = 40.
+
 ### 2026-10-17 (Phase 1 P0)
 
 - Added `useXRSessionMeta` and `usePlacement` Zustand stores (not part of world schema).
-- `WORLD_ROOT` default pose unchanged; runtime pose now comes from placement (or anchor space).
-- World object schema unchanged (`geometryVersion` semantics unchanged).
-- Next expected: XR-safe Forge load confirms (Phase 2); no schema break planned.
-
-### 2026-10-17 (merge)
-
-- Merged branches; documented existing world/nav state surfaces.
+- Runtime pose from placement (or anchor space).
