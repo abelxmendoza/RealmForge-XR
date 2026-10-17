@@ -38,3 +38,17 @@ describe('world scale presets', () => {
     }
   })
 })
+
+describe('world yaw', () => {
+  it('life-size placement keeps the robot start 1.5 m ahead after the world is turned', () => {
+    const head = new THREE.Vector3(0, 1.6, 0)
+    const forward = new THREE.Vector3(0, 0, -1)
+    const anchor: [number, number] = [-24, 22]
+    const yaw = 0.7
+    const p = worldPlacement('life', head, forward, anchor, yaw)
+    // Where the anchor lands in the room = root + rotate(anchor, yaw).
+    const landed = new THREE.Vector3(anchor[0], 0, anchor[1]).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw).add(p)
+    expect(landed.x).toBeCloseTo(0)
+    expect(landed.z).toBeCloseTo(-1.5)
+  })
+})

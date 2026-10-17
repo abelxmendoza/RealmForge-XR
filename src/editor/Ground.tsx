@@ -13,6 +13,7 @@ import { tiledPlane, useGeometry } from '../scene/geometry'
 import { Structure } from '../scene/structures'
 import { beginDrag } from './drag'
 import { useEditor } from './settings'
+import { useSelection } from './selection'
 import { useEnvironment } from '../world/environment'
 
 const MIN_WALL = 0.6
@@ -85,6 +86,7 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
   switch (tool) {
     case 'select':
       w.select(null)
+      useSelection.getState().clear()
       return
     case 'goal':
       e.stopPropagation()
@@ -242,8 +244,9 @@ function TableEdge({ size, cm, rim, base }: { size: number; cm: (v: number) => n
         apply={(state, target) => {
           target.position.copy(state.current.position)
           target.quaternion.copy(state.current.quaternion)
-          // Keep the shared default in sync so a re-render of <Scene> can't snap the map back.
+          // Keep the shared default in sync so a re-render of <Scene> (or Recenter) can't snap the map back.
           WORLD_ROOT.position.copy(state.current.position)
+          WORLD_ROOT.yaw = state.current.rotation.y
         }}
       >
         <Frame inner={size} outer={size + cm(6)} y={-cm(1.4) - cm(2.5)} height={cm(5)} material={baseMat} raycastable />

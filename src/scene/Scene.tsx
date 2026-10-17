@@ -12,8 +12,9 @@ import { tickDemo } from '../editor/demo'
 import { Robot } from '../agent/Robot'
 import { Route } from './Route'
 import { Lighting } from './Lighting'
-import { MenuButton, WristMenu } from '../editor/WristMenu'
+import { MenuButton, WRIST_THIRD, WristMenu } from '../editor/WristMenu'
 import { MocapSkeleton } from '../mocap/MocapSkeleton'
+import { GestureController } from '../xr/gestures/GestureController'
 import { toggleMocap, useMocap } from '../mocap/store'
 import { SCALE_PRESETS, WORLD_ROOT, placement, worldPlacement, worldRootRef } from './worldRoot'
 import { WorldPlacement } from '../xr/WorldPlacement'
@@ -54,6 +55,7 @@ export function Scene() {
       <Lighting />
       <WorldScaler />
       {inXR && <WristMenu extra={<MocapMenuButton />} />}
+      {inXR && <GestureController />}
       {/* Smartsuit skeleton at 1:1 in your room (Rokoko's origin = where the XR session started). */}
       {mocapOn && !mocapInMap && <MocapSkeleton />}
       {!inXR && <OrbitControls makeDefault enabled={!dragging} target={WORLD_ROOT.position} />}
@@ -116,10 +118,11 @@ function WorldScaler() {
     } else {
       const head = camera.getWorldPosition(new THREE.Vector3())
       const forward = camera.getWorldDirection(new THREE.Vector3())
-      at = worldPlacement(worldScale, head, forward, useWorld.getState().robotStart)
+      at = worldPlacement(worldScale, head, forward, useWorld.getState().robotStart, WORLD_ROOT.yaw)
     }
     root.position.copy(at)
-    root.quaternion.identity()
+    // Keep the yaw from the L gesture / world pull / map grab.
+    root.rotation.set(0, WORLD_ROOT.yaw, 0)
     WORLD_ROOT.position.copy(at)
   })
   return null
@@ -129,7 +132,7 @@ function WorldScaler() {
 function MocapMenuButton() {
   const enabled = useMocap((s) => s.enabled)
   const status = useMocap((s) => s.status)
-  return <MenuButton label={enabled ? `Mocap ${status}` : 'Mocap off'} active={enabled && status === 'live'} onPress={toggleMocap} />
+  return <MenuButton width={WRIST_THIRD} label={enabled ? `Mocap ${status}` : 'Mocap off'} active={enabled && status === 'live'} onPress={toggleMocap} />
 }
 
 /** Big invisible plane under the map so drags keep receiving moves past the map edge. */

@@ -12,6 +12,7 @@ import { beginDrag } from './drag'
 import { applyGroundTool } from './Ground'
 import { MIN_SIZE, grabPatch, samePatch, type GrabPatch } from './grab'
 import { useEditor } from './settings'
+import { groupIds, useSelection } from './selection'
 
 /** What a hand grab remembers between frames: the object as grabbed, and the last patch sent. */
 interface GrabMemo {
@@ -36,12 +37,26 @@ const toLocal = (o: WorldObject, p: Vec2, from: Vec2 = [o.position[0], o.positio
 }
 
 /** Editor actions shared by the keyboard, the HUD and the in-scene buttons. */
+/** Duplicate the framed group (the copies become the new group), or the single selected object. */
 export function duplicateSelected() {
   const w = useWorld.getState()
+  const group = groupIds()
+  if (group.length) {
+    const copies = group.map((id) => w.duplicateObject(id)).filter((id): id is string => !!id)
+    useSelection.getState().setGroup(copies)
+    return
+  }
   if (w.selectedId) w.duplicateObject(w.selectedId)
 }
+/** Delete the framed group, or the single selected object. */
 export function deleteSelected() {
   const w = useWorld.getState()
+  const group = groupIds()
+  if (group.length) {
+    for (const id of group) w.removeObject(id)
+    useSelection.getState().clear()
+    return
+  }
   if (w.selectedId) w.removeObject(w.selectedId)
 }
 export function cycleSelected() {
@@ -64,6 +79,9 @@ export function Obstacles() {
 
 function Obstacle({ o }: { o: WorldObject }) {
   const selected = useWorld((s) => s.selectedId === o.id)
+  // Framed group members get their own outline; the live frame preview a lighter one.
+  const inGroup = useSelection((s) => s.ids.includes(o.id))
+  const inPreview = useSelection((s) => s.preview.includes(o.id))
   const [w, h, d] = o.size
   const groupRef = useRef<THREE.Group>(null)
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
@@ -164,7 +182,7 @@ function Obstacle({ o }: { o: WorldObject }) {
   const bz = Math.max(d / 2, 2 * r)
   const top = h + r
   return (
-    <group ref={groupRef} position={o.position} rotation={[0, o.rotationY, 0]}>
+    <group ref={groupRef} position={o.position} rotation={[0, o.rotationY, 0]} userData={{ objectId: o.id }}>
       <group onPointerDown={onDown}>
         <GrabHandle
           targetRef={groupRef}
@@ -177,6 +195,7 @@ function Obstacle({ o }: { o: WorldObject }) {
           <Structure o={o} />
         </GrabHandle>
       </group>
+      {!selected && (inGroup || inPreview) && <SelectionOutline size={o.size} color={inGroup ? '#7bdff2' : '#ffffff'} />}
       {selected && (
         <>
           <SelectionOutline size={o.size} />

@@ -23,6 +23,8 @@ export const TABLE_HEIGHT = 0.8
 export const WORLD_ROOT = {
   position: new THREE.Vector3(0, TABLE_HEIGHT, -1.1),
   scale: SCALE_PRESETS.tabletop.ratio,
+  /** World yaw (radians): set by the L gesture (primary axis), world pull and the map grab; kept by Recenter. */
+  yaw: 0,
 }
 
 export const worldRootRef: { current: THREE.Group | null } = { current: null }
@@ -48,7 +50,7 @@ export const uiSize = (ratio: number, tabletopReal = 0.03) => (tabletopReal + 0.
  * On a table: centred ahead at table height. On the floor: small scales sit just ahead of you;
  * large and life size put `anchor` (the robot start) 1.5 m in front of you, so you begin next to it.
  */
-export function worldPlacement(id: ScaleId, head: THREE.Vector3, forward: THREE.Vector3, anchor: Vec2): THREE.Vector3 {
+export function worldPlacement(id: ScaleId, head: THREE.Vector3, forward: THREE.Vector3, anchor: Vec2, yaw = 0): THREE.Vector3 {
   const ratio = SCALE_PRESETS[id].ratio
   const f = forward.clone().setY(0)
   if (f.lengthSq() < 1e-6) f.set(0, 0, -1)
@@ -56,7 +58,12 @@ export function worldPlacement(id: ScaleId, head: THREE.Vector3, forward: THREE.
   const halfReal = WORLD.half * ratio
   if (onTable(ratio)) return new THREE.Vector3(head.x, TABLE_HEIGHT, head.z).addScaledVector(f, halfReal + 0.45)
   if (id === 'room') return new THREE.Vector3(head.x, 0, head.z).addScaledVector(f, halfReal + 0.5)
-  return new THREE.Vector3(head.x - anchor[0] * ratio, 0, head.z - anchor[1] * ratio).addScaledVector(f, 1.5)
+  // The anchor turns with the world's yaw (three.js rotation.y: (x, z) → (x cos + z sin, −x sin + z cos)).
+  const c = Math.cos(yaw)
+  const s = Math.sin(yaw)
+  const ax = (c * anchor[0] + s * anchor[1]) * ratio
+  const az = (-s * anchor[0] + c * anchor[1]) * ratio
+  return new THREE.Vector3(head.x - ax, 0, head.z - az).addScaledVector(f, 1.5)
 }
 
 const plane = new THREE.Plane()

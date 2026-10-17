@@ -74,6 +74,18 @@ Snapping (G) applies while you hold the object: position snaps so footprint edge
 grid, yaw to 15°, width and depth to 0.5 and height to 0.5. A one-hand grab never resizes an object.
 The grab logic lives in `src/editor/grab.ts` and uses `@react-three/handle` for the hand tracking math.
 
+### Gestures (XR, Minority Report–style)
+
+| Gesture | Does |
+| --- | --- |
+| **L** (thumb + index at a right angle), hold | Sets the world's primary axis to where your index points |
+| **Two fists**, pull | Moves the world past you at true scale (walk the 80 m map from a small room) |
+| **Frame** (both hands in mirrored L's), hold | Selects everything inside the frame as a group |
+| **Pinch** at a distance + **roll your wrist** | Rotates the object (or the group) |
+
+The app asks for WebXR `unbounded` tracking so you can walk past the play-area boundary. Design notes,
+tuning and limits are in [docs/gestures.md](docs/gestures.md).
+
 ### Wrist menu (XR)
 
 Turn your **left palm toward your face** (or tilt the top of the left controller toward you) and a small

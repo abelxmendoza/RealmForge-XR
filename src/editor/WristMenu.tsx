@@ -9,6 +9,8 @@ import { togglePlaceCity, toggleRays, toggleSurface } from './xrInput'
 import { useWorld } from '../world/store'
 import { usePlacement } from '../xr/placement'
 import type { EquipmentKind } from '../world/catalog'
+import { useSelection } from './selection'
+import { deleteSelected, duplicateSelected } from './Obstacles'
 
 /** Panel size in metres (real room size, independent of the world scale). */
 const W = 0.16
@@ -24,6 +26,11 @@ const RELEASE = 0.018
 const EDGE = 0.003
 /** Ignore repeat presses this soon after one. */
 const PRESS_COOLDOWN_MS = 350
+/** Width of a third-of-the-row button (for buttons passed in from outside, like Mocap). */
+export const WRIST_THIRD = (W - GAP * 2) / 3
+
+/** Where the menu is this frame, so hand gestures can ignore a hand that is using it. */
+export const wristMenuState = { visible: false, position: new THREE.Vector3() }
 
 const palm = new THREE.Vector3()
 const toHead = new THREE.Vector3()
@@ -91,6 +98,7 @@ export function WristMenu({ extra }: { extra?: ReactNode }) {
     palm.set(0, normalY, 0).applyQuaternion(wristQuat)
     toHead.copy(headPos).sub(wristPos).normalize()
     p.visible = palm.dot(toHead) > FACING
+    wristMenuState.visible = p.visible
     if (tipDot.current) tipDot.current.visible = p.visible
     if (!p.visible) {
       for (const b of registry) b.down = false
@@ -100,6 +108,7 @@ export function WristMenu({ extra }: { extra?: ReactNode }) {
     p.position.copy(wristPos).addScaledVector(palm, 0.07).addScaledVector(toHead, 0.02)
     p.lookAt(headPos)
     p.updateMatrixWorld()
+    wristMenuState.position.copy(p.position)
 
     // Fingertip presses: the right index tip touching a button's front face.
     const t = tip.current
@@ -134,7 +143,8 @@ export function WristMenu({ extra }: { extra?: ReactNode }) {
 }
 
 function MenuContent({ extra }: { extra?: ReactNode }) {
-  const { rays, snap, worldScale, surface, equipment } = useEditor()
+  const { rays, snap, worldScale, surface, equipment, gestures } = useEditor()
+  const group = useSelection((s) => s.ids.length)
   const tool = useWorld((s) => s.tool)
   const placing = usePlacement((s) => s.status === 'choosing')
   const place = (kind: EquipmentKind) => {
@@ -149,8 +159,8 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
   const col = (i: number, w: number) => -W / 2 + w / 2 + i * (w + GAP)
   return (
     <group>
-      <mesh position={[0, -0.0075, -0.004]} raycast={() => null}>
-        <planeGeometry args={[W + 0.02, 0.18]} />
+      <mesh position={[0, group > 0 ? -0.0235 : -0.0075, -0.004]} raycast={() => null}>
+        <planeGeometry args={[W + 0.02, group > 0 ? 0.212 : 0.18]} />
         <meshBasicMaterial color="#141a24" transparent opacity={0.85} />
       </mesh>
       <Text position={[0, 0.068, 0]} fontSize={0.011} color="#e8eaed" anchorX="center" anchorY="middle" raycast={() => null}>
@@ -174,9 +184,18 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
       <MenuButton position={[col(1, quarter), rowY(2), 0]} width={quarter} label="Pallet" active={tool === 'equipment' && equipment === 'pallet'} onPress={() => place('pallet')} />
       <MenuButton position={[col(2, quarter), rowY(2), 0]} width={quarter} label="Rack" active={tool === 'equipment' && equipment === 'rack'} onPress={() => place('rack')} />
       <MenuButton position={[col(3, quarter), rowY(2), 0]} width={quarter} label={placing ? 'Cancel' : 'Place'} active={placing} onPress={togglePlaceCity} />
-      <MenuButton position={[col(0, half), rowY(3), 0]} width={half} label="Recenter" onPress={recenterWorld} />
-      {extra && <group position={[col(1, half), rowY(3), 0]}>{extra}</group>}
-      <Text position={[0, rowY(4) + 0.004, 0]} fontSize={0.008} color="#9aa4ad" anchorX="center" anchorY="middle" raycast={() => null}>
+      <MenuButton position={[col(0, third), rowY(3), 0]} width={third} label="Recenter" onPress={recenterWorld} />
+      <MenuButton position={[col(1, third), rowY(3), 0]} width={third} label={`Gestures ${gestures ? 'on' : 'off'}`} active={gestures} onPress={() => set({ gestures: !gestures })} />
+      {extra && <group position={[col(2, third), rowY(3), 0]}>{extra}</group>}
+      {/* Framed group (frame-hands gesture): act on all of it. */}
+      {group > 0 && (
+        <>
+          <MenuButton position={[col(0, third), rowY(4), 0]} width={third} label="Duplicate" onPress={duplicateSelected} />
+          <MenuButton position={[col(1, third), rowY(4), 0]} width={third} label="Delete" onPress={deleteSelected} />
+          <MenuButton position={[col(2, third), rowY(4), 0]} width={third} label={`Clear (${group})`} onPress={() => useSelection.getState().clear()} />
+        </>
+      )}
+      <Text position={[0, rowY(group > 0 ? 5 : 4) + 0.004, 0]} fontSize={0.008} color="#9aa4ad" anchorX="center" anchorY="middle" raycast={() => null}>
         {`${SCALE_PRESETS[worldScale].label} · touch a button with your right fingertip`}
       </Text>
     </group>

@@ -20,6 +20,8 @@ export interface EditorSettings {
    * (passthrough shows through). virtual: a solid textured placeholder ground drawn over the room.
    */
   surface: 'real' | 'virtual'
+  /** Hand gestures in XR (L axis, frame select, pinch-roll rotate, two-fist pull; see docs/gestures.md). */
+  gestures: boolean
   buildingStyle: BuildingStyle
   roof: RoofType
   wallMaterial: MaterialId
@@ -38,6 +40,7 @@ export const useEditor = create<EditorSettings>((set) => ({
   worldScale: 'tabletop',
   rays: false,
   surface: 'real',
+  gestures: true,
   buildingStyle: 'office',
   roof: 'flat',
   wallMaterial: 'concrete',

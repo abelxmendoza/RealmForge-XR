@@ -153,6 +153,20 @@ from your hands or controllers. Gestures are listed in the README under *Hand gr
 - [ ] Wrist **Real / Virtual** button (and V on desktop) switches to the solid placeholder ground and back
 - [ ] Holds a usable frame rate at 1:1 with Forge District loaded (panel or feel)
 
+## Gestures (Quest 3S recommended)
+
+See docs/gestures.md for the poses.
+
+- [ ] Walk past your old play area without the app pausing; the dev log's "AR session started" line shows `referenceSpace: 'unbounded'`
+- [ ] L with your right hand pointed along a real wall: an arrow grows along your finger, then the grid and aisles turn to match
+- [ ] Both fists, pull toward you: the world slides past at true scale; twist the fists and it turns
+- [ ] Frame a few pallets with both hands: white preview, then a cyan group; the wrist shows Duplicate / Delete / Clear
+- [ ] Pinch a distant rack and roll your wrist: it turns, in 15° steps with snap on (flip `ROLL_GAIN` if reversed)
+- [ ] Pinch-roll on a grouped object turns the whole group about its centre
+- [ ] Near grab still works, and gestures don't fire while you're grabbing or using the wrist menu
+- [ ] Wrist **Gestures off** disables all of the above
+- [ ] Each gesture edit is one Undo
+
 ## Smartsuit mock skeleton
 
 On the PC run `npm run mocap:mock` (alongside the dev server), then press **Mocap** on the wrist menu.
