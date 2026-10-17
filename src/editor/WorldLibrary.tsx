@@ -55,7 +55,8 @@ function useLibraryKey() {
   }, [])
 }
 
-const swatch = (id: TemplateId) => {
+/** Preview gradient for a starting point (shared with the start screen). */
+export const swatch = (id: TemplateId) => {
   const a = id === 'blank' ? DEFAULT_APPEARANCE : (getEnvironment(id)?.appearance ?? DEFAULT_APPEARANCE)
   return `linear-gradient(135deg, ${a.lighting.background} 0%, ${a.groundColor} 55%, ${a.tableEdge} 100%)`
 }

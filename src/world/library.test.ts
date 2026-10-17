@@ -13,6 +13,7 @@ import {
   nextWorldName,
   openWorld,
   registerThumbnailCapture,
+  startFromTemplate,
 } from './library'
 import { worldActions } from './actions'
 
@@ -138,6 +139,18 @@ describe('world library', () => {
     expect(r.ok && getThumbnail(r.value.id)).toBe(PNG)
     useWorldLibrary.setState({ activeId: null })
     expect(captureActiveThumbnail()).toBe(false)
+  })
+
+  it('start screen swaps in a template without saving or asking', async () => {
+    useWorld.getState().addObject({ kind: 'wall', position: [0, 0, 0], size: [2, 1, 0.3], rotationY: 0 })
+    expect((await startFromTemplate('warehouse')).ok).toBe(true)
+    expect(useEnvironment.getState().activeId).toBe('warehouse')
+    expect(Object.keys(useWorld.getState().objects).length).toBeGreaterThan(3)
+    expect((await startFromTemplate('blank')).ok).toBe(true)
+    expect(Object.keys(useWorld.getState().objects)).toHaveLength(0)
+    expect(useEnvironment.getState().activeId).toBeNull()
+    expect(listSavedWorlds()).toHaveLength(0)
+    expect(useWorldLibrary.getState().dirty).toBe(false)
   })
 
   it('is reachable through worldActions for the XR menu and voice', async () => {

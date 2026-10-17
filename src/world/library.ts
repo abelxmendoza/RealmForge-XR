@@ -95,6 +95,22 @@ export async function createWorld(name: string, template: TemplateId = 'blank', 
   }
 }
 
+/**
+ * Swap in a template without saving it (the start screen uses this before any editing).
+ * Replaces the current world without asking, so only call it when nothing would be lost.
+ */
+export async function startFromTemplate(template: TemplateId): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (template === 'blank') {
+    const r = await replaceWorld({ name: 'Blank world', objects: [], robotStart: [0, WORLD.half * 0.5], goal: null }, { confirmReplace: () => true })
+    if (!r.ok) return r
+    useEnvironment.getState().setActive(null)
+    return { ok: true }
+  }
+  if (!isEnvironmentId(template)) return { ok: false, error: `Unknown template: ${template}` }
+  const r = await loadEnvironment(template, { confirmReplace: () => true })
+  return r.ok ? { ok: true } : r
+}
+
 /** Open a saved world from the library (asks before replacing a non-empty world). */
 export const openWorld = (id: string, opts: CreateWorldOptions = {}) =>
   loadSavedWorld(id, { confirmReplace: opts.confirmReplace ?? sharedConfirm })

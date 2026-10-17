@@ -1,3 +1,4 @@
+import { StartChooser } from './editor/StartChooser'
 import { BRAND } from './theme/brand'
 import { ConfirmationDialog } from './editor/ConfirmationDialog'
 import { ControlsGuide } from './editor/ControlsGuide'
@@ -74,6 +75,7 @@ export default function App() {
       {/* DOM confirm works in Quest Browser WebXR; required so wrist-menu env loads can confirm. */}
       <ConfirmationDialog />
       <DesktopContextMenu />
+      <StartChooser />
     </>
   )
 }
