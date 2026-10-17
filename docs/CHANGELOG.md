@@ -6,17 +6,26 @@ Dates are UTC.
 
 ## [Unreleased]
 
+### Fixed
+
+- Docs/examples cleanup: demo readiness reflects `main`; stale “do not merge Quest” / missing XR confirm notes removed; XR menu example points at production palette + confirmation.
+
+## [0.2.0] — 2026-10-17
+
 ### Added
 
-- Living docs for the best-of-both plan: `docs/plan.md`, `docs/BUILD_LOG.md`, `docs/STATE.md` (this file).
-- Main-app AR session fallback (`full (with depth)` → `no depth` → `minimal`) via `src/xr/session.ts`.
-- **Place city** (HUD + key `P`): pin the miniature `WORLD_ROOT` onto a Space Setup table/floor plane with optional WebXR anchor (`src/xr/placement.ts`, `WorldPlacement.tsx`).
-- Quest 2 smoke checklist for `/` in `docs/quest2-testing.md`.
+- Quest XR on `main`: hand grab, scale presets, wrist menu, Place city, rays/surface, `/xr-test/`.
+- Environments menu (Forge / Mars / Warehouse); world persistence + undo/redo.
+- Immersive control palette with in-headset Confirm/Cancel.
+- Molten-forge theme shared across landing, desktop HUD, wrist menu, VR palette.
+- User & controls guide (web **Guide** / **?** and VR Guide panel).
+- AssemblyAI voice commands + floating mic / VR voice tile; multi-actor controls.
+- Desktop right-click world actions menu; asset catalog / warehouse destinations.
 
-### Merged (awaiting `main`)
+### Notes
 
-- Emiliano’s Quest 2 harness: `/xr-test/`, `docs/quest2-testing.md`, cloudflared host allowlist.
-- Abel’s worldbuilding: structures, platforms, decor, grid snap, duplicate, Forge District, dotenvx `.env`.
+- Physical Quest hardware checklist remains with Emiliano (`docs/demo-readiness.md`).
+- Live mic needs dotenvx private key; ElevenLabs not implemented.
 
 ## [0.1.0] — 2026-10-17
 
@@ -25,6 +34,6 @@ Dates are UTC.
 - App scaffold: world store, grid A* navigation, robot, pointer editor (desktop + XR rays).
 - Worldbuilding kinds: wall, building, platform, tree, streetlight, crate; materials and styles.
 - Forge District preset; inspector panel; map-grid snapping; demo “block route”.
-- Encrypted shared env via dotenvx (`KAEDIM_API_TOKEN` present, unused in code).
-- Standalone `/xr-test/` passthrough page (grab, plane/mesh snap, anchors, fps HUD).
-- Quest 2 testing guide and Vite `allowedHosts` for `*.trycloudflare.com`.
+- Encrypted shared env via dotenvx.
+- Standalone `/xr-test/` passthrough page; Quest 2 testing guide; cloudflared host allowlist.
+- AR session fallback and Place city pinning.

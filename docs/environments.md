@@ -67,7 +67,7 @@ useEnvironment((s) => s.appearance)       // reactive ground/lighting for scene
 - If the current world has **0** objects → load proceeds.
 - If it has objects and `confirmReplace` is **omitted** → `{ ok: false, cancelled: true }` (safe no-op).
 - If `confirmReplace` returns **false** → world and appearance unchanged.
-- Desktop Inspector passes `(msg) => window.confirm(msg)` at the **UI layer only**.
+- Desktop Inspector / Environments menu pass `confirmReplace` from `src/world/confirmation.ts` (HTML dialog). XR uses the control palette Confirm/Cancel tiles.
 
 Does **not** touch hand tracking, controllers, Place city, or XR session code.
 

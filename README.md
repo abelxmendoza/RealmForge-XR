@@ -31,11 +31,13 @@ We document as we build. Update these in the same change when behavior or state 
 
 | Doc | Purpose |
 | --- | --- |
+| [docs/demo-readiness.md](docs/demo-readiness.md) | What’s on `main` + Quest hardware checklist |
+| [docs/controls-guide.md](docs/controls-guide.md) | Shared web/VR user & controls guide |
+| [docs/quest2-testing.md](docs/quest2-testing.md) | Headset setup + gesture checklist |
 | [docs/plan.md](docs/plan.md) | Best-of-both roadmap (Abel product + Emiliano headset) |
 | [docs/BUILD_LOG.md](docs/BUILD_LOG.md) | Append-only work diary |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | User/demo-facing changes |
 | [docs/STATE.md](docs/STATE.md) | Runtime & data state (store, XR, placement) |
-| [docs/quest2-testing.md](docs/quest2-testing.md) | Headset setup + checklist |
 
 ## Controls
 
@@ -55,10 +57,15 @@ Every control is a pointer event, so mouse, controller rays and hand rays behave
 | P Place city | In AR: highlight Space Setup planes; click a table/floor to pin the miniature (optional anchor). |
 | R / Shift+R, `[` `]`, Del | Rotate 15°, lower/raise height, delete the selected object. |
 | D, M, T, G | Duplicate, cycle material/style, toggle flat/pitched roof, toggle grid snapping. |
+| X, V | Toggle XR rays; toggle Real / Virtual ground. |
+| ? / **Guide** | Open the user & controls guide (same content in VR from wrist or control panel). |
 
 A selected object shows drag handles (yellow sphere resizes, blue sphere rotates) and press
 buttons (green cube duplicates, purple cube cycles material/style, red cube deletes). They are
 ordinary pointer targets, so they work with controller and hand rays too.
+
+In **VR/AR**, use hand grab (rays default off), the left-wrist menu, and the floating control
+palette. Open **Guide** anytime for short, sectioned help.
 
 The **inspector** (top right, desktop) sets exact dimensions, material, building style and roof,
 picks what the creation tools place, toggles snapping, and loads environments
@@ -121,10 +128,10 @@ walls and buildings always block; platforms block only when taller than `STEP_HE
 roads and plazas are walkable; trees, streetlights and crates never block unless `solid` is set.
 Navigation builds its grid from `navObstacles(objects)`; the grid and A* code are unchanged.
 
-- **Units:** 1 map unit = 1 m at map scale. The map spans −10…10 on x and z with 0.5-unit grid cells.
-- **Miniature:** everything is drawn inside one root group (`src/scene/worldRoot.ts`) that is scaled
-  to 0.07 and placed at table height. Store values are always map-local; convert a pointer ray with
-  `groundPoint(event)`.
+- **Units:** 1 map unit = 1 m. The map spans ±`WORLD.half` (40) on x and z with 0.5-unit grid cells.
+- **Miniature:** everything is drawn inside one root group (`src/scene/worldRoot.ts`) with
+  presentation scale presets (tabletop → life size). Store values stay map-local metres; convert a
+  pointer ray with `groundPoint(event)`.
 - **Edits trigger navigation** through the store: `addObject`, `updateObject` and `removeObject`
   bump `geometryVersion`, and navigation rebuilds the grid and replans. XR input only needs to call
   these actions; it never talks to navigation directly.

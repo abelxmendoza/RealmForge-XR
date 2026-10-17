@@ -1,7 +1,9 @@
 # RealmForge XR integration — October 17, 2026
 
-Local branch: `codex/unified-xr-integration`, based on voice head `ef8ddfd`.
-Original checkout: `feat/world-persistence` at `cb23002`. Only pre-existing untracked content was `.claude/`; it was preserved. No PRs merged, remote branches changed, messages sent, commits created, or pushes performed.
+> **Historical audit.** Persistence, environments, Quest XR (grab / wrist / scale), voice, control palette, forge theme, and the controls guide are **merged on `main`**. For current readiness see `docs/demo-readiness.md`. For controls UX see `docs/controls-guide.md`.
+
+Local branch (at time of writing): `codex/unified-xr-integration`, based on voice head `ef8ddfd`.
+Original checkout: `feat/world-persistence` at `cb23002`.
 
 ## Repository audit and dependency graph
 
@@ -44,9 +46,9 @@ Voice changes: stable React snapshots; shared hook controller; no mock registrat
 
 `src/world/confirmation.ts` exposes `requestConfirmation`, `getConfirmation`, `subscribeConfirmation`, and `resolveConfirmation(id, accepted)`. Only a current request ID can resolve a pending operation. Missing UI, concurrent requests, and removal of the last UI consumer deny the operation. Status-only observers must subscribe with `consumer = false`.
 
-Desktop uses a modal HTML dialog. The desktop consumer unmounts during immersive XR, so invisible browser dialogs cannot authorize a replacement. Until Emiliano supplies an XR consumer, shared confirmation requests in immersive mode are denied. World Action API replacement calls continue to require an injected `confirmReplace` callback. Core persistence no longer uses `window.confirm`.
+Desktop uses `ConfirmationDialog` (HTML). Immersive XR uses Confirm/Cancel tiles on `ControlPalette` (and guide via `ControlsGuidePanel`). Both subscribe to `src/world/confirmation.ts`. World Action API replacement calls still pass `confirmReplace`. Core persistence does not rely on `window.confirm` for XR paths.
 
-See `examples/unified-xr-contract.ts` for plain TypeScript wiring. The existing wrist menu has not been edited. Use the same shared voice controller as desktop; do not mount a second independent controller that also receives mock broadcasts. Subscribe to controller state for `isListening`, `lastTranscript`, `lastCommand`, `lastResult`, `lastError`, and `pendingConfirmation`. Subscribe to the confirmation channel to display requests while execution awaits an answer. Stop listening on XR session exit; detach the confirmation consumer to cancel pending requests.
+See `examples/unified-xr-contract.ts` and `examples/xr-menu-integration.ts` for sketches. Production menus: wrist + control palette. Use one shared voice controller; stop listening on XR session exit.
 
 Tabletop placement stays outside the scaled world group. Store coordinates, object dimensions, occupancy grids, and paths remain local; `groundPoint` transforms pointer hits through the root matrix. Tests cover translated/rotated/scaled roots. Hardware anchor drift and hand input are not established by those tests.
 
