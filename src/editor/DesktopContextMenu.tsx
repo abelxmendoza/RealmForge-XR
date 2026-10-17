@@ -216,8 +216,8 @@ export function DesktopContextMenu() {
       id: 'save',
       label: dirty ? 'Save world •' : 'Save world',
       shortcut: 'Ctrl+S',
-      run: () => {
-        const r = quickSave()
+      run: async () => {
+        const r = await quickSave()
         if (!r.ok) console.warn('[RealmForge] save failed:', r.error)
       },
     },

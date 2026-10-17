@@ -80,7 +80,6 @@ export function Scene() {
           makeDefault
           enabled={!dragging}
           target={orbitTarget}
-          target={WORLD_ROOT.position}
           mouseButtons={{
             LEFT: THREE.MOUSE.ROTATE,
             MIDDLE: THREE.MOUSE.PAN,
