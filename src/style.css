@@ -170,7 +170,17 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  align-items: center;
   margin-left: auto;
+}
+.hud-session .hud-vr-alt {
+  min-width: 0;
+  padding-inline: 8px;
+  font-size: 11px;
+  opacity: 0.72;
+}
+.hud-session .hud-vr-alt:hover {
+  opacity: 1;
 }
 
 .hud-panel {

@@ -20,6 +20,11 @@ export type VoiceCommand =
   | { type: 'OPEN_SAVED_WORLD'; query: string }
   /** "resume": bring back the auto-saved last session */
   | { type: 'RESUME_SESSION' }
+  /**
+   * Leave the editor for the landing page.
+   * `force: true` skips the unsaved-changes confirm — escape hatch for stuck UI ("go home now").
+   */
+  | { type: 'GO_HOME'; force?: boolean }
   /** "add three trees near the robot" */
   | { type: 'SPAWN_OBJECTS'; spec: SpawnSpec; label: string; count: number; placement: Placement }
   /** "move it 10 meters north", "move them to the goal" ("it" = selection, "them" = last batch) */

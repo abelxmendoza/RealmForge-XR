@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseVoiceCommand } from '../commandParser'
 import { executeVoiceCommand } from '../commandExecutor'
 import { matchSavedWorld } from '../worldCommands'
@@ -6,6 +6,12 @@ import { useWorld } from '../../world/store'
 import { useEnvironment } from '../../world/environment'
 import { listSavedWorlds, saveWorld, useWorldLibrary } from '../../world/persistence'
 import { installAutosave, readAutosave, writeAutosave } from '../../world/autosave'
+import { leaveEditor } from '../../editor/leaveEditor'
+
+vi.mock('../../editor/leaveEditor', () => ({
+  HOME_HREF: '?',
+  leaveEditor: vi.fn(),
+}))
 
 class MemoryStorage {
   data = new Map<string, string>()
@@ -32,6 +38,15 @@ beforeEach(() => {
 })
 
 describe('voice world commands — parsing', () => {
+  it('parses go home escape hatch', () => {
+    expect(cmd('go home')).toEqual({ type: 'GO_HOME' })
+    expect(cmd('go back home')).toEqual({ type: 'GO_HOME' })
+    expect(cmd('return to the landing page')).toEqual({ type: 'GO_HOME' })
+    expect(cmd('exit the editor')).toEqual({ type: 'GO_HOME' })
+    expect(cmd('go home now')).toEqual({ type: 'GO_HOME', force: true })
+    expect(cmd('leave now')).toEqual({ type: 'GO_HOME', force: true })
+  })
+
   it('parses new / open / save as / resume', () => {
     expect(cmd('new world')).toEqual({ type: 'NEW_WORLD', template: 'blank' })
     expect(cmd('start a new mars world')).toEqual({ type: 'NEW_WORLD', template: 'mars-outpost' })
@@ -61,6 +76,18 @@ describe('voice world commands — parsing', () => {
 })
 
 describe('voice world commands — execution', () => {
+  it('goes home and can force-skip the dirty confirm', async () => {
+    const leave = vi.mocked(leaveEditor)
+    leave.mockClear()
+    useWorldLibrary.setState({ dirty: true })
+    const cancelled = await executeVoiceCommand(cmd('go home'), { confirm: async () => false })
+    expect(cancelled.status).toBe('rejected')
+    expect(leave).not.toHaveBeenCalled()
+
+    expect((await executeVoiceCommand(cmd('go home now'), { confirm: async () => false })).status).toBe('executed')
+    expect(leave).toHaveBeenCalledTimes(1)
+  })
+
   it('creates, saves as, and reopens worlds by voice', async () => {
     expect((await executeVoiceCommand(cmd('new mars world called red base'), { confirm: yes })).status).toBe('executed')
     expect(useEnvironment.getState().activeId).toBe('mars-outpost')

@@ -24,6 +24,7 @@ import { redo, undo, subscribeHistory } from './world/history'
 import { bindRays, toggleRays, toggleSurface } from './editor/xrInput'
 import { toggleMocap, useMocap } from './mocap/store'
 import { SCALE_IDS, SCALE_PRESETS, type ScaleId } from './scene/worldRoot'
+import { HOME_HREF, leaveEditor } from './editor/leaveEditor'
 
 /**
  * By default no rays in XR: objects are grabbed directly. Hands keep grab + touch pointers;
@@ -132,12 +133,12 @@ function Hud() {
       <div className="hud-brand">
         <a
           className="editor-home"
-          href="?"
+          href={HOME_HREF}
           title="Back to project page"
           onClick={async (event) => {
             if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || !useWorldLibrary.getState().dirty) return
             event.preventDefault()
-            if (await confirmReplace('Leave the editor? Save your world first to keep your unsaved changes.')) window.location.assign('?')
+            if (await confirmReplace('Leave the editor? Save your world first to keep your unsaved changes.')) leaveEditor()
           }}
         >
           ← Home
@@ -150,8 +151,22 @@ function Hud() {
           </span>
         </div>
         <div className="hud-session">
-          <button type="button" className="primary" disabled={entering} onClick={() => void enterARWithFallback()}>
-            Enter AR
+          <button
+            type="button"
+            className="primary"
+            disabled={entering}
+            title="Enter immersive mode — AR when available, otherwise VR"
+            onClick={() => void enterARWithFallback()}
+          >
+            {entering ? 'Entering…' : 'Enter XR'}
+          </button>
+          <button
+            type="button"
+            className="ghost hud-vr-alt"
+            title="VR only — no camera passthrough. Prefer Enter XR on Quest."
+            onClick={() => void xrStore.enterVR()}
+          >
+            VR
           </button>
           <button
             type="button"
@@ -160,20 +175,18 @@ function Hud() {
               if (p.status === 'choosing') p.cancelChoosing()
               else p.startChoosing()
             }}
+            title="Pin the miniature world onto a real table or floor (AR)"
           >
-            {placement === 'choosing' ? 'Cancel place' : 'Place city'}
+            {placement === 'choosing' ? 'Cancel place' : 'Place world'}
           </button>
           {placement === 'pinned' && (
             <button type="button" className="ghost" onClick={() => usePlacement.getState().resetToDefault()}>
               Unpin
             </button>
           )}
-          <button type="button" className="ghost" onClick={() => xrStore.enterVR()}>
-            Enter VR
-          </button>
           <button
             type="button"
-            className={guideOpen ? 'on' : 'primary'}
+            className={guideOpen ? 'on' : ''}
             aria-pressed={guideOpen}
             title="User & controls guide (?)"
             onClick={() => (guideOpen ? closeGuide() : openGuide('start'))}

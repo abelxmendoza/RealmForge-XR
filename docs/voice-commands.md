@@ -132,6 +132,8 @@ Parsed by `src/voice/objectCommands.ts`, executed through `src/world/spawn.ts` (
 | “Open my world 2” / “Open harbor” | `OPEN_SAVED_WORLD` | Best name match among saved worlds (environments win unless you say “my” / “saved”) |
 | “Save as harbor town” | `SAVE_WORLD` | Saves as a new library entry with that name |
 | “Resume” / “Continue where I left off” | `RESUME_SESSION` | Restores the auto-saved last session (`src/world/autosave.ts`) |
+| “Go home” / “Exit the editor” / “Back to landing” | `GO_HOME` | Leaves for the project page; confirms if unsaved |
+| “Go home now” / “Leave now” / “Force home” | `GO_HOME` (force) | Same, **skips confirm** — escape hatch if UI is stuck |
 
 **Unsupported (structured reject):** “Stop navigation” (no safe stop API yet), free-form NL, anything not listed.
 

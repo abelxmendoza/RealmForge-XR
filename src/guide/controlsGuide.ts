@@ -27,8 +27,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     title: 'Quick start',
     tab: 'Start',
     lines: [
-      '1. Enter AR or VR from the top bar.',
-      '2. Place city (AR) pins the map on a table.',
+      '1. Enter XR from the top bar (AR preferred).',
+      '2. Place world (AR) pins the map on a table.',
       '3. Left palm toward you opens the wrist menu.',
       '4. The floating panel has Tools, Worlds, Guide.',
       '5. Grab buildings with pinch or grip.',
@@ -106,6 +106,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       '"Rotate it 45 degrees" · "make it taller"',
       '"Duplicate it 3 times" · "undo" · "save world"',
       '"New Mars world" · "open my world 2" · "resume"',
+      '"Go home" leaves editor · "go home now" skips confirm.',
       '"it" = selection · "them" = what you just added.',
     ],
   },

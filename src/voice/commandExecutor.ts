@@ -13,8 +13,9 @@ import { emitVoiceEvent } from './events'
 import { duplicateObjects, moveObjects, resizeObjects, rotateObjects, spawnObjects, targetIds } from '../world/spawn'
 import type { ConfirmationRequest, ConfirmHandler, VoiceCommand } from './types'
 import { createWorld, nextWorldName, openWorld } from '../world/library'
-import { listSavedWorlds } from '../world/persistence'
+import { listSavedWorlds, useWorldLibrary } from '../world/persistence'
 import { resumeAutosave } from '../world/autosave'
+import { leaveEditor } from '../editor/leaveEditor'
 import { matchSavedWorld } from './worldCommands'
 
 export type ExecuteResult =
@@ -257,6 +258,22 @@ export async function executeVoiceCommand(
         worldActions.setGoal([goal[0], goal[1]])
         const message = 'Navigation started'
         emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'GO_HOME': {
+        const dirty = useWorldLibrary.getState().dirty
+        if (dirty && !command.force) {
+          const gate = await resolveConfirm(
+            command,
+            'Leave the editor? Unsaved changes may be lost. Say "go home now" to leave without confirming.',
+            opts.confirm,
+          )
+          if (gate.status !== 'confirmed') return gate
+        }
+        const message = command.force ? 'Leaving for home (forced)' : 'Leaving for home'
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        leaveEditor()
         return { status: 'executed', command, message }
       }
 
