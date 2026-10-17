@@ -28,6 +28,7 @@ import { useEnvironment } from '../world/environment'
 import { usePlacement } from '../xr/placement'
 import { WristEnvMenu } from '../editor/WristEnvMenu'
 import { FloorTracker } from '../xr/floor'
+import { Occlusion } from '../xr/occlusion'
 
 export function Scene() {
   const background = useEnvironment((s) => s.appearance.lighting.background)
@@ -63,6 +64,7 @@ export function Scene() {
       <ThumbnailCapture />
       <WorldScaler />
       {inXR && <FloorTracker />}
+      {inXR && <Occlusion />}
       {inXR && <WristMenu extra={<MocapMenuButton />} envRow={<WristEnvMenu />} />}
       {inXR && <GestureController />}
       {/* Smartsuit skeleton at 1:1 in your room (Rokoko's origin = where the XR session started). */}

@@ -182,6 +182,15 @@ See docs/gestures.md for the poses.
 - [ ] Controllers buzz on grab, snap steps, placing and button presses
 - [ ] Library: pallets, racks, buildings, decor and main's warehouse catalog all place, save and load
 
+## Movable menus and occlusion
+
+- [ ] Grab the **Move** bar above the Control Palette with your hand (or squeeze the grip on it) and move it; it turns to face you on release
+- [ ] With rays on, point at the Move bar, pull the trigger or pinch, and drag the palette from a distance
+- [ ] The guide panel moves the same way and stays put when you change sections
+- [ ] Recenter (palette, guide or wrist) brings each panel back in front of you
+- [ ] Wrist **Occl.** off: nothing is hidden. On (3S): your hand in front of an object hides it, and the status line reads `occlusion: depth`
+- [ ] On (Quest 2): objects behind a Space Setup wall or table disappear, and the status line reads `occlusion: room`; the floor grid stays visible
+
 ## Smartsuit mock skeleton
 
 On the PC run `npm run mocap:mock` (alongside the dev server), then press **Mocap** on the wrist menu.

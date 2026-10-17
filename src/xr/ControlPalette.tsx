@@ -6,6 +6,7 @@ import { getAsset } from '../world/assets'
 import { libraryAssets, useAssetLibrary } from '../world/assetLibrary'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
+import { PanelMoveBar } from './PanelMoveBar'
 import { useXR } from '@react-three/xr'
 import * as THREE from 'three'
 import { worldActions } from '../world/actions'
@@ -177,6 +178,7 @@ function PaletteContent() {
   }
 
   return <group ref={root} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
+    <PanelMoveBar target={root} y={0.45} width={0.65} />
     <Tile
       text={voice.isListening ? `Listening… ${voice.lastPartial ? `"${voice.lastPartial}" · ` : ''}tap to run` : 'Voice command: tap to talk'}
       y={0.39}

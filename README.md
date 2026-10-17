@@ -132,6 +132,12 @@ The same world can be shown at four scales (HUD **Scale** select or the wrist me
 Handles, buttons and the goal flag keep a reachable real size at every scale, and lighting and shadows
 follow the world.
 
+**Occlusion (O, the HUD, or wrist Occl.; off by default).** Hides virtual objects behind real ones: live depth on
+Quest 3/3S, or your Space Setup walls and furniture on Quest 2 (see [docs/occlusion.md](docs/occlusion.md)).
+
+**Moving the floating panels.** Grab the **Move** bar above the Control Palette or guide panel, or point a ray at
+it and pull the trigger. The panel faces you when released and stays there until Recenter.
+
 **Real vs virtual surface (V, or the wrist menu).** With **Real** (the default) the ground is a transparent
 grid: passthrough shows your actual floor or table, grid lines mark the 0.5 m snap step and every 5 m, an
 orange outline marks the map's edge, and a 1 m cross marks its origin. Objects still cast shadows onto your

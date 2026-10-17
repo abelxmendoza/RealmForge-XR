@@ -25,6 +25,11 @@ export interface EditorSettings {
    * (passthrough shows through). virtual: a solid textured placeholder ground drawn over the room.
    */
   surface: 'real' | 'virtual'
+  /**
+   * Hide virtual objects behind real ones (Quest 3/3S live depth, else the Space Setup room). Off by
+   * default; see xr/occlusion.tsx and docs/occlusion.md.
+   */
+  occlusion: boolean
   /** Hand gestures in XR (L axis, frame select, pinch-roll rotate, two-fist pull; see docs/gestures.md). */
   gestures: boolean
   buildingStyle: BuildingStyle
@@ -47,6 +52,7 @@ export const useEditor = create<EditorSettings>((set) => ({
   worldScale: 'tabletop',
   rays: false,
   surface: 'real',
+  occlusion: false,
   gestures: true,
   buildingStyle: 'office',
   roof: 'flat',

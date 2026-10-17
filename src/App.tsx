@@ -21,6 +21,7 @@ import { useEditor } from './editor/settings'
 import { importWorld, quickSave, useWorldLibrary } from './world/persistence'
 import { redo, undo, subscribeHistory } from './world/history'
 import { bindRays, toggleRays, toggleSurface } from './editor/xrInput'
+import { toggleOcclusion } from './xr/occlusion'
 import { toggleMocap, useMocap } from './mocap/store'
 import { SCALE_IDS, SCALE_PRESETS, type ScaleId } from './scene/worldRoot'
 
@@ -118,6 +119,7 @@ function Hud() {
   const worldScale = useEditor((s) => s.worldScale)
   const rays = useEditor((s) => s.rays)
   const surface = useEditor((s) => s.surface)
+  const occlusion = useEditor((s) => s.occlusion)
   const mocap = useMocap()
   const [hist, setHist] = useState({ canUndo: false, canRedo: false })
   const guideOpen = useGuide((s) => s.open)
@@ -232,6 +234,14 @@ function Hud() {
           >
             V Surface: {surface === 'real' ? 'Real' : 'Virtual'}
           </button>
+          <button
+            type="button"
+            className={occlusion ? 'on' : ''}
+            onClick={toggleOcclusion}
+            title="Hide virtual objects behind real ones (Quest 3/3S depth, else your Space Setup room)"
+          >
+            O Occlusion
+          </button>
           <button type="button" className={mocap.enabled ? 'on' : ''} onClick={toggleMocap} title="Smartsuit Pro live skeleton (optional)">
             Mocap
           </button>
@@ -326,6 +336,7 @@ function useKeyboard() {
       if (e.key === 'g' || e.key === 'G') return useEditor.getState().set({ snap: !useEditor.getState().snap })
       if (e.key === 'x' || e.key === 'X') return toggleRays()
       if (e.key === 'v' || e.key === 'V') return toggleSurface()
+      if (e.key === 'o' || e.key === 'O') return toggleOcclusion()
       if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         e.preventDefault()
         useGuide.getState().toggleGuide()

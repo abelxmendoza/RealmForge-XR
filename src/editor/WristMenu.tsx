@@ -8,6 +8,7 @@ import { FORGE } from '../theme/forge'
 import { useGuide } from '../guide/guideStore'
 import { useEditor } from './settings'
 import { togglePlaceCity, toggleRays, toggleSurface } from './xrInput'
+import { toggleOcclusion, useOcclusion } from '../xr/occlusion'
 import { useWorld } from '../world/store'
 import { usePlacement } from '../xr/placement'
 import { useSelection } from './selection'
@@ -148,7 +149,8 @@ export function WristMenu({ extra, envRow }: { extra?: ReactNode; envRow?: React
 }
 
 function MenuContent({ extra, envRow }: { extra?: ReactNode; envRow?: ReactNode }) {
-  const { rays, snap, worldScale, surface, gestures } = useEditor()
+  const { rays, snap, worldScale, surface, gestures, occlusion } = useEditor()
+  const occlusionSrc = useOcclusion((s) => s.source)
   const set = useEditor((s) => s.set)
   const group = useSelection((s) => s.ids.length)
   const tool = useWorld((s) => s.tool)
@@ -173,9 +175,10 @@ function MenuContent({ extra, envRow }: { extra?: ReactNode; envRow?: ReactNode 
       <Text position={[0, 0.068, 0]} fontSize={0.011} color={FORGE.text} anchorX="center" anchorY="middle" raycast={() => null}>
         RealmForge
       </Text>
-      <MenuButton position={[col(0, third), rowY(0), 0]} width={third} label={`Rays ${rays ? 'on' : 'off'}`} active={rays} onPress={toggleRays} />
-      <MenuButton position={[col(1, third), rowY(0), 0]} width={third} label={`Snap ${snap ? 'on' : 'off'}`} active={snap} onPress={() => set({ snap: !snap })} />
-      <MenuButton position={[col(2, third), rowY(0), 0]} width={third} label={surface === 'real' ? 'Real' : 'Virtual'} active={surface === 'real'} onPress={toggleSurface} />
+      <MenuButton position={[col(0, quarter), rowY(0), 0]} width={quarter} label={`Rays ${rays ? 'on' : 'off'}`} active={rays} onPress={toggleRays} />
+      <MenuButton position={[col(1, quarter), rowY(0), 0]} width={quarter} label={`Snap ${snap ? 'on' : 'off'}`} active={snap} onPress={() => set({ snap: !snap })} />
+      <MenuButton position={[col(2, quarter), rowY(0), 0]} width={quarter} label={surface === 'real' ? 'Real' : 'Virtual'} active={surface === 'real'} onPress={toggleSurface} />
+      <MenuButton position={[col(3, quarter), rowY(0), 0]} width={quarter} label={`Occl. ${occlusion ? 'on' : 'off'}`} active={occlusion} onPress={toggleOcclusion} />
       {SCALE_IDS.map((id, i) => (
         <MenuButton
           key={id}
@@ -214,7 +217,7 @@ function MenuContent({ extra, envRow }: { extra?: ReactNode; envRow?: ReactNode 
         </>
       )}
       <Text position={[0, rowY(statusRow) + 0.004, 0]} fontSize={0.008} color={FORGE.copper} anchorX="center" anchorY="middle" raycast={() => null}>
-        {`${SCALE_PRESETS[worldScale].label} · fingertip to press · Guide for help`}
+        {`${SCALE_PRESETS[worldScale].label} · occlusion: ${occlusionSrc === 'none' ? 'no depth or room' : occlusionSrc} · Guide for help`}
       </Text>
     </group>
   )

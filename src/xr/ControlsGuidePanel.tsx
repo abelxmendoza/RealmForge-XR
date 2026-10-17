@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { FORGE } from '../theme/forge'
 import { GUIDE_SECTIONS, getGuideSection, nextGuideSection, prevGuideSection } from '../guide/controlsGuide'
 import { useGuide } from '../guide/guideStore'
+import { PanelMoveBar } from './PanelMoveBar'
 
 /**
  * Immersive user guide — same sections as the desktop modal.
@@ -36,10 +37,8 @@ function GuideContent() {
     [],
   )
 
-  // Place in front of the user on open; Recenter resets this flag.
-  useEffect(() => {
-    positioned.current = false
-  }, [sectionId])
+  // Placed in front of the user when opened (mount); after that it stays where you moved it until
+  // Recenter, so switching sections no longer snaps it back.
 
   useFrame(() => {
     if (!root.current || positioned.current) return
@@ -57,6 +56,7 @@ function GuideContent() {
 
   return (
     <group ref={root} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
+      <PanelMoveBar target={root} y={0.395} width={0.72} />
       <GuideTile text="User & controls guide" y={0.34} width={0.72} height={0.055} accent />
       <GuideTile text={section.title} y={0.28} width={0.72} height={0.045} />
       {GUIDE_SECTIONS.map((s, i) => (
