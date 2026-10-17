@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { WORLD, type ObjectKind, type Vec2, type Vec3, type WorldObject } from './types'
 
-export type Tool = 'select' | 'wall' | 'building' | 'platform' | 'decor' | 'goal' | 'robot'
+export type Tool = 'select' | 'wall' | 'building' | 'platform' | 'decor' | 'event' | 'goal' | 'robot'
 
 /** A whole world: what presets provide and loadWorld() installs. */
 export interface WorldSnapshot {
@@ -48,7 +48,15 @@ export function reserveIds(ids: Iterable<string>) {
     if (m) nextId = Math.max(nextId, Number(m[1]) + 1)
   }
 }
-const ID_PREFIX: Record<ObjectKind, string> = { wall: 'wall', building: 'bld', platform: 'plat', tree: 'tree', streetlight: 'lamp', crate: 'crate' }
+const ID_PREFIX: Record<ObjectKind, string> = {
+  wall: 'wall',
+  building: 'bld',
+  platform: 'plat',
+  tree: 'tree',
+  streetlight: 'lamp',
+  crate: 'crate',
+  prop: 'prop',
+}
 export const idFor = (kind: ObjectKind) => newId(ID_PREFIX[kind] ?? 'obj')
 
 export const WALL_DEFAULTS = { height: 1.6, thickness: 0.5, color: '#c9b79c' }

@@ -40,6 +40,7 @@ export const KIND_LABELS: Record<ObjectKind, string> = {
   tree: 'Tree',
   streetlight: 'Streetlight',
   crate: 'Crate',
+  prop: 'Event object',
 }
 
 export const defaultMaterial = (o: Pick<WorldObject, 'kind' | 'material'>): MaterialId =>

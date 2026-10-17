@@ -22,6 +22,7 @@ const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'robot', label: 'Place robot', key: '5' },
   { id: 'platform', label: 'Platform / road', key: '6' },
   { id: 'decor', label: 'Decoration', key: '7' },
+  { id: 'event', label: 'Event object', key: '8' },
 ]
 
 const STATUS_TEXT = {

@@ -10,13 +10,31 @@ export type Vec3 = [x: number, y: number, z: number]
 /** A point on the ground plane: [x, z]. */
 export type Vec2 = [x: number, z: number]
 
-export type ObjectKind = 'wall' | 'building' | 'platform' | 'tree' | 'streetlight' | 'crate'
+export type ObjectKind = 'wall' | 'building' | 'platform' | 'tree' | 'streetlight' | 'crate' | 'prop'
 
 /** Surface finish. Purely visual; navigation never reads it. */
 export type MaterialId = 'concrete' | 'brick' | 'metal' | 'glass' | 'wood' | 'asphalt' | 'grass'
 export type BuildingStyle = 'tower' | 'office' | 'house' | 'industrial'
 export type TreeStyle = 'pine' | 'round'
 export type RoofType = 'flat' | 'pitched'
+
+/**
+ * Optional simulation role for event objects. Appearance (kind/catalogId) stays separate
+ * from behavior so a registration desk and ticket counter can share check-in logic.
+ */
+export type SimulationRole =
+  | 'decoration'
+  | 'obstacle'
+  | 'entrance'
+  | 'exit'
+  | 'registration'
+  | 'booth'
+  | 'service'
+  | 'seating'
+  | 'queue'
+  | 'stage'
+  | 'pickup'
+  | 'delivery'
 
 export interface WorldObject {
   /** Stable id, never reused. */
@@ -39,9 +57,19 @@ export interface WorldObject {
   roof?: RoofType
   /** Overrides the default of whether this object blocks navigation (see blocksNavigation). */
   solid?: boolean
+
+  // Event / venue extras (optional; older saves without them still load).
+  /** Universal event catalog entry id when kind is `prop`. */
+  catalogId?: string
+  /** Functional role for attendee / robot simulation. */
+  simulationRole?: SimulationRole
+  /** Soft capacity hint (seats, booth visitors). Not enforced by physics. */
+  capacity?: number
+  /** Seconds an attendee waits at this destination (MVP). */
+  serviceDuration?: number
 }
 
-/** Structures that block by default. Decorations (trees, streetlights, crates) do not, unless `solid` is set. */
+/** Structures that block by default. Decorations and most props do not, unless `solid` is set. */
 const BLOCKING_KINDS: ReadonlySet<ObjectKind> = new Set(['wall', 'building'])
 /** Platforms at or below this height are walkable surfaces (roads, plazas); taller ones block. */
 export const STEP_HEIGHT = 0.3

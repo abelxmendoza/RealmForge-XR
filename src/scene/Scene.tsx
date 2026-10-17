@@ -9,6 +9,7 @@ import { Obstacles } from '../editor/Obstacles'
 import { dragMove, endDrag } from '../editor/drag'
 import { tickDemo } from '../editor/demo'
 import { Robot } from '../agent/Robot'
+import { Attendee, AttendeeRoute } from '../sim/Attendee'
 import { Route } from './Route'
 import { Lighting } from './Lighting'
 import { WORLD_ROOT, worldRootRef } from './worldRoot'
@@ -51,6 +52,8 @@ export function Scene() {
         <Obstacles />
         <Route />
         <Robot />
+        <AttendeeRoute />
+        <Attendee />
       </group>
     </>
   )

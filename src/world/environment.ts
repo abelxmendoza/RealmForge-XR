@@ -2,9 +2,10 @@ import { create } from 'zustand'
 import type { BuildingStyle, MaterialId } from './types'
 import type { WorldSnapshot } from './store'
 import { useWorld } from './store'
-import { forgeDistrict, marsOutpost, warehouse } from './presets'
+import { emptyEventVenue, forgeDistrict, jobFair, marsOutpost, warehouse } from './presets'
 import { replaceWorld, type ReplaceOptions, type ReplaceResult } from './persistence'
 import { useEditor } from '../editor/settings'
+import { resetAttendeeSimulation } from '../sim/attendee'
 
 /**
  * Multi-environment worldbuilding: appearance + defaults live here; object layouts
@@ -12,7 +13,7 @@ import { useEditor } from '../editor/settings'
  * (pass `confirmReplace` for an in-headset dialog).
  */
 
-export type EnvironmentId = 'forge-district' | 'mars-outpost' | 'warehouse'
+export type EnvironmentId = 'forge-district' | 'mars-outpost' | 'warehouse' | 'empty-event-venue' | 'job-fair'
 
 export interface EnvironmentLighting {
   /** Desktop / VR clear color (ignored in immersive-ar passthrough). */
@@ -144,6 +145,22 @@ export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentConfig> = {
     defaults: { buildingStyle: 'industrial', wallMaterial: 'metal', platformMaterial: 'concrete' },
     buildWorld: warehouse,
   },
+  'empty-event-venue': {
+    id: 'empty-event-venue',
+    name: 'Empty Event Venue',
+    description: 'Open warehouse interior with entrance/exits — start here to design any event.',
+    appearance: WAREHOUSE_APPEARANCE,
+    defaults: { buildingStyle: 'industrial', wallMaterial: 'concrete', platformMaterial: 'concrete' },
+    buildWorld: emptyEventVenue,
+  },
+  'job-fair': {
+    id: 'job-fair',
+    name: 'Job Fair',
+    description: 'Registration, employer booths, seating, and a stage — fully editable catalog props.',
+    appearance: WAREHOUSE_APPEARANCE,
+    defaults: { buildingStyle: 'industrial', wallMaterial: 'concrete', platformMaterial: 'concrete' },
+    buildWorld: jobFair,
+  },
 }
 
 export const ENVIRONMENT_IDS = Object.keys(ENVIRONMENTS) as EnvironmentId[]
@@ -233,5 +250,6 @@ export async function loadEnvironment(id: EnvironmentId | string, opts: LoadEnvi
   if (!result.ok) return result
   useEnvironment.getState().setActive(env.id)
   applyBrushDefaults(env)
+  resetAttendeeSimulation()
   return result
 }

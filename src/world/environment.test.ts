@@ -67,8 +67,14 @@ beforeEach(() => {
 })
 
 describe('environment registry', () => {
-  it('lists the three hackathon environments', () => {
-    expect(ENVIRONMENT_IDS).toEqual(['forge-district', 'mars-outpost', 'warehouse'])
+  it('lists the hackathon environments including event venues', () => {
+    expect(ENVIRONMENT_IDS).toEqual([
+      'forge-district',
+      'mars-outpost',
+      'warehouse',
+      'empty-event-venue',
+      'job-fair',
+    ])
     expect(listEnvironments().map((e) => e.id)).toEqual(ENVIRONMENT_IDS)
     expect(PRESETS.map((p) => p.id)).toEqual(ENVIRONMENT_IDS)
   })

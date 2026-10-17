@@ -15,6 +15,8 @@ export interface EditorSettings {
   platformMaterial: MaterialId
   decor: DecorKind
   treeStyle: TreeStyle
+  /** Active event catalog entry for the Event placement tool. */
+  eventCatalogId: string
   set: (patch: Partial<Omit<EditorSettings, 'set'>>) => void
 }
 
@@ -26,5 +28,6 @@ export const useEditor = create<EditorSettings>((set) => ({
   platformMaterial: 'concrete',
   decor: 'tree',
   treeStyle: 'round',
+  eventCatalogId: 'exhibition-booth',
   set: (patch) => set(patch),
 }))
