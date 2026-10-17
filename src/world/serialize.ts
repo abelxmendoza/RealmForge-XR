@@ -30,8 +30,9 @@ export interface WorldFile {
   name: string
   savedAt: string
   actors?: Actor[]
-  environmentId?: 'forge-district' | 'mars-outpost' | 'warehouse'
+  environmentId?: 'forge-district' | 'mars-outpost' | 'warehouse' | 'empty-event-venue' | 'job-fair'
   objects: WorldObject[]
+  robotEnabled?: boolean
   robotStart: Vec2
   goal: Vec2 | null
 }
@@ -66,7 +67,7 @@ export const cleanName = (name: unknown, fallback = 'Untitled world') => {
 }
 
 /** Build the file for the current world. Only schema fields are written (no editor state, no secrets). */
-export function serializeWorld(world: { objects: Record<string, WorldObject> | WorldObject[]; robotStart: Vec2; goal: Vec2 | null; actors?: Actor[] | Record<string, Actor> }, name: string, now = new Date()): WorldFile {
+export function serializeWorld(world: { objects: Record<string, WorldObject> | WorldObject[]; robotEnabled?: boolean; robotStart: Vec2; goal: Vec2 | null; actors?: Actor[] | Record<string, Actor> }, name: string, now = new Date()): WorldFile {
   const list = Array.isArray(world.objects) ? world.objects : Object.values(world.objects)
   const actors = world.actors ? Object.values(world.actors) : []
   return {
@@ -76,6 +77,7 @@ export function serializeWorld(world: { objects: Record<string, WorldObject> | W
     savedAt: now.toISOString(),
     objects: list.map(pickObject),
     ...(actors.length ? { actors: actors.map(cloneActor) } : {}),
+    ...(world.robotEnabled === false ? { robotEnabled: false } : {}),
     robotStart: [world.robotStart[0], world.robotStart[1]],
     goal: world.goal ? [world.goal[0], world.goal[1]] : null,
   }
@@ -154,9 +156,9 @@ export function parseWorld(input: unknown, newId: (kind: ObjectKind) => string):
   const parsedActors = parseActors(data.actors, seen, () => newWorldId('actor'))
   if (!parsedActors.ok) return parsedActors
   warnings.push(...parsedActors.warnings)
-  const environmentId = typeof data.environmentId === 'string' && ['forge-district', 'mars-outpost', 'warehouse'].includes(data.environmentId)
+  const environmentId = typeof data.environmentId === 'string' && ['forge-district', 'mars-outpost', 'warehouse', 'empty-event-venue', 'job-fair'].includes(data.environmentId)
     ? data.environmentId as WorldFile['environmentId'] : undefined
-  return { ok: true, world: { name: cleanName(data.name), objects, robotStart, goal, ...(parsedActors.actors.length ? { actors: parsedActors.actors } : {}), ...(environmentId ? { environmentId } : {}) }, warnings }
+  return { ok: true, world: { name: cleanName(data.name), objects, robotStart, goal, ...(data.robotEnabled === false ? { robotEnabled: false } : {}), ...(parsedActors.actors.length ? { actors: parsedActors.actors } : {}), ...(environmentId ? { environmentId } : {}) }, warnings }
 }
 
 /** One object, or an error string when it can't be used at all. */

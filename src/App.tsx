@@ -14,7 +14,7 @@ import { useWorld, type Tool } from './world/store'
 import { useNav } from './nav/navigation'
 import { blockRoute } from './editor/demo'
 import { Inspector } from './editor/Inspector'
-import { EnvironmentsMenu } from './editor/EnvironmentsMenu'
+import { WorldLibrary, openWorldLibrary } from './editor/WorldLibrary'
 import { DesktopContextMenu } from './editor/DesktopContextMenu'
 import { cycleSelected, deleteSelected, duplicateSelected } from './editor/Obstacles'
 import { useEditor } from './editor/settings'
@@ -67,6 +67,7 @@ export default function App() {
       </Canvas>
       <Hud />
       <Inspector />
+      <WorldLibrary />
       <VoicePanel />
       <ControlsGuide />
       {/* DOM confirm works in Quest Browser WebXR; required so wrist-menu env loads can confirm. */}
@@ -198,7 +199,7 @@ function Hud() {
         </div>
       </div>
 
-      <EnvironmentsMenu compact />
+      <button type="button" onClick={openWorldLibrary}>Worlds library (L)</button>
 
       <div className="hud-panel">
         <div className="row">

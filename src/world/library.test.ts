@@ -139,7 +139,7 @@ describe('world library', () => {
   })
 
   it('is reachable through worldActions for the XR menu and voice', async () => {
-    expect(worldActions.listTemplates().length).toBe(4)
+    expect(worldActions.listTemplates().length).toBe(5)
     const r = await worldActions.createWorld('From XR', 'warehouse')
     expect(r.ok).toBe(true)
   })

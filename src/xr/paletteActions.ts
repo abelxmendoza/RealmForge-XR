@@ -24,7 +24,7 @@ export async function createPaletteWorld(template: TemplateId = 'blank') {
   return createWorld(nextWorldName(), template, { confirmReplace })
 }
 export async function blankPaletteWorld() {
-  return replaceWorld({ name: 'Blank world', objects: [], robotStart: [0, 5], goal: null }, { confirmReplace })
+  return replaceWorld({ name: 'Blank world', objects: [], robotEnabled: false, robotStart: [0, 5], goal: null }, { confirmReplace })
 }
 export async function deletePaletteSelection() {
   const id = worldActions.getSelectedId()

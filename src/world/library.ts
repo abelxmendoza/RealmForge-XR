@@ -41,13 +41,13 @@ export interface WorldTemplate {
 
 export const BLANK_TEMPLATE: WorldTemplate = {
   id: 'blank',
-  name: 'Blank world',
+  name: 'Empty',
   description: 'An empty board: build anything from scratch.',
 }
 
 /** Every starting point: blank first, then the environments. */
 export function listTemplates(): WorldTemplate[] {
-  return [BLANK_TEMPLATE, ...listEnvironments()]
+  return [BLANK_TEMPLATE, ...listEnvironments().filter((env) => env.id !== 'empty-event-venue')]
 }
 
 export interface CreateWorldOptions {
@@ -76,7 +76,7 @@ export async function createWorld(name: string, template: TemplateId = 'blank', 
   }
 
   if (template === 'blank') {
-    const r = await replaceWorld({ name: label, objects: [], robotStart: [0, WORLD.half * 0.5], goal: null }, { confirmReplace: () => true })
+    const r = await replaceWorld({ name: label, objects: [], robotEnabled: false, robotStart: [0, WORLD.half * 0.5], goal: null }, { confirmReplace: () => true })
     if (!r.ok) return r
     useEnvironment.getState().setActive(null)
   } else {

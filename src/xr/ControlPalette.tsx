@@ -1,3 +1,4 @@
+import { listTemplates } from '../world/library'
 import { ACTOR_CATALOG, ACTOR_KINDS } from '../actors/types'
 import { actorRuntimeRevision, subscribeActorRuntime, getActorRuntime } from '../actors/runtime'
 import { requestConfirmation } from '../world/confirmation'
@@ -17,7 +18,7 @@ import { useNav } from '../nav/navigation'
 import { toggleRays } from '../editor/xrInput'
 import { blockRoute } from '../editor/demo'
 import { usePlacement } from './placement'
-import { blankPaletteWorld, createPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteEnvironment, loadPaletteSave, savePaletteWorld } from './paletteActions'
+import { createPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteSave, savePaletteWorld } from './paletteActions'
 import { FORGE } from '../theme/forge'
 import { useGuide } from '../guide/guideStore'
 import { useVoiceCommands } from '../voice/useVoiceCommands'
@@ -111,8 +112,8 @@ function PaletteContent() {
       { label: 'Block robot route', run: blockRoute },
       { label: 'Place world (AR)', disabled: !inAR, run: () => usePlacement.getState().startChoosing() })
   } else if (page === 'Worlds') {
-    buttons = worldActions.listEnvironments().map((env) => ({ label: env.name, run: () => loadPaletteEnvironment(env.id) }))
-    buttons.push({ label: 'New world (saved)', run: () => createPaletteWorld() }, { label: 'Blank world', run: blankPaletteWorld }, { label: 'Save world', run: savePaletteWorld },
+    buttons = listTemplates().map((template) => ({ label: template.name, run: () => createPaletteWorld(template.id) }))
+    buttons.push({ label: 'Save world', run: savePaletteWorld },
       { label: 'Save as new', run: () => worldActions.saveWorld(activeName) },
       { label: 'Browse saved worlds', run: () => { worldActions.listSavedWorlds(); setSavePage(0); setPage('Saved') } })
   } else if (page === 'Assets') {

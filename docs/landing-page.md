@@ -1,8 +1,8 @@
 # RealmForge XR project landing page
 
-The root URL is now a responsive project introduction. It presents the three environments, shared worldbuilding tools, robot navigation, spatial controls and local world library. The interactive hero illustration switches between Forge District, Mars Outpost and Warehouse; the primary launch link follows the selected environment.
+The root URL is now a responsive project introduction. It presents the three environments, shared worldbuilding tools, configurable workers/courier robots/utility vehicles, robot navigation, spatial controls and local world library. Feature rows also cover expanded spoken/typed object commands, ten warehouse assets and destination markers, four presentation scales, JSON import/export with actors, optional Rokoko debug skeleton streaming, and the desktop/in-headset Guide. Integration requirements and navigation limits appear beside the relevant features. The interactive hero illustration switches between Forge District, Mars Outpost and Warehouse; the primary launch link follows the selected environment.
 
-The illustrations are local SVG compositions, explicitly identified as illustrations rather than live simulation frames. No stock imagery, downloaded fonts, new dependency, fabricated customer claim or external service is required.
+The illustrations are local SVG compositions, explicitly identified as illustrations rather than live simulation frames. The artwork needs no stock imagery or external service. Display fonts are requested from Google Fonts with local fallbacks; optional live speech and mocap have separate setup requirements.
 
 ## Entry points
 
@@ -23,7 +23,7 @@ The landing page loads React and its own scoped styles and SVG art. The editor, 
 
 Responsive layouts cover desktop and mobile; the mobile header retains the main editor launch action. The page provides landmark navigation, a skip link, real links for navigation, named SVG illustrations, toggle state on preview buttons, visible keyboard focus, and reduced-motion styling for the decorative path and smooth scrolling. Headset compatibility is qualified in the footer.
 
-## Actual validation
+## Earlier landing-page validation record
 
 - `npm test`: **174 passed across 21 files**.
 - `npm run build`: **passed**; the editor is emitted as a separate lazy-loaded chunk.
@@ -35,3 +35,9 @@ Responsive layouts cover desktop and mobile; the mobile header retains the main 
 - Screenshots: `/tmp/realmforge-landing-desktop.png` and `/tmp/realmforge-landing-full.png`.
 
 Large editor/emulation chunks and extensionless Vite config imports still produce existing build warnings. Physical Quest tests and hosted production deployment were not performed for this landing-page change.
+
+## Capability content refresh
+
+README and landing-page copy now cover actors, expanded object voice commands, warehouse tools, four world scales, saves, shared controls help and optional mocap, with implementation limits and setup requirements. Page metadata and the Warehouse card description reflect the expanded scope.
+
+Validation: 219 tests passed across 29 files; TypeScript and production build passed. Existing Vite configuration and bundle-size warnings remain. This content refresh did not include a new browser layout or physical-headset check.

@@ -67,10 +67,11 @@ export const useWorldLibrary = create<LibraryState>(() => ({
 
 /** Stable fingerprint of world data (no name / savedAt) for dirty detection. */
 export function worldFingerprint(): string {
-  const { objects, robotStart, goal } = useWorld.getState()
+  const { objects, robotStart, goal, robotEnabled } = useWorld.getState()
   const ids = Object.keys(objects).sort()
   return JSON.stringify({
     objects: ids.map((id) => objects[id]),
+    robotEnabled,
     robotStart,
     goal,
     actors: Object.values(useWorld.getState().actors).sort((a, b) => a.id.localeCompare(b.id)),
@@ -144,8 +145,8 @@ const newSaveId = () => `w${Date.now().toString(36)}${Math.random().toString(36)
 
 /** The active world as a WorldFile (what save and export write). */
 export function currentWorldFile(name = useWorldLibrary.getState().activeName): WorldFile {
-  const { objects, robotStart, goal } = useWorld.getState()
-  const file = serializeWorld({ objects, robotStart, goal, actors: actorsForSave() }, name)
+  const { objects, robotStart, goal, robotEnabled } = useWorld.getState()
+  const file = serializeWorld({ objects, robotStart, goal, robotEnabled, actors: actorsForSave() }, name)
   const environmentId = useEnvironment.getState().activeId
   return environmentId ? { ...file, environmentId } : file
 }

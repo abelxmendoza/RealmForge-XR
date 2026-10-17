@@ -14,7 +14,7 @@ import {
   thumbVersion,
   type TemplateId,
 } from '../world/library'
-import { importWorld, listSavedWorlds, quickSave, saveWorld, useWorldLibrary } from '../world/persistence'
+import { downloadWorld, importWorld, listSavedWorlds, quickSave, saveWorld, useWorldLibrary } from '../world/persistence'
 import { getConfirmation, requestConfirmation } from '../world/confirmation'
 
 /** Open/close state for the library palette, so any button or key can open it. */
@@ -97,6 +97,7 @@ function Palette() {
 
         <section>
           <h3>Start a new world</h3>
+          <p className="hint">Empty has no content. Job Fair includes registration, employer booths, seating and a stage.</p>
           <div className="library-row">
             <input type="text" placeholder={suggested} value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
             <span className="hint">Pick a starting point. It's saved to your library straight away.</span>
@@ -126,6 +127,7 @@ function Palette() {
             <button disabled={busy} onClick={() => void act('Saved as a new world.', () => saveWorld(library.activeId ? `${library.activeName} (copy)` : library.activeName))}>
               Save as new
             </button>
+            <button disabled={busy} onClick={() => downloadWorld()}>Export JSON</button>
             <button disabled={busy} onClick={() => fileInput.current?.click()}>
               Import JSON
             </button>

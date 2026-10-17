@@ -157,31 +157,10 @@ export function warehouse(): WorldSnapshot {
   const objects: WorldObject[] = [
     // Floor plate + centre aisle + cross aisles (walkable).
     slab('concrete', 0, 0, 72, 0.16, 72),
-    road(0, 0, 8.8, 72),
-    road(0, 0, 72, 8),
-    road(0, 24, 72, 6.4),
-    road(0, -24, 72, 6.4),
-
-    // West storage racks (blocking industrial bays).
-    building('industrial', -24, 32, 16, 12.8, 8.8, { color: '#8a96a0' }),
-    building('industrial', -24, 16, 16, 14, 8.8, { color: '#7a8690' }),
-    building('industrial', -24, -16, 16, 12.8, 8.8, { color: '#8a96a0' }),
-    building('industrial', -24, -32, 16, 13.6, 8.8, { color: '#7a8690' }),
-
-    // East storage racks.
-    building('industrial', 24, 32, 16, 13.2, 8.8, { color: '#8a96a0' }),
-    building('industrial', 24, 16, 16, 14.4, 8.8, { color: '#7a8690' }),
-    building('industrial', 24, -16, 16, 13.2, 8.8, { color: '#8a96a0' }),
-    building('industrial', 24, -32, 16, 14, 8.8, { color: '#7a8690' }),
-
-    // Loading dock (north) — raised metal pad, short enough to stay walkable? height 1 < STEP 1.2
-    slab('metal', 0, -34, 20, 0.20, 10),
-    wall('metal', -12.8, -34, 9.6, 6.4, Math.PI / 8),
-    wall('metal', 12.8, -34, 9.6, 6.4, Math.PI / 8),
-
-    // Workstations (south corners) — small offices, leave centre clear.
-    building('office', -30, 0, 8.8, 8, 8.8, { color: '#b0b8c0', roof: 'flat' }),
-    building('office', 30, 0, 8.8, 8, 8.8, { color: '#b0b8c0', roof: 'flat' }),
+    slab('concrete', 0, 0, 8.8, 0.17, 72),
+    slab('concrete', 0, 0, 72, 0.17, 8),
+    slab('concrete', 0, 24, 72, 0.17, 6.4),
+    slab('concrete', 0, -24, 72, 0.17, 6.4),
 
     // Cargo crates in bays (blocking) — keep clear of centre aisle (x≈0) and cross aisle (z≈0).
     crate(-24, 24.8, 'wood', 3.6),
@@ -196,15 +175,14 @@ export function warehouse(): WorldSnapshot {
     crate(24, -24.8, 'wood', 3.6),
     crate(-34, 34, 'wood', 2.8),
     crate(34, -14, 'metal', 2.8),
-
-    // Aisle lights (non-blocking).
-    lamp(-5.6, 32),
-    lamp(5.6, 32),
-    lamp(-5.6, 0, Math.PI),
-    lamp(5.6, 0, Math.PI),
-    lamp(-5.6, -32),
-    lamp(5.6, -32),
   ]
+  // Real shelving instead of miniature exterior buildings; cross aisles stay open.
+  for (const x of [-26, -16, 16, 26]) {
+    for (const z of [-32, -16, 16, 32]) {
+      const rack = buildAsset('storage-rack', [x, z], 0, false)!
+      objects.push({ ...rack, id: idFor(rack.kind), size: [6, 7.5, 7], color: '#e49843' })
+    }
+  }
   // Catalog equipment and usable destination pads leave the central route clear.
   const equipment: [AssetId, number, number][] = [
     ['storage-rack', -10, -10], ['workstation', 10, 10], ['conveyor', 10, -10],
@@ -218,9 +196,37 @@ export function warehouse(): WorldSnapshot {
   return { objects, robotStart: [0, 32], goal: [0, -32.8] }
 }
 
+/** Empty has no authored content, agents, destinations or automatic routes. */
+export function emptyEventVenue(): WorldSnapshot {
+  return { objects: [], actors: [], robotEnabled: false, robotStart: [0, 0], goal: null }
+}
+
+/** Editable job-fair layout: registration, four employer booths, seating and presentation area. */
+export function jobFair(): WorldSnapshot {
+  const objects: WorldObject[] = []
+  const desk = (x: number, z: number) => {
+    const asset = buildAsset('workstation', [x, z], 0, false)!
+    objects.push({ ...asset, id: idFor(asset.kind) })
+  }
+  objects.push(slab('concrete', 0, 0, 34, 0.05, 30))
+  desk(0, 11) // registration
+  for (const x of [-10, 10]) for (const z of [-4, 5]) {
+    desk(x, z)
+    objects.push(wall('metal', x, z - 2, 7, 2.4))
+  }
+  objects.push(slab('concrete', 0, -11, 12, 0.6, 5))
+  objects.push(wall('metal', 0, -13, 12, 3))
+  for (const x of [-3, 0, 3]) for (const z of [-4, -7]) {
+    objects.push(obj('crate', x, z, [0.8, 0.5, 0.8], { color: '#65cdd0' }))
+  }
+  return { objects, actors: [], robotEnabled: false, robotStart: [0, 14], goal: null }
+}
+
 /** Desktop inspector list — ids match `EnvironmentId` / `loadEnvironment`. */
 export const PRESETS = [
   { id: 'forge-district', label: 'Forge District (demo city)', build: forgeDistrict },
   { id: 'mars-outpost', label: 'Mars Outpost', build: marsOutpost },
   { id: 'warehouse', label: 'Autonomous Warehouse', build: warehouse },
+  { id: 'empty-event-venue', label: 'Empty', build: emptyEventVenue },
+  { id: 'job-fair', label: 'Job Fair', build: jobFair },
 ] as const

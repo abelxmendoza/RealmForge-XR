@@ -1,3 +1,4 @@
+import { WarehouseInterior } from './WarehouseInterior'
 import { Actors } from '../actors/Actors'
 import { ControlPalette } from '../xr/ControlPalette'
 import { ControlsGuidePanel } from '../xr/ControlsGuidePanel'
@@ -24,7 +25,6 @@ import { WorldPlacement } from '../xr/WorldPlacement'
 import { bindWebXRManager } from '../xr/session'
 import { useEnvironment } from '../world/environment'
 import { usePlacement } from '../xr/placement'
-import { WristEnvMenu } from '../editor/WristEnvMenu'
 
 export function Scene() {
   const background = useEnvironment((s) => s.appearance.lighting.background)
@@ -38,6 +38,7 @@ export function Scene() {
   const mocapOn = useMocap((s) => s.enabled)
   const mocapInMap = useMocap((s) => s.placement === 'map')
   const robotStart = useWorld((s) => s.robotStart)
+  const robotEnabled = useWorld((s) => s.robotEnabled !== false)
 
   useEffect(() => {
     bindWebXRManager(gl.xr)
@@ -65,7 +66,6 @@ export function Scene() {
         <WristMenu
           extra={
             <>
-              <WristEnvMenu />
               <group position={[0, -0.032, 0]}>
                 <MocapMenuButton />
               </group>
@@ -101,9 +101,10 @@ export function Scene() {
         >
           <DragCatcher />
           <Ground />
+          <WarehouseInterior />
           <Obstacles />
           <Route />
-          <Robot />
+          {robotEnabled && <Robot />}
           <Actors />
           {mocapOn && mocapInMap && (
             <group position={[robotStart[0], 0, robotStart[1]]}>

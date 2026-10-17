@@ -1,3 +1,4 @@
+import { useWorld } from '../world/store'
 import { startActors } from '../actors/runtime'
 import App from '../App'
 import { startNavigation } from '../nav/navigation'
@@ -19,6 +20,7 @@ export async function initializeEditor(world?: LandingWorldId) {
     const result = await loadEnvironment(world, { confirmReplace: () => true })
     if (!result.ok) throw new Error(result.error)
   }
+  if (!world) useWorld.getState().loadWorld({ objects: [], actors: [], robotEnabled: false, robotStart: [0, 0], goal: null })
   startNavigation()
   startActors()
   installHistory()

@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useWorld, type Tool } from '../world/store'
-import { listEnvironments, loadEnvironment, type EnvironmentId } from '../world/environment'
+import { openWorldLibrary } from './WorldLibrary'
 import { quickSave, useWorldLibrary } from '../world/persistence'
 import { getHistoryState, redo, undo, subscribeHistory } from '../world/history'
 import { deleteSelected, duplicateSelected } from './Obstacles'
@@ -127,7 +127,6 @@ export function DesktopContextMenu() {
 
   if (!panel) return null
 
-  const envs = listEnvironments()
 
   const items: Item[] = [
     {
@@ -236,34 +235,7 @@ export function DesktopContextMenu() {
       run: () => blockRoute(),
     },
     { kind: 'sep' },
-    ...envs.map(
-      (env): Item => ({
-        kind: 'action',
-        id: `env-${env.id}`,
-        label: `Load ${env.name}`,
-        run: async () => {
-          await loadEnvironment(env.id as EnvironmentId, {
-            confirmReplace: (msg) => window.confirm(msg),
-          })
-        },
-      }),
-    ),
-    {
-      kind: 'action',
-      id: 'blank',
-      label: 'Blank world…',
-      danger: true,
-      run: () => {
-        const count = Object.keys(useWorld.getState().objects).length
-        if (
-          count > 0 &&
-          !window.confirm(`Clear the world (${count} objects)? Unsaved changes will be lost.`)
-        ) {
-          return
-        }
-        useWorld.getState().loadWorld({ objects: [], robotStart: [0, 5], goal: null })
-      },
-    },
+    { kind: 'action', id: 'worlds', label: 'Worlds library…', run: openWorldLibrary },
   ]
 
   const activate = (item: Extract<Item, { kind: 'action' }>) => {
