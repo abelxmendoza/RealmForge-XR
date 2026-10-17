@@ -25,7 +25,8 @@ export function assemblyaiTokenPlugin(): Plugin {
           return
         }
 
-        const apiKey = process.env.ASSEMBLYAI_API_KEY
+        // Accept both spellings; the docs use ASSEMBLYAI_API_KEY.
+        const apiKey = process.env.ASSEMBLYAI_API_KEY || process.env.ASSEMBLY_AI_API_KEY
         if (!apiKey) {
           res.statusCode = 503
           res.setHeader('Content-Type', 'application/json')
