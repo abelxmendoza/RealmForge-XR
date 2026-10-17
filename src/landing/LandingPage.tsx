@@ -12,7 +12,7 @@ function Arrow() {
 function Brand() {
   return (
     <a className="rf-brand" href="#top" aria-label="RealmForge XR home">
-      <img className="rf-brand-logo" src={BRAND.logo} width="34" height="34" alt="" />
+      <img className="rf-brand-logo" src={BRAND.logo} width="52" height="52" alt="" />
       <span>
         REALMFORGE<em>XR</em>
       </span>
@@ -302,7 +302,7 @@ export default function LandingPage() {
         </section>
 
         <section className="rf-shell rf-final">
-          <img className="rf-final-mark rf-final-logo" src={BRAND.logoLarge} width="120" height="120" alt="" aria-hidden="true" />
+          <img className="rf-final-mark rf-final-logo" src={BRAND.logoLarge} width="168" height="168" alt="" aria-hidden="true" />
           <p className="rf-eyebrow">SHAPE WORLDS. STAGE EVENTS. BRING THEM TO LIFE.</p>
           <h2>
             Your next venue
