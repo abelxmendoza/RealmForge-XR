@@ -15,6 +15,8 @@ import {
   treeStyle,
 } from '../world/catalog'
 import { PRESETS } from '../world/presets'
+import { replaceWorld } from '../world/persistence'
+import { WorldsPanel } from './WorldsPanel'
 import { useEditor, type DecorKind } from './settings'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 
@@ -30,6 +32,7 @@ export function Inspector() {
     <div className="inspector">
       {selected ? <ObjectPanel o={selected} /> : <BrushPanel tool={tool} />}
       <WorldPanel />
+      <WorldsPanel />
     </div>
   )
 }
@@ -214,11 +217,8 @@ function BrushPanel({ tool }: { tool: Tool }) {
 
 function WorldPanel() {
   const snap = useEditor((s) => s.snap)
-  const load = (build: () => ReturnType<(typeof PRESETS)[number]['build']>, label: string) => {
-    const count = Object.keys(useWorld.getState().objects).length
-    if (count > 0 && !window.confirm(`Replace the current world (${count} objects) with "${label}"?`)) return
-    useWorld.getState().loadWorld(build())
-  }
+  const load = (build: () => ReturnType<(typeof PRESETS)[number]['build']>, label: string) =>
+    replaceWorld({ ...build(), name: label.replace(/ \(.*\)$/, '') })
   return (
     <section>
       <h3>World</h3>

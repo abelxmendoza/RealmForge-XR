@@ -41,6 +41,13 @@ export interface WorldState {
 
 let nextId = 1
 export const newId = (prefix = 'obj') => `${prefix}-${nextId++}`
+/** Keep newId() ahead of ids that came from outside (loaded or imported worlds), so they never collide. */
+export function reserveIds(ids: Iterable<string>) {
+  for (const id of ids) {
+    const m = /-(\d+)$/.exec(id)
+    if (m) nextId = Math.max(nextId, Number(m[1]) + 1)
+  }
+}
 const ID_PREFIX: Record<ObjectKind, string> = { wall: 'wall', building: 'bld', platform: 'plat', tree: 'tree', streetlight: 'lamp', crate: 'crate' }
 export const idFor = (kind: ObjectKind) => newId(ID_PREFIX[kind] ?? 'obj')
 
@@ -108,7 +115,8 @@ export const useWorld = create<WorldState>((set) => ({
     set((s) => ({ objects: { ...s.objects, [copy.id]: copy }, selectedId: copy.id, geometryVersion: s.geometryVersion + 1 }))
     return copy.id
   },
-  loadWorld: (w) =>
+  loadWorld: (w) => {
+    reserveIds(w.objects.map((o) => o.id))
     set((s) => ({
       objects: Object.fromEntries(w.objects.map((o) => [o.id, { ...o }])),
       robotStart: [...w.robotStart],
@@ -116,7 +124,8 @@ export const useWorld = create<WorldState>((set) => ({
       selectedId: null,
       geometryVersion: s.geometryVersion + 1,
       robotVersion: s.robotVersion + 1,
-    })),
+    }))
+  },
   setGoal: (p) => set({ goal: p }),
   placeRobot: (p) => set((s) => ({ robotStart: p, robotVersion: s.robotVersion + 1 })),
   setTool: (tool) => set({ tool }),
