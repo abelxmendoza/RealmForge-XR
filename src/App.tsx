@@ -8,7 +8,7 @@ import { blockRoute } from './editor/demo'
 import { Inspector } from './editor/Inspector'
 import { cycleSelected, deleteSelected, duplicateSelected } from './editor/Obstacles'
 import { useEditor } from './editor/settings'
-import { bindRays, toggleRays } from './editor/xrInput'
+import { bindRays, toggleRays, toggleSurface } from './editor/xrInput'
 import { toggleMocap, useMocap } from './mocap/store'
 import { SCALE_IDS, SCALE_PRESETS, type ScaleId } from './scene/worldRoot'
 
@@ -65,6 +65,7 @@ function Hud() {
   const snap = useEditor((s) => s.snap)
   const worldScale = useEditor((s) => s.worldScale)
   const rays = useEditor((s) => s.rays)
+  const surface = useEditor((s) => s.surface)
   const mocap = useMocap()
   return (
     <div className="hud">
@@ -94,6 +95,9 @@ function Hud() {
         <button className={rays ? 'on' : ''} onClick={toggleRays} title="XR pointer rays on hands and controllers">
           X Rays
         </button>
+        <button className={surface === 'real' ? 'on' : ''} onClick={toggleSurface} title="Real: transparent grid over your floor or table. Virtual: solid placeholder ground">
+          V Surface: {surface === 'real' ? 'Real' : 'Virtual'}
+        </button>
         <button className={mocap.enabled ? 'on' : ''} onClick={toggleMocap} title="Smartsuit Pro live skeleton (needs npm run mocap:bridge or mocap:mock)">
           Mocap
         </button>
@@ -119,7 +123,7 @@ function Hud() {
       <div className="help">
         Drag empty ground to orbit. Select: drag an object to move it, yellow handle resizes, blue handle rotates,
         green cube duplicates, purple cube changes style, red cube deletes.
-        Keys: R rotate 15°, [ ] height, D duplicate, M material/style, T roof, G snap, X rays, Del delete.
+        Keys: R rotate 15°, [ ] height, D duplicate, M material/style, T roof, G snap, X rays, V real/virtual surface, Del delete.
       </div>
     </div>
   )
@@ -136,6 +140,7 @@ function useKeyboard() {
       if (e.key === 'b' || e.key === 'B') return blockRoute()
       if (e.key === 'g' || e.key === 'G') return useEditor.getState().set({ snap: !useEditor.getState().snap })
       if (e.key === 'x' || e.key === 'X') return toggleRays()
+      if (e.key === 'v' || e.key === 'V') return toggleSurface()
       const sel = w.selectedId ? w.objects[w.selectedId] : null
       if (!sel) return
       if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected()

@@ -5,7 +5,7 @@ import { Text } from '@react-three/drei'
 import { XRSpace, useXRInputSourceState } from '@react-three/xr'
 import { SCALE_IDS, SCALE_PRESETS, recenterWorld } from '../scene/worldRoot'
 import { useEditor } from './settings'
-import { toggleRays } from './xrInput'
+import { toggleRays, toggleSurface } from './xrInput'
 
 /** Panel size in metres (real room size, independent of the world scale). */
 const W = 0.16
@@ -131,11 +131,12 @@ export function WristMenu({ extra }: { extra?: ReactNode }) {
 }
 
 function MenuContent({ extra }: { extra?: ReactNode }) {
-  const { rays, snap, worldScale } = useEditor()
+  const { rays, snap, worldScale, surface } = useEditor()
   const set = useEditor((s) => s.set)
   const rowY = (i: number) => 0.05 - i * (BTN_H + GAP)
   const quarter = (W - GAP * 3) / 4
   const half = (W - GAP) / 2
+  const third = (W - GAP * 2) / 3
   const col = (i: number, w: number) => -W / 2 + w / 2 + i * (w + GAP)
   return (
     <group>
@@ -146,8 +147,9 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
       <Text position={[0, 0.068, 0]} fontSize={0.011} color="#e8eaed" anchorX="center" anchorY="middle" raycast={() => null}>
         RealmForge
       </Text>
-      <MenuButton position={[col(0, half), rowY(0), 0]} width={half} label={`Rays ${rays ? 'on' : 'off'}`} active={rays} onPress={toggleRays} />
-      <MenuButton position={[col(1, half), rowY(0), 0]} width={half} label={`Snap ${snap ? 'on' : 'off'}`} active={snap} onPress={() => set({ snap: !snap })} />
+      <MenuButton position={[col(0, third), rowY(0), 0]} width={third} label={`Rays ${rays ? 'on' : 'off'}`} active={rays} onPress={toggleRays} />
+      <MenuButton position={[col(1, third), rowY(0), 0]} width={third} label={`Snap ${snap ? 'on' : 'off'}`} active={snap} onPress={() => set({ snap: !snap })} />
+      <MenuButton position={[col(2, third), rowY(0), 0]} width={third} label={surface === 'real' ? 'Real' : 'Virtual'} active={surface === 'real'} onPress={toggleSurface} />
       {SCALE_IDS.map((id, i) => (
         <MenuButton
           key={id}

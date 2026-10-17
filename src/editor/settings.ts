@@ -14,6 +14,11 @@ export interface EditorSettings {
   worldScale: ScaleId
   /** XR pointer rays on hands and controllers. Off: you grab and poke things directly. */
   rays: boolean
+  /**
+   * What the world stands on. real: a transparent grid, so your actual floor or table is the surface
+   * (passthrough shows through). virtual: a solid textured placeholder ground drawn over the room.
+   */
+  surface: 'real' | 'virtual'
   buildingStyle: BuildingStyle
   roof: RoofType
   wallMaterial: MaterialId
@@ -27,6 +32,7 @@ export const useEditor = create<EditorSettings>((set) => ({
   snap: true,
   worldScale: 'tabletop',
   rays: false,
+  surface: 'real',
   buildingStyle: 'office',
   roof: 'flat',
   wallMaterial: 'concrete',

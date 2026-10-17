@@ -18,3 +18,6 @@ export function bindRays(store: XRStore) {
 }
 
 export const toggleRays = () => useEditor.getState().set({ rays: !useEditor.getState().rays })
+
+/** Switch between the real surface (transparent grid over your floor/table) and the virtual placeholder ground. */
+export const toggleSurface = () => useEditor.getState().set({ surface: useEditor.getState().surface === 'real' ? 'virtual' : 'real' })

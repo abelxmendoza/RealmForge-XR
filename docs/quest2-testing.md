@@ -146,6 +146,11 @@ from your hands or controllers. Gestures are listed in the README under *Hand gr
 - [ ] Grabbing buildings works at every scale; handles and buttons stay pokeable
 - [ ] Shadows stay on the world after changing scale and after grabbing the map
 - [ ] **Recenter** brings the world back in front of you
+- [ ] **Real** surface: your real floor shows through the grid at 1:20, 1:4 and 1:1 (0.5 m and 5 m lines, orange map edge, 1 m origin cross)
+- [ ] Buildings and the robot still cast shadows onto your real floor
+- [ ] At 1:60 the city sits on your real table, visible through the middle of the board frame
+- [ ] With rays on, pointing at the floor with the Building tool places a building; grabbing it works
+- [ ] Wrist **Real / Virtual** button (and V on desktop) switches to the solid placeholder ground and back
 - [ ] Holds a usable frame rate at 1:1 with Forge District loaded (panel or feel)
 
 ## Smartsuit mock skeleton

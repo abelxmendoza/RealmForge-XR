@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import * as THREE from 'three'
+import { Line } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
 import { Handle as GrabHandle } from '@react-three/handle'
 import { WALL_DEFAULTS, clampToWorld, useWorld } from '../world/store'
@@ -142,38 +144,73 @@ function DraftPreview({ draft }: { draft: Draft }) {
   )
 }
 
+/** Real surface: an invisible ground that only shows shadows, so objects stay grounded on your actual floor. */
+const SHADOW_GROUND = new THREE.ShadowMaterial({ opacity: 0.35, depthWrite: false })
+
 /**
- * The board: textured ground, a faint construction grid and, when the world sits on a table,
- * a bevelled table edge. Edge sizes are real centimetres at any tabletop scale (divided by the
- * world ratio), so the rim stays grabbable; on the floor (room scale and up) there is no table.
+ * The board. Two surfaces (editor setting `surface`):
+ * - virtual: textured placeholder ground with a faint construction grid
+ * - real: transparent grid over your actual floor or table (passthrough shows through), with shadows,
+ *   the map boundary and a 1 m origin cross, so true metres stay readable while you walk around
+ * Either way the ground plane keeps its pointer handler, so pokes and rays still place things.
+ * When the world sits on a table there is also a bevelled table edge. Edge sizes are real centimetres
+ * at any tabletop scale (divided by the world ratio), so the rim stays grabbable; on the floor
+ * (room scale and up) there is no table.
  */
 function Board({ size, onPointerDown }: { size: number; onPointerDown: (e: ThreeEvent<PointerEvent>) => void }) {
   const ground = useGeometry(() => tiledPlane(size, size, 2), [size])
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
+  const real = useEditor((s) => s.surface === 'real')
   const table = onTable(ratio)
   const cm = (v: number) => v / 100 / ratio
+  const fine = real ? { color: '#ffffff', opacity: 0.25 } : { color: '#ffffff', opacity: 0.07 }
+  const major = real ? { color: '#7bdff2', opacity: 0.55 } : { color: '#e8f4ff', opacity: 0.18 }
   return (
     <>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} geometry={ground} material={groundMaterial()} receiveShadow onPointerDown={onPointerDown} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} geometry={ground} material={real ? SHADOW_GROUND : groundMaterial()} receiveShadow onPointerDown={onPointerDown} />
       {/* Fine grid at the snapping step (only once it's big enough to read), major lines every 5 m. */}
       {ratio >= SCALE_PRESETS.room.ratio && (
-        <gridHelper args={[size, size / SNAP, '#ffffff', '#ffffff']} position={[0, 0.006, 0]} material-transparent material-opacity={0.07} material-depthWrite={false} raycast={() => null} />
+        <gridHelper args={[size, size / SNAP, fine.color, fine.color]} position={[0, 0.006, 0]} material-transparent material-opacity={fine.opacity} material-depthWrite={false} raycast={() => null} />
       )}
-      <gridHelper args={[size, size / 5, '#e8f4ff', '#e8f4ff']} position={[0, 0.008, 0]} material-transparent material-opacity={0.18} material-depthWrite={false} raycast={() => null} />
+      <gridHelper args={[size, size / 5, major.color, major.color]} position={[0, 0.008, 0]} material-transparent material-opacity={major.opacity} material-depthWrite={false} raycast={() => null} />
+      {real && <RealSurfaceMarks half={size / 2} />}
       {table && <TableEdge size={size} cm={cm} />}
     </>
   )
 }
 
-/** Table edge so the miniature reads as an object in passthrough; its dark base is the map's grab handle. */
+/** Map boundary (where editing ends) and a 1 m cross at the origin as a true-size reference. */
+function RealSurfaceMarks({ half }: { half: number }) {
+  const y = 0.012
+  const edge: [number, number, number][] = [
+    [-half, y, -half],
+    [half, y, -half],
+    [half, y, half],
+    [-half, y, half],
+    [-half, y, -half],
+  ]
+  return (
+    <group>
+      <Line points={edge} color="#f4a261" lineWidth={3} transparent opacity={0.9} depthWrite={false} raycast={() => null} />
+      <Line points={[[-0.5, y, 0], [0.5, y, 0]]} color="#ffffff" lineWidth={2} depthWrite={false} raycast={() => null} />
+      <Line points={[[0, y, -0.5], [0, y, 0.5]]} color="#ffffff" lineWidth={2} depthWrite={false} raycast={() => null} />
+    </group>
+  )
+}
+
+const RIM_MAT = new THREE.MeshStandardMaterial({ color: '#d9d4c8', roughness: 0.7 })
+const BASE_MAT = new THREE.MeshStandardMaterial({ color: '#2c2f36', roughness: 0.6 })
+
+/**
+ * Table edge so the miniature reads as an object in passthrough; its dark base is the map's grab handle.
+ * Built as a frame around the board (not a slab under it), so with the real surface your actual table
+ * shows through the middle.
+ */
 function TableEdge({ size, cm }: { size: number; cm: (v: number) => number }) {
   return (
     <>
       {/* Top sits 1 mm below the ground plane: coplanar faces z-fight. */}
-      <mesh position={[0, -cm(0.1) - cm(0.6), 0]} raycast={() => null} receiveShadow>
-        <boxGeometry args={[size + cm(3), cm(1.2), size + cm(3)]} />
-        <meshStandardMaterial color="#d9d4c8" roughness={0.7} />
-      </mesh>
+      <Frame inner={size} outer={size + cm(3)} y={-cm(0.1) - cm(0.6)} height={cm(1.2)} material={RIM_MAT} />
       {/*
         The dark base is the map's grab handle in XR: grab its rim with one hand to move the whole map
         (up, down, closer), or with both hands to turn it. Grab pointers only, so desktop is unaffected.
@@ -190,11 +227,30 @@ function TableEdge({ size, cm }: { size: number; cm: (v: number) => number }) {
           WORLD_ROOT.position.copy(state.current.position)
         }}
       >
-        <mesh position={[0, -cm(1.4) - cm(2.5), 0]}>
-          <boxGeometry args={[size + cm(6), cm(5), size + cm(6)]} />
-          <meshStandardMaterial color="#2c2f36" roughness={0.6} />
-        </mesh>
+        <Frame inner={size} outer={size + cm(6)} y={-cm(1.4) - cm(2.5)} height={cm(5)} material={BASE_MAT} raycastable />
       </GrabHandle>
+    </>
+  )
+}
+
+/** A square frame of four bars between `inner` and `outer` widths, centred at height `y`. */
+function Frame(props: { inner: number; outer: number; y: number; height: number; material: THREE.Material; raycastable?: boolean }) {
+  const { inner, outer, y, height, material } = props
+  const band = (outer - inner) / 2
+  const off = inner / 2 + band / 2
+  const bars: { pos: [number, number, number]; size: [number, number, number] }[] = [
+    { pos: [0, y, -off], size: [outer, height, band] },
+    { pos: [0, y, off], size: [outer, height, band] },
+    { pos: [-off, y, 0], size: [band, height, inner] },
+    { pos: [off, y, 0], size: [band, height, inner] },
+  ]
+  return (
+    <>
+      {bars.map((b, i) => (
+        <mesh key={i} position={b.pos} material={material} receiveShadow raycast={props.raycastable ? undefined : () => null}>
+          <boxGeometry args={b.size} />
+        </mesh>
+      ))}
     </>
   )
 }
