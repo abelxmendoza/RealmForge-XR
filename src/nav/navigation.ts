@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { useWorld } from '../world/store'
-import type { Vec2 } from '../world/types'
+import { navObstacles, type Vec2 } from '../world/types'
 import { planPath } from './astar'
 import { buildGrid, pathIsClear, type Grid } from './grid'
 
@@ -30,7 +30,7 @@ export const robotRuntime = {
 }
 
 export const useNav = create<NavState>(() => ({
-  grid: buildGrid(Object.values(useWorld.getState().objects)),
+  grid: buildGrid(navObstacles(useWorld.getState().objects)),
   path: [],
   status: 'idle',
   replanCount: 0,
@@ -46,7 +46,7 @@ export function remainingRoute(): Vec2[] {
 
 function replan(reason: 'geometry' | 'goal' | 'robot') {
   const world = useWorld.getState()
-  const grid = buildGrid(Object.values(world.objects))
+  const grid = buildGrid(navObstacles(world.objects))
   const nav = useNav.getState()
   const goal = world.goal
 
