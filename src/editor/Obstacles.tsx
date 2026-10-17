@@ -1,8 +1,12 @@
 import type { ThreeEvent } from '@react-three/fiber'
 import { clampToWorld, useWorld } from '../world/store'
 import type { Vec2, WorldObject } from '../world/types'
+import { snapAngle, snapFootprint, snapSize } from '../world/snap'
+import { cycleVariant } from '../world/catalog'
 import { groundPoint } from '../scene/worldRoot'
+import { SelectionOutline, Structure } from '../scene/structures'
 import { beginDrag } from './drag'
+import { useEditor } from './settings'
 
 const MIN_SIZE = 0.4
 
@@ -18,6 +22,22 @@ const toLocal = (o: WorldObject, p: Vec2, from: Vec2 = [o.position[0], o.positio
   const dx = p[0] - from[0]
   const dz = p[1] - from[1]
   return [c * dx - s * dz, s * dx + c * dz]
+}
+
+/** Editor actions shared by the keyboard, the HUD and the in-scene buttons. */
+export function duplicateSelected() {
+  const w = useWorld.getState()
+  if (w.selectedId) w.duplicateObject(w.selectedId)
+}
+export function deleteSelected() {
+  const w = useWorld.getState()
+  if (w.selectedId) w.removeObject(w.selectedId)
+}
+export function cycleSelected() {
+  const w = useWorld.getState()
+  const o = w.selectedId ? w.objects[w.selectedId] : null
+  const patch = o && cycleVariant(o)
+  if (o && patch) w.updateObject(o.id, patch)
 }
 
 export function Obstacles() {
@@ -44,10 +64,12 @@ function Obstacle({ o }: { o: WorldObject }) {
     if (!start) return
     const offset: Vec2 = [o.position[0] - start[0], o.position[2] - start[1]]
     beginDrag(e, {
-      move: (p) =>
-        updateObject(o.id, {
-          position: [clampToWorld(p[0] + offset[0]), o.position[1], clampToWorld(p[1] + offset[1])],
-        }),
+      move: (p) => {
+        const cur = useWorld.getState().objects[o.id] ?? o
+        let at: Vec2 = [p[0] + offset[0], p[1] + offset[1]]
+        if (useEditor.getState().snap) at = snapFootprint(at, cur.size[0], cur.size[2], cur.rotationY)
+        updateObject(o.id, { position: [clampToWorld(at[0]), o.position[1], clampToWorld(at[1])] })
+      },
     })
   }
 
@@ -59,8 +81,9 @@ function Obstacle({ o }: { o: WorldObject }) {
         const cur = useWorld.getState().objects[o.id]
         if (!cur) return
         const [lx, lz] = toLocal(cur, p, fixed)
-        const nw = Math.max(MIN_SIZE, lx)
-        const nd = Math.max(MIN_SIZE, lz)
+        const snap = useEditor.getState().snap
+        const nw = snap ? snapSize(lx) : Math.max(MIN_SIZE, lx)
+        const nd = snap ? snapSize(lz) : Math.max(MIN_SIZE, lz)
         const c = Math.cos(cur.rotationY)
         const s = Math.sin(cur.rotationY)
         const cx = fixed[0] + c * (nw / 2) + s * (nd / 2)
@@ -79,33 +102,59 @@ function Obstacle({ o }: { o: WorldObject }) {
         const dx = p[0] - cur.position[0]
         const dz = p[1] - cur.position[2]
         if (Math.hypot(dx, dz) < 0.2) return
-        useWorld.getState().updateObject(o.id, { rotationY: Math.atan2(-dx, -dz) })
+        const a = Math.atan2(-dx, -dz)
+        useWorld.getState().updateObject(o.id, { rotationY: useEditor.getState().snap ? snapAngle(a) : a })
       },
     })
   }
 
-  const color = o.color ?? '#999'
+  // One-shot buttons: a press is the whole action (works the same for mouse, rays and hands).
+  const press = (action: () => void) => (e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation()
+    action()
+  }
+
+  // Buttons spread out a little on small objects so they stay easy to hit.
+  const bx = Math.max(w / 2, 0.7)
+  const bz = Math.max(d / 2, 0.7)
+  const top = h + 0.35
   return (
     <group position={o.position} rotation={[0, o.rotationY, 0]}>
-      <mesh position={[0, h / 2, 0]} castShadow receiveShadow onPointerDown={onDown}>
-        <boxGeometry args={[w, h, d]} />
-        <meshStandardMaterial color={color} emissive={selected ? '#ffb347' : '#000'} emissiveIntensity={selected ? 0.35 : 0} />
-      </mesh>
+      <group onPointerDown={onDown}>
+        <Structure o={o} />
+      </group>
       {selected && (
         <>
-          <Handle position={[w / 2, h + 0.3, d / 2]} color="#ffd166" onPointerDown={onResizeDown} />
-          <Handle position={[0, h + 0.3, -d / 2 - 0.8]} color="#7bdff2" onPointerDown={onRotateDown} />
+          <SelectionOutline size={o.size} />
+          <Handle position={[w / 2, top, d / 2]} color="#ffd166" onPointerDown={onResizeDown} />
+          <Handle position={[0, top, -d / 2 - 0.8]} color="#7bdff2" onPointerDown={onRotateDown} />
+          <Button position={[-bx, top, bz]} color="#06d6a0" onPointerDown={press(duplicateSelected)} />
+          <Button position={[-bx, top, -bz]} color="#b388eb" onPointerDown={press(cycleSelected)} />
+          <Button position={[bx, top, -bz]} color="#ef476f" onPointerDown={press(deleteSelected)} />
         </>
       )}
     </group>
   )
 }
 
-function Handle(props: { position: [number, number, number]; color: string; onPointerDown: (e: ThreeEvent<PointerEvent>) => void }) {
+type HandleProps = { position: [number, number, number]; color: string; onPointerDown: (e: ThreeEvent<PointerEvent>) => void }
+
+/** Drag handle (sphere). */
+function Handle(props: HandleProps) {
   return (
     <mesh position={props.position} onPointerDown={props.onPointerDown}>
       <sphereGeometry args={[0.35, 16, 12]} />
       <meshStandardMaterial color={props.color} emissive={props.color} emissiveIntensity={0.4} />
+    </mesh>
+  )
+}
+
+/** Press button (cube), so it reads differently from the drag handles. */
+function Button(props: HandleProps) {
+  return (
+    <mesh position={props.position} rotation={[0, Math.PI / 4, 0]} onPointerDown={props.onPointerDown}>
+      <boxGeometry args={[0.45, 0.45, 0.45]} />
+      <meshStandardMaterial color={props.color} emissive={props.color} emissiveIntensity={0.5} />
     </mesh>
   )
 }

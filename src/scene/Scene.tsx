@@ -10,6 +10,7 @@ import { dragMove, endDrag } from '../editor/drag'
 import { tickDemo } from '../editor/demo'
 import { Robot } from '../agent/Robot'
 import { Route } from './Route'
+import { Lighting } from './Lighting'
 import { WORLD_ROOT, worldRootRef } from './worldRoot'
 
 export function Scene() {
@@ -31,8 +32,7 @@ export function Scene() {
   return (
     <>
       {mode !== 'immersive-ar' && <color attach="background" args={['#1d2433']} />}
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[3, 6, 2]} intensity={1.4} castShadow shadow-mapSize={[1024, 1024]} />
+      <Lighting />
       {!inXR && <OrbitControls makeDefault enabled={!dragging} target={WORLD_ROOT.position} />}
 
       <group

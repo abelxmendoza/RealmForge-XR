@@ -6,3 +6,21 @@ html, body, #root { margin: 0; height: 100%; background: #1d2433; font-family: s
 .hud button:disabled { opacity: 0.4; cursor: default; }
 .hud .status { font-size: 14px; background: #0008; padding: 4px 8px; border-radius: 6px; width: fit-content; }
 .hud .help { font-size: 12px; opacity: 0.75; }
+
+/* Worldbuilding inspector (right side). */
+.inspector { position: fixed; top: 12px; right: 12px; width: 240px; display: flex; flex-direction: column; gap: 8px; color: #eee; font-size: 13px; }
+.inspector section { background: #141a26e6; border: 1px solid #4a5568; border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.inspector h3 { margin: 0; font-size: 14px; display: flex; align-items: center; justify-content: space-between; }
+.inspector label { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.inspector label.check { justify-content: flex-start; }
+.inspector .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.inspector .grid3 label { flex-direction: column; align-items: stretch; font-size: 11px; opacity: 0.9; }
+.inspector input[type='number'], .inspector select { background: #2d3748; color: #eee; border: 1px solid #4a5568; border-radius: 4px; padding: 3px 4px; font-size: 12px; min-width: 0; }
+.inspector label > select, .inspector label > input[type='number'] { width: 120px; }
+.inspector .grid3 input[type='number'] { width: 100%; box-sizing: border-box; }
+.inspector .row { display: flex; flex-wrap: wrap; gap: 6px; }
+.inspector button { background: #2d3748; color: #eee; border: 1px solid #4a5568; border-radius: 6px; padding: 5px 8px; cursor: pointer; font-size: 12px; }
+.inspector button.on { background: #f4a261; color: #1d2433; border-color: #f4a261; }
+.inspector .hint { margin: 0; font-size: 11px; opacity: 0.7; }
+.inspector .tag { font-size: 10px; font-weight: normal; padding: 1px 6px; border-radius: 10px; background: #06d6a033; color: #7ef0c8; }
+.inspector .tag.block { background: #ef476f33; color: #ff9bb3; }
