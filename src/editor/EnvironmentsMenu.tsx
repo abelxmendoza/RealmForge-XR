@@ -1,20 +1,37 @@
-import { worldActions } from '../world/actions'
-import { confirmReplace } from '../world/confirmation'
+import { useState } from 'react'
 import { listEnvironments, useEnvironment, type EnvironmentId } from '../world/environment'
+import {
+  environmentShortName,
+  isEnvironmentLoadBusy,
+  loadEnvironmentFromMenu,
+  type EnvMenuFeedback,
+} from './environmentMenuController'
 
 /**
  * Menu to switch hackathon environments (Forge / Mars / Warehouse).
- * Uses worldActions.loadEnvironment + the shared confirmReplace channel
- * so desktop, voice, and XR stay on one confirmation path.
+ * Uses the shared confirmReplace channel and surfaces load failures without crashing the HUD.
  * Styled with the molten-forge HUD / inspector tokens.
  */
 export function EnvironmentsMenu({ compact = false }: { compact?: boolean }) {
   const activeId = useEnvironment((s) => s.activeId)
   const envs = listEnvironments()
+  const [feedback, setFeedback] = useState<EnvMenuFeedback>({ kind: 'idle' })
+  const loading = feedback.kind === 'loading' || isEnvironmentLoadBusy()
 
   const load = (id: EnvironmentId) => {
-    void worldActions.loadEnvironment(id, { confirmReplace })
+    if (loading) return
+    setFeedback({ kind: 'loading', id })
+    void loadEnvironmentFromMenu(id).then(({ feedback: next }) => setFeedback(next))
   }
+
+  const statusText =
+    feedback.kind === 'loading'
+      ? `Loading ${feedback.id}…`
+      : feedback.kind === 'error'
+        ? feedback.message
+        : feedback.kind === 'cancelled'
+          ? 'Load cancelled.'
+          : null
 
   if (compact) {
     return (
@@ -27,11 +44,17 @@ export function EnvironmentsMenu({ compact = false }: { compact?: boolean }) {
             className={activeId === env.id ? 'on' : ''}
             title={env.description}
             aria-pressed={activeId === env.id}
+            disabled={loading}
             onClick={() => load(env.id)}
           >
-            {shortName(env.name)}
+            {environmentShortName(env.name)}
           </button>
         ))}
+        {statusText && (
+          <span className={`env-menu-status${feedback.kind === 'error' ? ' err' : ''}`} role="status" aria-live="polite">
+            {statusText}
+          </span>
+        )}
       </div>
     )
   }
@@ -45,7 +68,14 @@ export function EnvironmentsMenu({ compact = false }: { compact?: boolean }) {
           const active = activeId === env.id
           return (
             <li key={env.id} className={active ? 'active' : ''}>
-              <button type="button" className={active ? 'on' : ''} onClick={() => load(env.id)} title={env.description} aria-pressed={active}>
+              <button
+                type="button"
+                className={active ? 'on' : ''}
+                onClick={() => load(env.id)}
+                title={env.description}
+                aria-pressed={active}
+                disabled={loading}
+              >
                 <span className="env-name">{env.name}</span>
                 <span className="env-desc">{env.description}</span>
               </button>
@@ -53,14 +83,12 @@ export function EnvironmentsMenu({ compact = false }: { compact?: boolean }) {
           )
         })}
       </ul>
-      {!activeId && <p className="hint">Sandbox (default look) until you load one.</p>}
+      {!activeId && feedback.kind === 'idle' && <p className="hint">Sandbox (default look) until you load one.</p>}
+      {statusText && (
+        <p className={`hint${feedback.kind === 'error' ? ' toast-err' : feedback.kind === 'ready' ? ' toast' : ''}`} role="status" aria-live="polite">
+          {statusText}
+        </p>
+      )}
     </section>
   )
-}
-
-function shortName(name: string): string {
-  if (name.startsWith('Forge')) return 'Forge'
-  if (name.startsWith('Mars')) return 'Mars'
-  if (name.startsWith('Autonomous')) return 'Warehouse'
-  return name.split(/\s+/)[0] ?? name
 }

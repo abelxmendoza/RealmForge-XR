@@ -1,16 +1,25 @@
+import { cloneActor, type Actor } from '../actors/types'
 import { create } from 'zustand'
 import { WORLD, type ObjectKind, type Vec2, type Vec3, type WorldObject } from './types'
 
-export type Tool = 'select' | 'wall' | 'building' | 'platform' | 'decor' | 'goal' | 'robot' | 'asset'
+export type Tool = 'select' | 'wall' | 'building' | 'platform' | 'decor' | 'event' | 'goal' | 'robot' | 'asset' | 'actor'
 
 /** A whole world: what presets provide and loadWorld() installs. */
 export interface WorldSnapshot {
+  actors?: Actor[]
   objects: WorldObject[]
   robotStart: Vec2
   goal: Vec2 | null
 }
 
 export interface WorldState {
+  actors: Record<string, Actor>
+  selectedActorId: string | null
+  actorLoadVersion: number
+  addActor: (actor: Omit<Actor, 'id'>) => string
+  updateActor: (id: string, patch: Partial<Omit<Actor, 'id' | 'kind'>>) => void
+  removeActor: (id: string) => void
+  selectActor: (id: string | null) => void
   objects: Record<string, WorldObject>
   robotStart: Vec2
   goal: Vec2 | null
@@ -54,7 +63,17 @@ export function reserveIds(ids: Iterable<string>) {
     if (m) nextId = Math.max(nextId, Number(m[1]) + 1)
   }
 }
-const ID_PREFIX: Record<ObjectKind, string> = { wall: 'wall', building: 'bld', platform: 'plat', tree: 'tree', streetlight: 'lamp', crate: 'crate', pallet: 'pallet', rack: 'rack' }
+const ID_PREFIX: Record<ObjectKind, string> = {
+  wall: 'wall',
+  building: 'bld',
+  platform: 'plat',
+  tree: 'tree',
+  streetlight: 'lamp',
+  crate: 'crate',
+  pallet: 'pallet',
+  rack: 'rack',
+  prop: 'prop',
+}
 export const idFor = (kind: ObjectKind) => newId(ID_PREFIX[kind] ?? 'obj')
 
 const sameVec2 = (a: Vec2, b: Vec2) => a[0] === b[0] && a[1] === b[1]
@@ -77,6 +96,7 @@ function initialObjects(): Record<string, WorldObject> {
 
 const initial = () => ({
   objects: initialObjects(),
+  actors: {} as Record<string, Actor>,
   robotStart: [-32, 28] as Vec2,
   goal: [32, -28] as Vec2,
 })
@@ -86,6 +106,19 @@ export const useWorld = create<WorldState>((set) => ({
   geometryVersion: 0,
   robotVersion: 0,
   tool: 'select',
+  actorLoadVersion: 0,
+  selectedActorId: null,
+  addActor: (actor) => {
+    const id = newId('actor')
+    set((s) => ({ actors: { ...s.actors, [id]: cloneActor({ ...actor, id }) }, selectedActorId: id, selectedId: null }))
+    return id
+  },
+  updateActor: (id, patch) => set((s) => s.actors[id] ? { actors: { ...s.actors, [id]: cloneActor({ ...s.actors[id], ...patch, id }) } } : s),
+  removeActor: (id) => set((s) => {
+    const { [id]: removed, ...actors } = s.actors
+    return { actors, selectedActorId: s.selectedActorId === id ? null : s.selectedActorId }
+  }),
+  selectActor: (id) => set((s) => ({ selectedActorId: id && s.actors[id] ? id : null, selectedId: null })),
   selectedId: null,
   dragging: false,
 
@@ -125,6 +158,7 @@ export const useWorld = create<WorldState>((set) => ({
     return copy.id
   },
   loadWorld: (w) => {
+    reserveIds((w.actors ?? []).map((a) => a.id))
     reserveIds(w.objects.map((o) => o.id))
     set((s) => ({
       objects: Object.fromEntries(w.objects.map((o) => [o.id, { ...o }])),
@@ -133,13 +167,19 @@ export const useWorld = create<WorldState>((set) => ({
       selectedId: null,
       geometryVersion: s.geometryVersion + 1,
       robotVersion: s.robotVersion + 1,
+      actors: Object.fromEntries((w.actors ?? []).map((a) => [a.id, cloneActor(a)])),
+      selectedActorId: null,
+      actorLoadVersion: s.actorLoadVersion + 1,
     }))
   },
   restoreWorld: (w) => {
+    reserveIds((w.actors ?? []).map((a) => a.id))
     reserveIds(w.objects.map((o) => o.id))
     set((s) => {
       const robotChanged = !sameVec2(s.robotStart, w.robotStart)
       return {
+        actors: Object.fromEntries((w.actors ?? []).map((a) => [a.id, cloneActor(a)])),
+        selectedActorId: s.selectedActorId && (w.actors ?? []).some((a) => a.id === s.selectedActorId) ? s.selectedActorId : null,
         objects: Object.fromEntries(w.objects.map((o) => [o.id, { ...o }])),
         robotStart: [...w.robotStart] as Vec2,
         goal: w.goal ? ([...w.goal] as Vec2) : null,
@@ -152,8 +192,8 @@ export const useWorld = create<WorldState>((set) => ({
   setGoal: (p) => set({ goal: p }),
   placeRobot: (p) => set((s) => ({ robotStart: p, robotVersion: s.robotVersion + 1 })),
   setTool: (tool) => set({ tool }),
-  select: (selectedId) => set({ selectedId }),
+  select: (selectedId) => set({ selectedId, selectedActorId: null }),
   setDragging: (dragging) => set({ dragging }),
   reset: () =>
-    set((s) => ({ ...initial(), selectedId: null, geometryVersion: s.geometryVersion + 1, robotVersion: s.robotVersion + 1 })),
+    set((s) => ({ ...initial(), selectedId: null, selectedActorId: null, actorLoadVersion: s.actorLoadVersion + 1, geometryVersion: s.geometryVersion + 1, robotVersion: s.robotVersion + 1 })),
 }))

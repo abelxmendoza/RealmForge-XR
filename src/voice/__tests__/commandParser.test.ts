@@ -44,7 +44,7 @@ describe('parseVoiceCommand — tools', () => {
       ok: true,
       command: { type: 'SELECT_TOOL', tool: 'building' },
     })
-    expect(parseVoiceCommand('Create a building')).toEqual({
+    expect(parseVoiceCommand('Building tool')).toEqual({
       ok: true,
       command: { type: 'SELECT_TOOL', tool: 'building' },
     })
@@ -54,7 +54,7 @@ describe('parseVoiceCommand — tools', () => {
     expect(parseVoiceCommand('Select wall tool')).toMatchObject({
       command: { type: 'SELECT_TOOL', tool: 'wall' },
     })
-    expect(parseVoiceCommand('Place a platform')).toMatchObject({
+    expect(parseVoiceCommand('Platform tool')).toMatchObject({
       command: { type: 'SELECT_TOOL', tool: 'platform' },
     })
     expect(parseVoiceCommand('Select robot')).toMatchObject({

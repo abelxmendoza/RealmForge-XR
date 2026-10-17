@@ -67,7 +67,7 @@ These are plain functions with no React. Each one returns a result object and ne
   - `{ ok: true }` or `{ ok: false, error, cancelled? }`
   - saving returns `{ ok: true, value: meta }`
   - load and import return `{ ok: true, warnings }`, or `{ ok: false, error, cancelled? }`
-- **`confirmReplace` / `confirmOverwrite`:** return `boolean | Promise<boolean>`. By default they use `window.confirm`. In XR, pass your own dialog.
+- **`confirmReplace` / `confirmOverwrite`:** return `boolean | Promise<boolean>`. Prefer the shared `confirmReplace` from `src/world/confirmation.ts` (desktop dialog + XR palette). Avoid bare `window.confirm` in new XR paths.
 - **Navigation:** loading goes through `useWorld.getState().loadWorld()`. That updates the geometry and robot versions, so navigation rebuilds the grid, puts the robot at `robotStart` and plans a new route. Later edits trigger replanning as usual.
 
 ## Public API: `src/world/history.ts`

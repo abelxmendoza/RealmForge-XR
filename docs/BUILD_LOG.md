@@ -18,6 +18,15 @@ Pair each entry with CHANGELOG (user-facing) and STATE (runtime) updates when st
 
 ---
 
+### 2026-10-17 — Project loose-end cleanup
+
+- **Who:** Cursor agent
+- **Phase:** wrap-up
+- **Did:** Closed stale draft PRs #7 and #9 (already on `main`). Refreshed `demo-readiness`, `CHANGELOG`, `STATE`, `README`, `unified-integration` historical banner, and `examples/xr-menu-integration.ts` to match production wrist/palette/guide. Left open PR #11 (event venue MVP) as active work.
+- **Why:** Docs and open PRs still described pre-merge Quest/voice state.
+- **Verified:** `npm test` 212 pass on cleanup branch base.
+- **Follow-ups:** Emiliano Quest hardware checklist; optional ElevenLabs; event venue PR review.
+
 ### 2026-10-17 — Phase 1 P0: AR fallback + place city
 
 - **Who:** Cursor agent (Abel + Emiliano integration)

@@ -1,7 +1,9 @@
+import { useState } from 'react'
+import { ActorPanel } from '../actors/ActorPanel'
 import { getAsset } from '../world/assets'
 import { AssetCatalogPanel } from './AssetCatalogPanel'
 import { useWorld, type Tool } from '../world/store'
-import { STEP_HEIGHT, blocksNavigation, type MaterialId, type WorldObject } from '../world/types'
+import { STEP_HEIGHT, blocksNavigation, type MaterialId, type SimulationRole, type WorldObject } from '../world/types'
 import {
   BUILDING_STYLES,
   BUILDING_STYLE_IDS,
@@ -16,11 +18,19 @@ import {
   defaultMaterial,
   treeStyle,
 } from '../world/catalog'
+import {
+  EVENT_CATALOG_CATEGORIES,
+  SIMULATION_ROLE_LABELS,
+  getEventCatalogEntry,
+  listEventCatalog,
+  type EventCatalogCategory,
+} from '../world/eventCatalog'
 import { WorldsPanel } from './WorldsPanel'
 import { EnvironmentsMenu } from './EnvironmentsMenu'
 import { WorldLibrary, openWorldLibrary } from './WorldLibrary'
 import { useEditor, type DecorKind } from './settings'
 import { deleteSelected, duplicateSelected } from './Obstacles'
+import { SimulationPanel } from '../sim/SimulationPanel'
 
 /**
  * Desktop side panel for worldbuilding: exact dimensions and looks for the selected object,
@@ -33,9 +43,11 @@ export function Inspector() {
   return (
     <div className="inspector">
       {selected ? <ObjectPanel o={selected} /> : <BrushPanel tool={tool} />}
+      <ActorPanel />
       <AssetCatalogPanel />
       <EnvironmentsMenu />
       <WorldPanel />
+      <SimulationPanel />
       <WorldsPanel />
       <WorldLibrary />
     </div>
@@ -53,14 +65,17 @@ function ObjectPanel({ o }: { o: WorldObject }) {
   }
   const deg = Math.round(((o.rotationY * 180) / Math.PI) % 360)
   const materials = o.kind === 'wall' ? WALL_MATERIALS : o.kind === 'platform' ? PLATFORM_MATERIALS : o.kind === 'crate' ? CRATE_MATERIALS : null
-  const isDecor = o.kind === 'tree' || o.kind === 'streetlight' || o.kind === 'crate'
+  const isDecor = o.kind === 'tree' || o.kind === 'streetlight' || o.kind === 'crate' || o.kind === 'prop'
   const blocks = blocksNavigation(o)
   const labels = o.kind === 'wall' ? ['Length', 'Height', 'Thickness'] : ['Width', 'Height', 'Depth']
+  const catalogLabel = o.catalogId ? getEventCatalogEntry(o.catalogId)?.label : null
+  const title = catalogLabel ?? KIND_LABELS[o.kind]
 
   return (
     <section>
       <h3>
-        {getAsset(o.assetId || '')?.name || KIND_LABELS[o.kind]} <span className={blocks ? 'tag block' : 'tag'}>{blocks ? 'blocks robot' : 'walkable'}</span>
+        {getAsset(o.assetId || '')?.name || title}{' '}
+        <span className={blocks ? 'tag block' : 'tag'}>{blocks ? 'blocks nav' : 'walkable'}</span>
       </h3>
       <div className="grid3">
         {labels.map((label, axis) => (
@@ -128,14 +143,40 @@ function ObjectPanel({ o }: { o: WorldObject }) {
       {(isDecor || o.kind === 'platform') && (
         <label className="check">
           <input type="checkbox" checked={blocks} onChange={(e) => update({ solid: e.target.checked })} />
-          Blocks the robot
+          Blocks navigation
           {o.kind === 'platform' && o.solid === undefined && <small> (auto: taller than {STEP_HEIGHT})</small>}
         </label>
       )}
-      {o.assetId && <label>Color<input type="color" value={o.color || '#8fa6c9'} onChange={(e) => update({ color: e.target.value })} /></label>}
+      {o.assetId && (
+        <label>
+          Color
+          <input type="color" value={o.color || '#8fa6c9'} onChange={(e) => update({ color: e.target.value })} />
+        </label>
+      )}
+      <label>
+        Simulation role
+        <select
+          value={o.simulationRole ?? ''}
+          onChange={(e) => {
+            const v = e.target.value
+            update({ simulationRole: v ? (v as SimulationRole) : undefined })
+          }}
+        >
+          <option value="">None</option>
+          {(Object.keys(SIMULATION_ROLE_LABELS) as SimulationRole[]).map((role) => (
+            <option key={role} value={role}>
+              {SIMULATION_ROLE_LABELS[role]}
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="row">
-        <button onClick={duplicateSelected}>D Duplicate</button>
-        <button onClick={deleteSelected}>Del Delete</button>
+        <button type="button" onClick={duplicateSelected}>
+          D Duplicate
+        </button>
+        <button type="button" className="danger" onClick={deleteSelected}>
+          Del Delete
+        </button>
       </div>
     </section>
   )
@@ -213,10 +254,53 @@ function BrushPanel({ tool }: { tool: Tool }) {
         <p className="hint">Click to place. Decorations don't block the robot unless you tick "Blocks the robot".</p>
       </section>
     )
+  if (tool === 'event') return <EventBrushPanel />
   return (
     <section>
       <h3>Inspector</h3>
       <p className="hint">Select an object to edit its size, material and style.</p>
+    </section>
+  )
+}
+
+function EventBrushPanel() {
+  const s = useEditor()
+  const [category, setCategory] = useState<EventCatalogCategory>('furniture')
+  const entries = listEventCatalog(category)
+  const activeInCategory = entries.some((e) => e.id === s.eventCatalogId)
+  const selectedId = activeInCategory ? s.eventCatalogId : (entries[0]?.id ?? s.eventCatalogId)
+  return (
+    <section>
+      <h3>Event catalog</h3>
+      <div className="row">
+        {EVENT_CATALOG_CATEGORIES.map((c) => (
+          <button
+            key={c.id}
+            className={category === c.id ? 'on' : ''}
+            onClick={() => {
+              setCategory(c.id)
+              const first = listEventCatalog(c.id)[0]
+              if (first) s.set({ eventCatalogId: first.id })
+            }}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+      <label>
+        Object
+        <select value={selectedId} onChange={(e) => s.set({ eventCatalogId: e.target.value })}>
+          {entries.map((e) => (
+            <option key={e.id} value={e.id}>
+              {e.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="hint">
+        Click ground to place. Role: {getEventCatalogEntry(selectedId)?.simulationRole ?? '—'}. Editable after
+        placement.
+      </p>
     </section>
   )
 }

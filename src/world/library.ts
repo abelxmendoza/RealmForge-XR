@@ -1,6 +1,6 @@
 import { useWorld } from './store'
 import { WORLD } from './types'
-import { isEnvironmentId, listEnvironments, loadEnvironment, useEnvironment, type EnvironmentId } from './environment'
+import { isEnvironmentId, listEnvironments, loadEnvironment, normalizeEnvironmentId, useEnvironment, type EnvironmentId } from './environment'
 import { cleanName } from './serialize'
 import { confirmReplace as sharedConfirm } from './confirmation'
 import {
@@ -18,6 +18,7 @@ import {
   type SaveResult,
   type SavedWorldMeta,
 } from './persistence'
+import { failSave, safeConfirm, toErrorMessage } from './errors'
 
 /**
  * World library: the "make a new world / pick up a saved one" layer on top of persistence.
@@ -67,24 +68,31 @@ export function nextWorldName(base = 'My world', names: string[] = listSavedWorl
  * Asks before replacing a non-empty world. Returns the saved entry.
  */
 export async function createWorld(name: string, template: TemplateId = 'blank', opts: CreateWorldOptions = {}): Promise<SaveResult> {
-  const label = cleanName(name, nextWorldName())
-  const count = Object.keys(useWorld.getState().objects).length
-  if (count > 0) {
-    const ask = opts.confirmReplace ?? sharedConfirm
-    const ok = await ask(`Start a new world "${label}"?\n\nThe current world (${count} objects) will be replaced. Save it first if you want to keep it.`)
-    if (!ok) return { ok: false, error: 'Cancelled.', cancelled: true }
-  }
+  try {
+    const label = cleanName(name, nextWorldName())
+    const count = Object.keys(useWorld.getState().objects).length + Object.keys(useWorld.getState().actors).length
+    if (count > 0) {
+      const gate = await safeConfirm(
+        opts.confirmReplace ?? sharedConfirm,
+        `Start a new world "${label}"?\n\nThe current world (${count} objects) will be replaced. Save it first if you want to keep it.`,
+      )
+      if (!gate.ok) return failSave(gate.error, Boolean(gate.cancelled))
+    }
 
-  if (template === 'blank') {
-    const r = await replaceWorld({ name: label, objects: [], robotStart: [0, WORLD.half * 0.5], goal: null }, { confirmReplace: () => true })
-    if (!r.ok) return r
-    useEnvironment.getState().setActive(null)
-  } else {
-    if (!isEnvironmentId(template)) return { ok: false, error: `Unknown template: ${template}` }
-    const r = await loadEnvironment(template, { confirmReplace: () => true })
-    if (!r.ok) return r
+    if (template === 'blank') {
+      const r = await replaceWorld({ name: label, objects: [], robotStart: [0, WORLD.half * 0.5], goal: null }, { confirmReplace: () => true })
+      if (!r.ok) return failSave(r.error, Boolean(r.cancelled))
+      useEnvironment.getState().setActive(null)
+    } else {
+      const envId = normalizeEnvironmentId(template) ?? (isEnvironmentId(template) ? template : null)
+      if (!envId) return failSave(`Unknown template: ${String(template)}`)
+      const r = await loadEnvironment(envId, { confirmReplace: () => true })
+      if (!r.ok) return failSave(r.error, Boolean(r.cancelled))
+    }
+    return saveWorld(label)
+  } catch (e) {
+    return failSave(`Could not create world: ${toErrorMessage(e)}`)
   }
-  return saveWorld(label)
 }
 
 /** Open a saved world from the library (asks before replacing a non-empty world). */

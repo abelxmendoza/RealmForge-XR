@@ -1,3 +1,4 @@
+import { cloneActor } from '../actors/types'
 import { useWorld, type WorldSnapshot } from './store'
 
 /**
@@ -15,6 +16,7 @@ let suppress = false
 let beforeDrag: WorldSnapshot | null = null
 let dragStartGeometry = 0
 let dragStartRobot = 0
+let actorsChangedDuringDrag = false
 let listening = false
 
 export interface HistoryState {
@@ -31,8 +33,10 @@ function snapshotOf(s: {
   objects: ReturnType<typeof useWorld.getState>['objects']
   robotStart: ReturnType<typeof useWorld.getState>['robotStart']
   goal: ReturnType<typeof useWorld.getState>['goal']
+  actors: ReturnType<typeof useWorld.getState>['actors']
 }): WorldSnapshot {
   return {
+    actors: Object.values(s.actors).map(cloneActor),
     objects: Object.values(s.objects).map((o) => ({
       ...o,
       position: [...o.position] as [number, number, number],
@@ -127,6 +131,7 @@ export function installHistory(): () => void {
       beforeDrag = snapshotOf(prev)
       dragStartGeometry = prev.geometryVersion
       dragStartRobot = prev.robotVersion
+      actorsChangedDuringDrag = false
       return
     }
 
@@ -134,7 +139,7 @@ export function installHistory(): () => void {
     if (!state.dragging && prev.dragging) {
       if (
         beforeDrag &&
-        (state.geometryVersion !== dragStartGeometry ||
+        (actorsChangedDuringDrag || state.actors !== prev.actors || state.geometryVersion !== dragStartGeometry ||
           state.robotVersion !== dragStartRobot ||
           !sameVec2(state.goal, beforeDrag.goal))
       ) {
@@ -144,9 +149,13 @@ export function installHistory(): () => void {
       return
     }
 
-    if (state.dragging) return
+    if (state.dragging) {
+      if (state.actors !== prev.actors) actorsChangedDuringDrag = true
+      return
+    }
 
     const changed =
+      state.actors !== prev.actors ||
       state.geometryVersion !== prev.geometryVersion ||
       state.robotVersion !== prev.robotVersion ||
       state.goal !== prev.goal

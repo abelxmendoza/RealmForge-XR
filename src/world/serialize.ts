@@ -1,3 +1,6 @@
+import { cloneActor, type Actor } from '../actors/types'
+import { parseActors } from '../actors/serialization'
+import { newId as newWorldId } from './store'
 import { isAssetId, isDestinationRole } from './assetTypes'
 import { WORLD, type ObjectKind, type Vec2, type Vec3, type WorldObject } from './types'
 import { BUILDING_STYLES, PALLET_STYLES, PLATFORM_MATERIALS, RACK_STYLES, TREE_STYLES, WALL_MATERIALS } from './catalog'
@@ -26,7 +29,8 @@ export interface WorldFile {
   version: typeof WORLD_VERSION
   name: string
   savedAt: string
-  environmentId?: 'forge-district' | 'mars-outpost' | 'warehouse'
+  actors?: Actor[]
+  environmentId?: 'forge-district' | 'mars-outpost' | 'warehouse' | 'empty-event-venue' | 'job-fair'
   objects: WorldObject[]
   robotStart: Vec2
   goal: Vec2 | null
@@ -49,7 +53,21 @@ export const LIMITS = {
   maxHeight: 60,
 } as const
 
-const KINDS: ReadonlySet<ObjectKind> = new Set(['wall', 'building', 'platform', 'tree', 'streetlight', 'crate', 'pallet', 'rack'])
+const KINDS: ReadonlySet<ObjectKind> = new Set(['wall', 'building', 'platform', 'tree', 'streetlight', 'crate', 'pallet', 'rack', 'prop'])
+const SIM_ROLES: ReadonlySet<string> = new Set([
+  'decoration',
+  'obstacle',
+  'entrance',
+  'exit',
+  'registration',
+  'booth',
+  'service',
+  'seating',
+  'queue',
+  'stage',
+  'pickup',
+  'delivery',
+])
 const MATERIALS: ReadonlySet<string> = new Set([...WALL_MATERIALS, ...PLATFORM_MATERIALS])
 const STYLES: ReadonlySet<string> = new Set([...Object.keys(BUILDING_STYLES), ...TREE_STYLES, ...PALLET_STYLES, ...RACK_STYLES])
 const ROOFS: ReadonlySet<string> = new Set(['flat', 'pitched'])
@@ -62,14 +80,16 @@ export const cleanName = (name: unknown, fallback = 'Untitled world') => {
 }
 
 /** Build the file for the current world. Only schema fields are written (no editor state, no secrets). */
-export function serializeWorld(world: { objects: Record<string, WorldObject> | WorldObject[]; robotStart: Vec2; goal: Vec2 | null }, name: string, now = new Date()): WorldFile {
+export function serializeWorld(world: { objects: Record<string, WorldObject> | WorldObject[]; robotStart: Vec2; goal: Vec2 | null; actors?: Actor[] | Record<string, Actor> }, name: string, now = new Date()): WorldFile {
   const list = Array.isArray(world.objects) ? world.objects : Object.values(world.objects)
+  const actors = world.actors ? Object.values(world.actors) : []
   return {
     format: WORLD_FORMAT,
     version: WORLD_VERSION,
     name: cleanName(name),
     savedAt: now.toISOString(),
     objects: list.map(pickObject),
+    ...(actors.length ? { actors: actors.map(cloneActor) } : {}),
     robotStart: [world.robotStart[0], world.robotStart[1]],
     goal: world.goal ? [world.goal[0], world.goal[1]] : null,
   }
@@ -87,6 +107,10 @@ function pickObject(o: WorldObject): WorldObject {
   if (o.assetId !== undefined) out.assetId = o.assetId
   if (o.destinationRole !== undefined) out.destinationRole = o.destinationRole
   if (o.solid !== undefined) out.solid = o.solid
+  if (o.catalogId !== undefined) out.catalogId = o.catalogId
+  if (o.simulationRole !== undefined) out.simulationRole = o.simulationRole
+  if (o.capacity !== undefined) out.capacity = o.capacity
+  if (o.serviceDuration !== undefined) out.serviceDuration = o.serviceDuration
   return out
 }
 
@@ -145,9 +169,15 @@ export function parseWorld(input: unknown, newId: (kind: ObjectKind) => string):
     seen.add(r.id)
     objects.push(r)
   }
-  const environmentId = typeof data.environmentId === 'string' && ['forge-district', 'mars-outpost', 'warehouse'].includes(data.environmentId)
-    ? data.environmentId as WorldFile['environmentId'] : undefined
-  return { ok: true, world: { name: cleanName(data.name), objects, robotStart, goal, ...(environmentId ? { environmentId } : {}) }, warnings }
+  const parsedActors = parseActors(data.actors, seen, () => newWorldId('actor'))
+  if (!parsedActors.ok) return parsedActors
+  warnings.push(...parsedActors.warnings)
+  const environmentId =
+    typeof data.environmentId === 'string' &&
+    ['forge-district', 'mars-outpost', 'warehouse', 'empty-event-venue', 'job-fair'].includes(data.environmentId)
+      ? (data.environmentId as WorldFile['environmentId'])
+      : undefined
+  return { ok: true, world: { name: cleanName(data.name), objects, robotStart, goal, ...(parsedActors.actors.length ? { actors: parsedActors.actors } : {}), ...(environmentId ? { environmentId } : {}) }, warnings }
 }
 
 /** One object, or an error string when it can't be used at all. */
@@ -187,5 +217,17 @@ function readObject(v: unknown, i: number, warnings: string[]): WorldObject | st
   opt('assetId', isAssetId, (x) => (o.assetId = x as WorldObject['assetId']))
   opt('destinationRole', isDestinationRole, (x) => (o.destinationRole = x as WorldObject['destinationRole']))
   opt('solid', (x) => typeof x === 'boolean', (x) => (o.solid = x as boolean))
+  opt(
+    'catalogId',
+    (x) => typeof x === 'string' && x.length > 0 && x.length <= 64 && ID_RE.test(x),
+    (x) => (o.catalogId = x as string),
+  )
+  opt('simulationRole', (x) => typeof x === 'string' && SIM_ROLES.has(x), (x) => (o.simulationRole = x as WorldObject['simulationRole']))
+  opt('capacity', (x) => finite(x) && (x as number) >= 0 && (x as number) <= 10_000, (x) => (o.capacity = x as number))
+  opt(
+    'serviceDuration',
+    (x) => finite(x) && (x as number) >= 0 && (x as number) <= 600,
+    (x) => (o.serviceDuration = x as number),
+  )
   return o
 }

@@ -1,3 +1,4 @@
+import { Actors } from '../actors/Actors'
 import { ControlPalette } from '../xr/ControlPalette'
 import { ControlsGuidePanel } from '../xr/ControlsGuidePanel'
 import { useEffect } from 'react'
@@ -12,6 +13,7 @@ import { Obstacles } from '../editor/Obstacles'
 import { dragMove, endDrag } from '../editor/drag'
 import { tickDemo } from '../editor/demo'
 import { Robot } from '../agent/Robot'
+import { Attendee, AttendeeRoute } from '../sim/AttendeeView'
 import { Route } from './Route'
 import { Lighting } from './Lighting'
 import { ThumbnailCapture } from './ThumbnailCapture'
@@ -65,7 +67,19 @@ export function Scene() {
       {inXR && <GestureController />}
       {/* Smartsuit skeleton at 1:1 in your room (Rokoko's origin = where the XR session started). */}
       {mocapOn && !mocapInMap && <MocapSkeleton />}
-      {!inXR && <OrbitControls makeDefault enabled={!dragging} target={WORLD_ROOT.position} />}
+      {/* Right-click is reserved for the desktop context menu; middle-drag pans. */}
+      {!inXR && (
+        <OrbitControls
+          makeDefault
+          enabled={!dragging}
+          target={WORLD_ROOT.position}
+          mouseButtons={{
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.PAN,
+            RIGHT: -1 as THREE.MOUSE,
+          }}
+        />
+      )}
 
       {/* In-VR Control Palette (assets, routes, saves, worlds) and the controls guide. */}
       <ControlPalette />
@@ -90,7 +104,9 @@ export function Scene() {
           <Obstacles />
           <Route />
           <Robot />
-          {/* Or inside the world, standing at the robot start and scaled with the world. */}
+          <AttendeeRoute />
+          <Attendee />
+          <Actors />
           {mocapOn && mocapInMap && (
             <group position={[robotStart[0], 0, robotStart[1]]}>
               <MocapSkeleton />

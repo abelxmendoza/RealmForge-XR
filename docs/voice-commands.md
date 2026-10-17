@@ -92,9 +92,9 @@ Encrypted dotenvx does **not** make a `VITE_*` key safe for the browser.
 | “Switch to warehouse” | `LOAD_ENVIRONMENT` | `warehouse` |
 | “Load Forge District” | `LOAD_ENVIRONMENT` | `forge-district` |
 | “Create a blank world” | `RESET_WORLD` | Empty snapshot (confirm required) |
-| “Select building tool” / “Create a building” | `SELECT_TOOL` | Activates `building` tool (no arbitrary spawn) |
-| “Select wall tool” / “Create a wall” | `SELECT_TOOL` | `wall` |
-| “Select road tool” / “Place a platform” | `SELECT_TOOL` | `platform` |
+| “Select building tool” / “Building tool” | `SELECT_TOOL` | Activates `building` tool |
+| “Select wall tool” / “Draw a wall” | `SELECT_TOOL` | `wall` |
+| “Select road tool” / “Platform tool” | `SELECT_TOOL` | `platform` |
 | “Select robot” / “Place robot” | `SELECT_TOOL` | `robot` |
 | “Set destination” | `SELECT_TOOL` | `goal` (goal-placement mode) |
 | “Start navigation” | `START_NAVIGATION` | Replans if a goal exists |
@@ -102,6 +102,27 @@ Encrypted dotenvx does **not** make a `VITE_*` key safe for the browser.
 | “Save world” | `SAVE_WORLD` | `quickSave` / `saveWorld` |
 | “Reset selection” | `CLEAR_SELECTION` | Clears selection |
 | “Delete selected object” | `DELETE_SELECTED` | Deletes selection (**confirm required**) |
+
+### Making and moving objects
+
+Parsed by `src/voice/objectCommands.ts`, executed through `src/world/spawn.ts` (store actions only, so navigation replans and each command is one undo step).
+
+| Spoken example | Command | Action |
+| --- | --- | --- |
+| “Add three trees near the robot” | `SPAWN_OBJECTS` | 3 trees on free ground around the robot start |
+| “Build two tall glass towers 20 meters north of the goal” | `SPAWN_OBJECTS` | Count, style, size, landmark + direction + distance |
+| “Create a building” / “Place a brick wall in the center” | `SPAWN_OBJECTS` | One object (count defaults to 1) |
+| “Put four storage racks” / “Add a charging pad” | `SPAWN_OBJECTS` | Catalog items by name |
+| “Move them 10 meters left” / “Move it to the goal” | `MOVE_OBJECTS` | By direction + metres, or next to robot / goal / center |
+| “Rotate it 45 degrees” / “Turn them right” | `ROTATE_OBJECTS` | Default 90°, right = clockwise |
+| “Make it bigger / smaller / taller / shorter / twice as big” | `RESIZE_OBJECTS` | Scales size |
+| “Duplicate it 3 times” | `DUPLICATE_OBJECTS` | Copies on free ground around it |
+
+- **Counts:** digits or words, “a couple”, “a dozen”; capped at 25. “to/too/for” before a noun are heard as 2/4.
+- **Objects:** tree, pine tree, streetlight, crate, metal crate, house, office, tower/skyscraper, factory/warehouse, brick/glass/wood/metal wall, road, park, platform, and every catalog asset.
+- **Places:** near / by / next to / in / at the robot, goal, center, or “here” (selected object); north/south/east/west, left/right/forward/back; “N meters”.
+- **“it”** = selected object (else the last one added); **“them”** = everything from the last add/duplicate.
+- Objects land on free ground, spaced apart and snapped; solid ones never cover the robot start or goal. If space runs out, it adds what fits and says so.
 
 **Unsupported (structured reject):** “Stop navigation” (no safe stop API yet), free-form NL, anything not listed.
 
@@ -197,7 +218,7 @@ Demo remains usable when AssemblyAI is missing, mic is denied, or the network dr
 - “Stop navigation” is intentionally unsupported until a safe stop API exists.
 - Token proxy is Vite-dev middleware; production hosting needs an equivalent serverless/proxy route.
 - Quest mic + WebXR session behavior not yet validated on hardware.
-- Desktop UI chrome for PTT is not wired into `App.tsx` (avoids teammate merge conflicts) — use the hook or mock submitter.
+- Desktop: right-click the canvas for **World actions** (tools, save/undo, environments, voice). Orbit pans with middle-drag; right-click is reserved for the menu.
 
 ## Tests
 

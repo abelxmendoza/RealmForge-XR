@@ -9,6 +9,7 @@ export type GuideSectionId =
   | 'wrist'
   | 'panel'
   | 'tools'
+  | 'voice'
   | 'desktop'
   | 'comfort'
 
@@ -90,6 +91,22 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Place robot / Set destination — pathfinding.',
       'Yellow handle resize · blue rotate.',
       'Green duplicate · purple style · red delete.',
+    ],
+  },
+  {
+    id: 'voice',
+    title: 'Voice commands',
+    tab: 'Voice',
+    lines: [
+      'Tap the mic (web: bottom · VR: top of panel),',
+      'speak, tap again. Web: or hold Space to talk.',
+      '"Add three trees near the robot"',
+      '"Build two tall towers 20 m north of the goal"',
+      '"Move them 10 meters left" · "move it to the goal"',
+      '"Rotate it 45 degrees" · "make it taller"',
+      '"Duplicate it 3 times" · "undo" · "save world"',
+      '"Load Mars outpost" · "set destination"',
+      '"it" = selection · "them" = what you just added.',
     ],
   },
   {

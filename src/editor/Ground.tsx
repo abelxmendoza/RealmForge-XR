@@ -19,6 +19,7 @@ import { useSelection } from './selection'
 import { HAPTIC, pulse } from '../xr/haptics'
 import { usePlacement } from '../xr/placement'
 import { useEnvironment } from '../world/environment'
+import { propFromCatalog } from '../world/eventCatalog'
 
 const MIN_WALL = 0.6
 const MIN_PLATFORM = 0.5
@@ -112,15 +113,32 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
       return
     case 'goal':
       e.stopPropagation()
-      w.setGoal(raw)
+      if (w.selectedActorId) {
+        const result = worldActions.setActorGoal(w.selectedActorId, raw)
+        useEditor.getState().set({ actorMessage: result.ok ? 'Actor destination set.' : result.error })
+      } else w.setGoal(raw)
       return
     case 'robot':
       e.stopPropagation()
       w.placeRobot(raw)
       return
+    case 'actor': {
+      e.stopPropagation()
+      const result = worldActions.placeActor(raw)
+      useEditor.getState().set({ actorMessage: result.ok ? 'Actor placed. Select it to customize or choose its destination.' : result.error })
+      return
+    }
     case 'asset': {
       e.stopPropagation()
       placeAssetAt(raw)
+      return
+    }
+    case 'event': {
+      e.stopPropagation()
+      const at = placePoint(raw)
+      const prop = propFromCatalog(useEditor.getState().eventCatalogId, [at[0], 0, at[1]])
+      if (!prop) return
+      w.select(w.addObject(prop))
       return
     }
     case 'building':
@@ -169,6 +187,7 @@ export function Ground() {
   const hover = useGroundUI((s) => s.hover)
   const placementError = useGroundUI((s) => s.placementError)
   // Read reactive settings and geometry so ghost validity always matches the commit action.
+  useEditor((s) => s.actorKind)
   useEditor((s) => s.assetId)
   useEditor((s) => s.assetRotation)
   useEditor((s) => s.snap)

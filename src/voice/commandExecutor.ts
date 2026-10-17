@@ -10,6 +10,7 @@ import {
 } from '../world/actions'
 import { getEnvironment } from '../world/environment'
 import { emitVoiceEvent } from './events'
+import { duplicateObjects, moveObjects, resizeObjects, rotateObjects, spawnObjects, targetIds } from '../world/spawn'
 import type { ConfirmationRequest, ConfirmHandler, VoiceCommand } from './types'
 
 export type ExecuteResult =
@@ -250,6 +251,48 @@ export async function executeVoiceCommand(
         // Re-apply goal to force a replan if nav was idle.
         worldActions.setGoal([goal[0], goal[1]])
         const message = 'Navigation started'
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'SPAWN_OBJECTS': {
+        const { ids, requested } = spawnObjects(command.spec, command.count, command.placement)
+        if (!ids.length) {
+          const message = `No free space for ${command.label}s there`
+          emitVoiceEvent({ type: 'VOICE_COMMAND_REJECTED', command, message })
+          return { status: 'rejected', command, message }
+        }
+        const noun = ids.length === 1 ? command.label : `${command.label}s`
+        const message = ids.length < requested ? `Added ${ids.length} of ${requested} ${noun} (out of free space)` : `Added ${ids.length} ${noun}`
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'MOVE_OBJECTS':
+      case 'ROTATE_OBJECTS':
+      case 'RESIZE_OBJECTS':
+      case 'DUPLICATE_OBJECTS': {
+        const ids = targetIds(command.which)
+        if (!ids.length) {
+          const message = 'Nothing selected. Select an object or add some first.'
+          emitVoiceEvent({ type: 'VOICE_COMMAND_REJECTED', command, message })
+          return { status: 'rejected', command, message }
+        }
+        const things = ids.length === 1 ? 'object' : `${ids.length} objects`
+        let message: string
+        if (command.type === 'MOVE_OBJECTS') {
+          moveObjects(ids, command)
+          message = command.to ? `Moved ${things} to the ${command.to}` : `Moved ${things} ${command.distance ?? 5} m ${command.direction}`
+        } else if (command.type === 'ROTATE_OBJECTS') {
+          rotateObjects(ids, command.degrees)
+          message = `Rotated ${things} ${Math.abs(command.degrees)}°`
+        } else if (command.type === 'RESIZE_OBJECTS') {
+          resizeObjects(ids, command.factor, command.axis)
+          message = `Resized ${things}`
+        } else {
+          const r = duplicateObjects(ids[ids.length - 1], command.count)
+          message = r.ids.length ? `Made ${r.ids.length} ${r.ids.length === 1 ? 'copy' : 'copies'}` : 'No free space for copies'
+        }
         emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
         return { status: 'executed', command, message }
       }

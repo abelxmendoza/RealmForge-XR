@@ -11,7 +11,7 @@ export type Vec3 = [x: number, y: number, z: number]
 /** A point on the ground plane: [x, z]. */
 export type Vec2 = [x: number, z: number]
 
-export type ObjectKind = 'wall' | 'building' | 'platform' | 'tree' | 'streetlight' | 'crate' | 'pallet' | 'rack'
+export type ObjectKind = 'wall' | 'building' | 'platform' | 'tree' | 'streetlight' | 'crate' | 'pallet' | 'rack' | 'prop'
 
 /** Surface finish. Purely visual; navigation never reads it. */
 export type MaterialId = 'concrete' | 'brick' | 'metal' | 'glass' | 'wood' | 'asphalt' | 'grass'
@@ -22,6 +22,24 @@ export type RoofType = 'flat' | 'pitched'
 export type PalletStyle = 'empty' | 'boxes' | 'wrapped'
 /** Pallet racks: bare beams, or a pallet on every level. */
 export type RackStyle = 'empty' | 'loaded'
+
+/**
+ * Optional simulation role for event objects. Appearance (kind/catalogId) stays separate
+ * from behavior so a registration desk and ticket counter can share check-in logic.
+ */
+export type SimulationRole =
+  | 'decoration'
+  | 'obstacle'
+  | 'entrance'
+  | 'exit'
+  | 'registration'
+  | 'booth'
+  | 'service'
+  | 'seating'
+  | 'queue'
+  | 'stage'
+  | 'pickup'
+  | 'delivery'
 
 export interface WorldObject {
   /** Stable id, never reused. */
@@ -46,6 +64,16 @@ export interface WorldObject {
   assetId?: AssetId
   destinationRole?: DestinationRole
   solid?: boolean
+
+  // Event / venue extras (optional; older saves without them still load).
+  /** Universal event catalog entry id when kind is `prop`. */
+  catalogId?: string
+  /** Functional role for attendee / robot simulation. */
+  simulationRole?: SimulationRole
+  /** Soft capacity hint (seats, booth visitors). Not enforced by physics. */
+  capacity?: number
+  /** Seconds an attendee waits at this destination (MVP). */
+  serviceDuration?: number
 }
 
 /** Structures (and pallets/racks) block by default. Decorations (trees, streetlights, crates) do not, unless `solid` is set. */

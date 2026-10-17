@@ -10,6 +10,8 @@ appearance and brush defaults live in `src/world/environment.ts`.
 | `forge-district` | Forge District | Existing demo city (preserved) |
 | `mars-outpost` | Mars Outpost | Red ground, habitats, solar arrays, comm tower |
 | `warehouse` | Autonomous Warehouse | Racks, aisles, loading dock, cargo |
+| `empty-event-venue` | Empty Event Venue | Open interior + entrance/exits for event design |
+| `job-fair` | Job Fair | Editable catalog props (booths, registration, stage) |
 
 Each config defines: id, display name, description, ground/table/grid colors, lighting,
 default building/wall/platform brush styles, and a `buildWorld()` snapshot
@@ -19,9 +21,20 @@ default building/wall/platform brush styles, and a `buildWorld()` snapshot
 
 Desktop uses the molten-forge HUD/inspector styling (`EnvironmentsMenu`):
 full list with descriptions in the inspector, plus a compact **Env** chip row in the HUD.
-Both call `worldActions.loadEnvironment(id, { confirmReplace })`.
+Both call `loadEnvironmentFromMenu` → `worldActions.loadEnvironment(id, { confirmReplace })`.
 
 In XR, the control palette **Worlds** tab and wrist env buttons use the same API.
+
+### Error handling
+
+- Unknown / empty ids → `{ ok: false, error }` (no store mutation)
+- Missing `confirmReplace` on a non-empty world → cancelled, world unchanged
+- `confirmReplace` throwing → non-cancelled failure message (world unchanged)
+- `buildWorld()` throwing / invalid snapshot → failure, `activeId` stays previous
+- Menu overlaps → busy guard returns an error toast; buttons disable while loading
+- Confirmation channel with no UI consumer → deny (never `window.confirm`)
+
+Tests: `environmentErrors.test.ts`, `environmentMenuController.test.ts`, `confirmation.test.ts`, `errors.test.ts`.
 
 ## Public API (for Emiliano / XR menu)
 
@@ -54,7 +67,7 @@ useEnvironment((s) => s.appearance)       // reactive ground/lighting for scene
 - If the current world has **0** objects → load proceeds.
 - If it has objects and `confirmReplace` is **omitted** → `{ ok: false, cancelled: true }` (safe no-op).
 - If `confirmReplace` returns **false** → world and appearance unchanged.
-- Desktop Inspector passes `(msg) => window.confirm(msg)` at the **UI layer only**.
+- Desktop Inspector / Environments menu pass `confirmReplace` from `src/world/confirmation.ts` (HTML dialog). XR uses the control palette Confirm/Cancel tiles.
 
 Does **not** touch hand tracking, controllers, Place city, or XR session code.
 

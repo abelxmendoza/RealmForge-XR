@@ -58,6 +58,7 @@ export const KIND_LABELS: Record<ObjectKind, string> = {
   crate: 'Crate',
   pallet: 'Pallet',
   rack: 'Pallet rack',
+  prop: 'Event object',
 }
 
 export const defaultMaterial = (o: Pick<WorldObject, 'kind' | 'material'>): MaterialId =>

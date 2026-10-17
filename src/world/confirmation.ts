@@ -10,6 +10,19 @@ let consumers = 0
 let pending: ConfirmationRequest | null = null
 let settle: ((accepted: boolean) => void) | null = null
 let nextId = 0
+
+/** Test / recovery helper — rejects any in-flight request and clears channel state. */
+export function resetConfirmationChannel() {
+  if (pending) {
+    const resolve = settle
+    pending = null
+    settle = null
+    resolve?.(false)
+  }
+  listeners.clear()
+  consumers = 0
+}
+
 export const getConfirmation = () => pending
 export function resolveConfirmation(id: number, accepted: boolean) {
   if (pending?.id !== id) return
@@ -29,11 +42,20 @@ export function subscribeConfirmation(listener: Listener, consumer = true) {
   }
 }
 export function requestConfirmation(input: Omit<ConfirmationRequest, 'id'>): Promise<boolean> {
+  const message = typeof input.message === 'string' ? input.message.trim() : ''
+  if (!message) return Promise.resolve(false)
   if (!consumers || pending) return Promise.resolve(false)
   return new Promise((resolve) => {
     settle = resolve
-    pending = { ...input, id: ++nextId }
-    listeners.forEach((notify) => notify())
+    pending = { ...input, message, id: ++nextId }
+    try {
+      listeners.forEach((notify) => notify())
+    } catch {
+      // A buggy subscriber must not leave the channel stuck open.
+      pending = null
+      settle = null
+      resolve(false)
+    }
   })
 }
 export const confirmReplace = (message: string) => requestConfirmation({ type: 'REPLACE_WORLD', message })

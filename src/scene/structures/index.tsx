@@ -8,6 +8,7 @@ import { Crate, Streetlight, Tree } from './Decor'
 import { Pallet, Rack } from './Warehouse'
 import { ModelStructure } from './ModelStructure'
 import { getAsset, isWarehouseCatalogAsset } from '../../world/assetLibrary'
+import { EventProp } from './EventProp'
 
 /**
  * Draws one world object. Pure presentation: reads the object, never the store,
@@ -34,6 +35,8 @@ export function Structure({ o }: { o: WorldObject }) {
       return <Pallet o={o} />
     case 'rack':
       return <Rack o={o} />
+    case 'prop':
+      return <EventProp o={o} />
     case 'wall':
     default:
       return <Wall o={o} />

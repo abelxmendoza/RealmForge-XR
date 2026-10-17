@@ -1,3 +1,4 @@
+import { sendActorToDestination } from '../actors/actions'
 import { useWorld } from './store'
 import { useEditor } from '../editor/settings'
 import { buildAsset, canPlaceAsset, getAsset } from './assets'
@@ -39,6 +40,7 @@ export function listDestinations() {
 /** Target the marker's current local center; no hidden cargo or battery simulation. */
 export function sendRobotToDestination(id: string): { ok: true } | { ok: false; error: string } {
   const world = useWorld.getState()
+  if (world.selectedActorId) return sendActorToDestination(world.selectedActorId, id)
   const object = world.objects[id]
   if (!object?.destinationRole) return { ok: false, error: 'That destination no longer exists.' }
   const goal: Vec2 = [object.position[0], object.position[2]]

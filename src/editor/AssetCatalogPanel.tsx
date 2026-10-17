@@ -15,6 +15,7 @@ export function AssetCatalogPanel() {
   const rotation = useEditor((s) => s.assetRotation)
   const tool = useWorld((s) => s.tool)
   const objects = useWorld((s) => s.objects)
+  const selectedActor = useWorld((s) => s.selectedActorId ? s.actors[s.selectedActorId] : null)
   const navStatus = useNav((s) => s.status)
   const destinations = Object.values(objects).filter((o) => o.destinationRole)
   const asset = getAsset(assetId) ?? assetsIn('Warehouse')[0]
@@ -28,9 +29,9 @@ export function AssetCatalogPanel() {
     {tool === 'asset' && <p className="hint">Aim at clear ground to preview. Green: place; red: blocked. Click to place. R rotates.</p>}
     {destinations.length > 0 && <>
       <h3>Robot destinations</h3>
-      <p className="hint">{navStatus}. Choose a marker to navigate to its current center.</p>
+      <p className="hint">{navStatus}. Choose a marker to send {selectedActor?.name || 'the original robot'} to its current center.</p>
       <ul className="catalog-destinations">{destinations.map((object, i) => <li key={object.id}>
-        <button onClick={() => { const result = worldActions.sendRobotToDestination(object.id); setMessage(result.ok ? `Robot dispatched to ${object.destinationRole} marker ${i + 1}.` : result.error) }}>Go: {getAsset(object.assetId || '')?.name || object.destinationRole} {i + 1}</button>
+        <button onClick={() => { const result = worldActions.sendRobotToDestination(object.id); setMessage(result.ok ? `${selectedActor?.name || 'Robot'} dispatched to ${object.destinationRole} marker ${i + 1}.` : result.error) }}>Go: {getAsset(object.assetId || '')?.name || object.destinationRole} {i + 1}</button>
       </li>)}</ul>
     </>}
     {message && <p role="status">{message}</p>}

@@ -1,16 +1,11 @@
 import { useState, useSyncExternalStore } from 'react'
 import { useVoiceCommands } from '../voice/useVoiceCommands'
-import { getConfirmation, subscribeConfirmation, requestConfirmation } from '../world/confirmation'
-import type { ConfirmationRequest } from '../voice/types'
-
-const confirm = (request: ConfirmationRequest) =>
-  requestConfirmation({
-    type: request.action.type === 'DELETE_SELECTED' ? 'DELETE' : 'REPLACE_WORLD',
-    message: request.message,
-  })
+import { getConfirmation, subscribeConfirmation } from '../world/confirmation'
+import { VOICE_OPTIONS } from '../voice/sharedConfirm'
+import { VoiceMicButton } from './VoiceMicButton'
 
 export function VoicePanel() {
-  const voice = useVoiceCommands({ provider: 'assemblyai', fallbackToMock: false, confirm })
+  const voice = useVoiceCommands(VOICE_OPTIONS)
   const confirmation = useSyncExternalStore((notify) => subscribeConfirmation(notify, false), getConfirmation, getConfirmation)
   const [starting, setStarting] = useState(false)
   const [text, setText] = useState('Select wall tool')
@@ -34,6 +29,8 @@ export function VoicePanel() {
                   : 'Idle'
   const listening = voice.isListening
   return (
+    <>
+    <VoiceMicButton />
     <aside className="voice-panel" aria-label="Voice commands">
       <div className="voice-panel-head">
         <span className="voice-panel-title">Voice</span>
@@ -101,5 +98,6 @@ export function VoicePanel() {
         </form>
       </details>
     </aside>
+    </>
   )
 }

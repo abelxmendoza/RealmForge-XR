@@ -1,3 +1,4 @@
+import { startActors } from '../actors/runtime'
 import App from '../App'
 import { startNavigation } from '../nav/navigation'
 import { installHistory } from '../world/history'
@@ -22,6 +23,7 @@ export async function initializeEditor(world?: LandingWorldId) {
     if (!result.ok) throw new Error(result.error)
   }
   startNavigation()
+  startActors()
   installHistory()
   installDirtyTracking()
   startMocapClient()
