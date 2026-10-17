@@ -105,7 +105,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       '"Move them 10 meters left" · "move it to the goal"',
       '"Rotate it 45 degrees" · "make it taller"',
       '"Duplicate it 3 times" · "undo" · "save world"',
-      '"Load Mars outpost" · "set destination"',
+      '"New Mars world" · "open my world 2" · "resume"',
       '"it" = selection · "them" = what you just added.',
     ],
   },

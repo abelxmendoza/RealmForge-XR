@@ -1,3 +1,4 @@
+import { installAutosave } from '../world/autosave'
 import { useWorld } from '../world/store'
 import { startActors } from '../actors/runtime'
 import App from '../App'
@@ -29,6 +30,7 @@ export async function initializeEditor(world?: LandingWorldId) {
   startActors()
   installHistory()
   installDirtyTracking()
+  installAutosave()
   startMocapClient()
 }
 export default App

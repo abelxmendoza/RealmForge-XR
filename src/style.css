@@ -1513,3 +1513,7 @@ dialog.controls-guide::backdrop {
 .start footer button { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--rf-line, #4a5568); background: rgba(255, 255, 255, 0.04); font-size: 13px; }
 .start footer button.link { border: 0; background: none; opacity: 0.7; text-decoration: underline; }
 .start-error { margin: 0 auto 0 0; color: #ffb4b4; font-size: 13px; }
+
+/* Worlds library: resume the auto-saved session. */
+.library section.resume { border: 1px solid var(--rf-ember, #e07845); border-radius: 10px; padding: 10px 12px; background: rgba(224, 120, 69, 0.08); }
+.library section.resume button.primary { background: linear-gradient(180deg, var(--rf-ember-hot, #ff9a5c), var(--rf-ember, #e07845)); color: #1a100c; border-color: transparent; font-weight: 600; }
