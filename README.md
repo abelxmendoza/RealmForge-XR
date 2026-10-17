@@ -32,6 +32,18 @@ Shared secrets live in `.env`, committed **encrypted** with [dotenvx](https://do
 - Add or change a variable: `npm run env:set -- NAME value`, then commit `.env`. Teammates get it on pull.
 - `.env.keys` and `*.local` are gitignored. Never commit the private key.
 
+## Docs (living)
+
+We document as we build. Update these in the same change when behavior or state moves:
+
+| Doc | Purpose |
+| --- | --- |
+| [docs/plan.md](docs/plan.md) | Best-of-both roadmap (Abel product + Emiliano headset) |
+| [docs/BUILD_LOG.md](docs/BUILD_LOG.md) | Append-only work diary |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md) | User/demo-facing changes |
+| [docs/STATE.md](docs/STATE.md) | Runtime & data state (store, XR, placement) |
+| [docs/quest2-testing.md](docs/quest2-testing.md) | Headset setup + checklist |
+
 ## Controls
 
 Every control is a pointer event, so mouse, controller rays and hand rays behave the same.
