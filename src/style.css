@@ -1473,3 +1473,13 @@ dialog.controls-guide::backdrop {
   color: #eee;
   font-size: 13px;
 }
+.sim-panel .sim-status {
+  font-size: 12px;
+  line-height: 1.35;
+  background: #0006;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.sim-panel .sim-status strong {
+  color: #4dabf7;
+}

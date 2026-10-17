@@ -30,7 +30,7 @@ export interface WorldFile {
   name: string
   savedAt: string
   actors?: Actor[]
-  environmentId?: 'forge-district' | 'mars-outpost' | 'warehouse'
+  environmentId?: 'forge-district' | 'mars-outpost' | 'warehouse' | 'empty-event-venue' | 'job-fair'
   objects: WorldObject[]
   robotStart: Vec2
   goal: Vec2 | null
@@ -53,7 +53,21 @@ export const LIMITS = {
   maxHeight: 60,
 } as const
 
-const KINDS: ReadonlySet<ObjectKind> = new Set(['wall', 'building', 'platform', 'tree', 'streetlight', 'crate'])
+const KINDS: ReadonlySet<ObjectKind> = new Set(['wall', 'building', 'platform', 'tree', 'streetlight', 'crate', 'prop'])
+const SIM_ROLES: ReadonlySet<string> = new Set([
+  'decoration',
+  'obstacle',
+  'entrance',
+  'exit',
+  'registration',
+  'booth',
+  'service',
+  'seating',
+  'queue',
+  'stage',
+  'pickup',
+  'delivery',
+])
 const MATERIALS: ReadonlySet<string> = new Set([...WALL_MATERIALS, ...PLATFORM_MATERIALS])
 const STYLES: ReadonlySet<string> = new Set([...Object.keys(BUILDING_STYLES), ...TREE_STYLES])
 const ROOFS: ReadonlySet<string> = new Set(['flat', 'pitched'])
@@ -93,6 +107,10 @@ function pickObject(o: WorldObject): WorldObject {
   if (o.assetId !== undefined) out.assetId = o.assetId
   if (o.destinationRole !== undefined) out.destinationRole = o.destinationRole
   if (o.solid !== undefined) out.solid = o.solid
+  if (o.catalogId !== undefined) out.catalogId = o.catalogId
+  if (o.simulationRole !== undefined) out.simulationRole = o.simulationRole
+  if (o.capacity !== undefined) out.capacity = o.capacity
+  if (o.serviceDuration !== undefined) out.serviceDuration = o.serviceDuration
   return out
 }
 
@@ -154,8 +172,11 @@ export function parseWorld(input: unknown, newId: (kind: ObjectKind) => string):
   const parsedActors = parseActors(data.actors, seen, () => newWorldId('actor'))
   if (!parsedActors.ok) return parsedActors
   warnings.push(...parsedActors.warnings)
-  const environmentId = typeof data.environmentId === 'string' && ['forge-district', 'mars-outpost', 'warehouse'].includes(data.environmentId)
-    ? data.environmentId as WorldFile['environmentId'] : undefined
+  const environmentId =
+    typeof data.environmentId === 'string' &&
+    ['forge-district', 'mars-outpost', 'warehouse', 'empty-event-venue', 'job-fair'].includes(data.environmentId)
+      ? (data.environmentId as WorldFile['environmentId'])
+      : undefined
   return { ok: true, world: { name: cleanName(data.name), objects, robotStart, goal, ...(parsedActors.actors.length ? { actors: parsedActors.actors } : {}), ...(environmentId ? { environmentId } : {}) }, warnings }
 }
 
@@ -196,5 +217,17 @@ function readObject(v: unknown, i: number, warnings: string[]): WorldObject | st
   opt('assetId', isAssetId, (x) => (o.assetId = x as WorldObject['assetId']))
   opt('destinationRole', isDestinationRole, (x) => (o.destinationRole = x as WorldObject['destinationRole']))
   opt('solid', (x) => typeof x === 'boolean', (x) => (o.solid = x as boolean))
+  opt(
+    'catalogId',
+    (x) => typeof x === 'string' && x.length > 0 && x.length <= 64 && ID_RE.test(x),
+    (x) => (o.catalogId = x as string),
+  )
+  opt('simulationRole', (x) => typeof x === 'string' && SIM_ROLES.has(x), (x) => (o.simulationRole = x as WorldObject['simulationRole']))
+  opt('capacity', (x) => finite(x) && (x as number) >= 0 && (x as number) <= 10_000, (x) => (o.capacity = x as number))
+  opt(
+    'serviceDuration',
+    (x) => finite(x) && (x as number) >= 0 && (x as number) <= 600,
+    (x) => (o.serviceDuration = x as number),
+  )
   return o
 }

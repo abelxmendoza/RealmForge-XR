@@ -15,6 +15,7 @@ import { tiledPlane, useGeometry } from '../scene/geometry'
 import { Structure } from '../scene/structures'
 import { beginDrag } from './drag'
 import { useEditor } from './settings'
+import { propFromCatalog } from '../world/eventCatalog'
 
 const MIN_WALL = 0.6
 const MIN_PLATFORM = 0.5
@@ -110,6 +111,16 @@ export function Ground() {
       case 'decor': {
         e.stopPropagation()
         const id = w.addObject(objectForTool(tool, placePoint(raw)))
+        w.select(id)
+        return
+      }
+      case 'event': {
+        e.stopPropagation()
+        const at = placePoint(raw)
+        const catalogId = useEditor.getState().eventCatalogId
+        const prop = propFromCatalog(catalogId, [at[0], 0, at[1]])
+        if (!prop) return
+        const id = w.addObject(prop)
         w.select(id)
         return
       }

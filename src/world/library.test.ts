@@ -56,7 +56,9 @@ describe('world library', () => {
   it('offers a blank template plus every environment', () => {
     const ids = listTemplates().map((t) => t.id)
     expect(ids[0]).toBe('blank')
-    expect(ids).toEqual(expect.arrayContaining(['forge-district', 'mars-outpost', 'warehouse']))
+    expect(ids).toEqual(
+      expect.arrayContaining(['forge-district', 'mars-outpost', 'warehouse', 'empty-event-venue', 'job-fair']),
+    )
   })
 
   it('creates a blank world and saves it to the library', async () => {
@@ -139,7 +141,8 @@ describe('world library', () => {
   })
 
   it('is reachable through worldActions for the XR menu and voice', async () => {
-    expect(worldActions.listTemplates().length).toBe(4)
+    // blank + forge/mars/warehouse + empty-event-venue + job-fair
+    expect(worldActions.listTemplates().length).toBe(6)
     const r = await worldActions.createWorld('From XR', 'warehouse')
     expect(r.ok).toBe(true)
   })

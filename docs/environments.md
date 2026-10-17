@@ -10,6 +10,8 @@ appearance and brush defaults live in `src/world/environment.ts`.
 | `forge-district` | Forge District | Existing demo city (preserved) |
 | `mars-outpost` | Mars Outpost | Red ground, habitats, solar arrays, comm tower |
 | `warehouse` | Autonomous Warehouse | Racks, aisles, loading dock, cargo |
+| `empty-event-venue` | Empty Event Venue | Open interior + entrance/exits for event design |
+| `job-fair` | Job Fair | Editable catalog props (booths, registration, stage) |
 
 Each config defines: id, display name, description, ground/table/grid colors, lighting,
 default building/wall/platform brush styles, and a `buildWorld()` snapshot

@@ -84,11 +84,13 @@ src/world/snap.ts          grid / angle snapping helpers
 src/world/presets.ts       preset layouts (Forge / Mars / Warehouse)
 src/world/environment.ts   environment config + loadEnvironment() API
 src/world/actions.ts       XR-safe World Action API (see docs/xr-world-actions.md)
+src/world/eventCatalog.ts  Universal event furniture / booths / wayfinding catalog
+src/sim/*                  Single-attendee event simulation MVP
 src/voice/*                AssemblyAI voice commands (see docs/voice-commands.md)
 src/editor/*               pointer editing + XR grab, wrist menu, rays/surface (Quest)
 src/xr/*                   AR enter fallback, Place city plane pinning
 src/scene/worldRoot.ts     presentation scale presets (tabletop → life size); store stays metres
-src/scene/structures/      how each object kind is drawn (buildings, walls, platforms, decorations)
+src/scene/structures/      how each object kind is drawn (buildings, walls, platforms, decorations, props)
 src/scene/materials.ts     procedural canvas textures + shared, cached materials
 src/scene/*                scene graph, lighting, route + goal visuals
 ```
