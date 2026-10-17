@@ -6,7 +6,8 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 // xr-test/ is a standalone headset test page (docs/quest2-testing.md), built alongside the app.
 export default defineConfig({
   plugins: [react(), basicSsl()],
-  server: { host: true },
+  // allowedHosts: lets a `cloudflared tunnel` URL reach the dev server when the headset can't see the laptop on LAN.
+  server: { host: true, allowedHosts: ['.trycloudflare.com'] },
   build: {
     rollupOptions: {
       input: {

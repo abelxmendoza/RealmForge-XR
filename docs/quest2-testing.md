@@ -52,7 +52,18 @@ The dev server is HTTPS (self-signed, via `@vitejs/plugin-basic-ssl`) on port 51
   Open `https://localhost:5173` in the Quest Browser and accept the certificate warning.
   Re-run `adb reverse` after unplugging.
 - **Same Wi-Fi.** Open `https://<laptop-LAN-IP>:5173` and accept the certificate warning.
-  Vite prints the LAN address when it starts.
+  Vite prints the LAN address when it starts. Guest and venue networks often block device-to-device
+  traffic, so if the headset says the site is unreachable, use a tunnel instead.
+- **Tunnel (any network, no Developer Mode).** Install `cloudflared` (`winget install Cloudflare.cloudflared`),
+  keep `npm run dev` running, then:
+
+  ```bash
+  cloudflared tunnel --url https://localhost:5173 --no-tls-verify
+  ```
+
+  Open the `https://<random>.trycloudflare.com` address it prints. It has a real certificate, so there's
+  no warning. `vite.config.ts` allows `*.trycloudflare.com` hosts for this. The address is public while
+  the tunnel runs and changes on every restart; stop it with Ctrl+C when you're done.
 
 Pages:
 
@@ -108,6 +119,8 @@ enabled features (`[MR] session started: …`).
 | Problem | Fix |
 | --- | --- |
 | `adb devices` shows nothing / `unauthorized` | Use a data cable, install the Oculus ADB driver, accept the prompt in the headset |
+| "Site can't be reached" over Wi-Fi | Network isolates devices (common on guest Wi-Fi); use the tunnel |
+| No ADB interface even with a data cable | Developer Mode isn't on yet; use Wi-Fi or the tunnel meanwhile |
 | No **Enter AR**, or "not supported" | Page must be `https://` or `localhost` |
 | No outlines, nothing snaps | Redo Space Setup with a table, and allow spatial-data access when prompted |
 | Page won't load after unplugging | Re-run `adb reverse tcp:5173 tcp:5173` |
