@@ -12,6 +12,7 @@ import { useWorld, type Tool } from './world/store'
 import { useNav } from './nav/navigation'
 import { blockRoute } from './editor/demo'
 import { Inspector } from './editor/Inspector'
+import { EnvironmentsMenu } from './editor/EnvironmentsMenu'
 import { cycleSelected, deleteSelected, duplicateSelected } from './editor/Obstacles'
 import { useEditor } from './editor/settings'
 import { importWorld, quickSave, useWorldLibrary } from './world/persistence'
@@ -179,6 +180,8 @@ function Hud() {
           ))}
         </div>
       </div>
+
+      <EnvironmentsMenu compact />
 
       <div className="hud-panel">
         <div className="row">

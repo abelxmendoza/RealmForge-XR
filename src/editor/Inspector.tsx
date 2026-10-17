@@ -16,10 +16,8 @@ import {
   defaultMaterial,
   treeStyle,
 } from '../world/catalog'
-import { PRESETS } from '../world/presets'
-import { worldActions } from '../world/actions'
-import { confirmReplace } from '../world/confirmation'
 import { WorldsPanel } from './WorldsPanel'
+import { EnvironmentsMenu } from './EnvironmentsMenu'
 import { WorldLibrary, openWorldLibrary } from './WorldLibrary'
 import { useEditor, type DecorKind } from './settings'
 import { deleteSelected, duplicateSelected } from './Obstacles'
@@ -36,6 +34,7 @@ export function Inspector() {
     <div className="inspector">
       {selected ? <ObjectPanel o={selected} /> : <BrushPanel tool={tool} />}
       <AssetCatalogPanel />
+      <EnvironmentsMenu />
       <WorldPanel />
       <WorldsPanel />
       <WorldLibrary />
@@ -227,27 +226,13 @@ function WorldPanel() {
   return (
     <section>
       <h3>World</h3>
-      <button className="primary" onClick={openWorldLibrary} title="New worlds, saved worlds (L)">
+      <button type="button" className="primary" onClick={openWorldLibrary} title="New worlds, saved worlds (L)">
         Worlds library (L)
       </button>
       <label className="check">
         <input type="checkbox" checked={snap} onChange={(e) => useEditor.getState().set({ snap: e.target.checked })} />
         Snap to grid (G)
       </label>
-      {PRESETS.map((p) => (
-        <button
-          key={p.id}
-          onClick={() =>
-            void worldActions.loadEnvironment(p.id, {
-              // One confirmation channel for desktop, voice, and headset consumers.
-              confirmReplace,
-            })
-          }
-          title="Replaces the current world (asks first)"
-        >
-          Load {p.label}
-        </button>
-      ))}
     </section>
   )
 }

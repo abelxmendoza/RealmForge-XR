@@ -1154,3 +1154,80 @@ dialog button.danger-confirm:hover:not(:disabled) {
   margin-bottom: 4px;
   text-align: left;
 }
+
+/* ——— Environments menu (molten-forge) ——— */
+
+.hud .env-menu-compact {
+  pointer-events: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud .env-menu-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rf-copper);
+  margin-right: 2px;
+}
+
+.inspector .env-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inspector .env-list li button {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 10px;
+  min-height: 0;
+}
+
+.inspector .env-list li button:hover:not(:disabled) {
+  border-color: var(--rf-line-strong);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.inspector .env-list .env-name {
+  font-family: var(--rf-font-display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.02em;
+  color: var(--rf-text);
+}
+
+.inspector .env-list .env-desc {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--rf-faint);
+  font-weight: 400;
+  white-space: normal;
+}
+
+.inspector .env-list li.active button,
+.inspector .env-list li button.on {
+  background: linear-gradient(180deg, rgba(240, 164, 106, 0.95), rgba(224, 120, 69, 0.9));
+  border-color: transparent;
+  box-shadow: 0 0 0 1px rgba(240, 164, 106, 0.35), 0 8px 20px rgba(224, 120, 69, 0.22);
+}
+
+.inspector .env-list li.active .env-name,
+.inspector .env-list li button.on .env-name {
+  color: #1a100c;
+}
+
+.inspector .env-list li.active .env-desc,
+.inspector .env-list li button.on .env-desc {
+  color: rgba(26, 16, 12, 0.72);
+}

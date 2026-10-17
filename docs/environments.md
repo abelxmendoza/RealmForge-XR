@@ -15,6 +15,14 @@ Each config defines: id, display name, description, ground/table/grid colors, li
 default building/wall/platform brush styles, and a `buildWorld()` snapshot
 (objects + robot start + goal).
 
+## UI menu
+
+Desktop uses the molten-forge HUD/inspector styling (`EnvironmentsMenu`):
+full list with descriptions in the inspector, plus a compact **Env** chip row in the HUD.
+Both call `worldActions.loadEnvironment(id, { confirmReplace })`.
+
+In XR, the control palette **Worlds** tab and wrist env buttons use the same API.
+
 ## Public API (for Emiliano / XR menu)
 
 ```ts
