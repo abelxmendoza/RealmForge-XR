@@ -59,25 +59,26 @@ export const idFor = (kind: ObjectKind) => newId(ID_PREFIX[kind] ?? 'obj')
 
 const sameVec2 = (a: Vec2, b: Vec2) => a[0] === b[0] && a[1] === b[1]
 
-export const WALL_DEFAULTS = { height: 1.6, thickness: 0.5, color: '#c9b79c' }
-export const BUILDING_DEFAULTS: { size: Vec3; color: string } = { size: [2, 3, 2], color: '#8fa6c9' }
+/** Defaults in map metres (1 unit = 1 m). Presentation scale never changes these. */
+export const WALL_DEFAULTS = { height: 3, thickness: 0.3, color: '#c9b79c' }
+export const BUILDING_DEFAULTS: { size: Vec3; color: string } = { size: [12, 12, 12], color: '#8fa6c9' }
 
 export const clampToWorld = (v: number, margin = 0) =>
   Math.max(-WORLD.half + margin, Math.min(WORLD.half - margin, v))
 
 function initialObjects(): Record<string, WorldObject> {
   const list: WorldObject[] = [
-    { id: newId('bld'), kind: 'building', position: [-3, 0, -2], size: [3, 3.5, 3], rotationY: 0, color: BUILDING_DEFAULTS.color },
-    { id: newId('bld'), kind: 'building', position: [4, 0, 3], size: [2.5, 2.5, 4], rotationY: 0.3, color: '#a9c98f' },
-    { id: newId('wall'), kind: 'wall', position: [2, 0, -4], size: [6, WALL_DEFAULTS.height, WALL_DEFAULTS.thickness], rotationY: 0, color: WALL_DEFAULTS.color },
+    { id: newId('bld'), kind: 'building', position: [-12, 0, -8], size: [12, 12, 12], rotationY: 0, color: BUILDING_DEFAULTS.color },
+    { id: newId('bld'), kind: 'building', position: [16, 0, 12], size: [10, 9, 16], rotationY: 0.3, color: '#a9c98f' },
+    { id: newId('wall'), kind: 'wall', position: [8, 0, -16], size: [24, WALL_DEFAULTS.height, WALL_DEFAULTS.thickness], rotationY: 0, color: WALL_DEFAULTS.color },
   ]
   return Object.fromEntries(list.map((o) => [o.id, o]))
 }
 
 const initial = () => ({
   objects: initialObjects(),
-  robotStart: [-8, 7] as Vec2,
-  goal: [8, -7] as Vec2,
+  robotStart: [-32, 28] as Vec2,
+  goal: [32, -28] as Vec2,
 })
 
 export const useWorld = create<WorldState>((set) => ({

@@ -4,7 +4,7 @@ import { worldActions } from './world/actions'
 import { confirmReplace } from './world/confirmation'
 import { enterARWithFallback, useXRSessionMeta } from './xr/session'
 import { usePlacement } from './xr/placement'
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { XR, createXRStore } from '@react-three/xr'
 import { Scene } from './scene/Scene'
@@ -16,9 +16,21 @@ import { cycleSelected, deleteSelected, duplicateSelected } from './editor/Obsta
 import { useEditor } from './editor/settings'
 import { importWorld, quickSave, useWorldLibrary } from './world/persistence'
 import { redo, undo, subscribeHistory } from './world/history'
+import { bindRays, toggleRays, toggleSurface } from './editor/xrInput'
+import { toggleMocap, useMocap } from './mocap/store'
+import { SCALE_IDS, SCALE_PRESETS, type ScaleId } from './scene/worldRoot'
 
-/** Hands and controllers both emit the same pointer events, so the editor doesn't care which is used. */
-export const xrStore = createXRStore({ offerSession: false, depthSensing: false, planeDetection: true, anchors: true, meshDetection: true, hitTest: true, handTracking: true })
+/**
+ * By default no rays in XR: objects are grabbed directly. Hands keep grab + touch pointers;
+ * controllers keep grab. Rays can be switched on (HUD, X key, wrist menu).
+ * offerSession:false — Enter AR uses enterARWithFallback (depth/plane/anchor chain).
+ */
+export const xrStore = createXRStore({
+  offerSession: false,
+  hand: { rayPointer: useEditor.getState().rays },
+  controller: { rayPointer: useEditor.getState().rays },
+})
+bindRays(xrStore)
 
 const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'select', label: 'Select / move', key: '1' },
@@ -38,7 +50,6 @@ const STATUS_TEXT = {
 } as const
 
 export default function App() {
-  const immersive = useSyncExternalStore(xrStore.subscribe, () => xrStore.getState().session != null)
   useKeyboard()
   useJsonFileDrop()
   return (
@@ -51,7 +62,8 @@ export default function App() {
       <Hud />
       <Inspector />
       <VoicePanel />
-      {!immersive && <ConfirmationDialog />}
+      {/* DOM confirm works in Quest Browser WebXR; required so wrist-menu env loads can confirm. */}
+      <ConfirmationDialog />
     </>
   )
 }
@@ -94,6 +106,10 @@ function Hud() {
   const xrError = useXRSessionMeta((s) => s.lastError)
   const entering = useXRSessionMeta((s) => s.entering)
   const dirty = useWorldLibrary((s) => s.dirty)
+  const worldScale = useEditor((s) => s.worldScale)
+  const rays = useEditor((s) => s.rays)
+  const surface = useEditor((s) => s.surface)
+  const mocap = useMocap()
   const [hist, setHist] = useState({ canUndo: false, canRedo: false })
   useEffect(() => subscribeHistory((s) => setHist({ canUndo: s.canUndo, canRedo: s.canRedo })), [])
   return (
@@ -142,18 +158,52 @@ function Hud() {
         <button disabled={!hist.canRedo} onClick={() => redo()} title="Ctrl+Shift+Z">
           Redo
         </button>
-        <button onClick={async () => { if (await confirmReplace('Reset the current world?')) useWorld.getState().reset() }}>Reset</button>
+        <button className={rays ? 'on' : ''} onClick={toggleRays} title="XR pointer rays on hands and controllers">
+          X Rays
+        </button>
+        <button
+          className={surface === 'real' ? 'on' : ''}
+          onClick={toggleSurface}
+          title="Real: transparent grid over your floor or table. Virtual: solid placeholder ground"
+        >
+          V Surface: {surface === 'real' ? 'Real' : 'Virtual'}
+        </button>
+        <button className={mocap.enabled ? 'on' : ''} onClick={toggleMocap} title="Smartsuit Pro live skeleton (optional)">
+          Mocap
+        </button>
+        <button
+          onClick={async () => {
+            if (await confirmReplace('Reset the current world?')) useWorld.getState().reset()
+          }}
+        >
+          Reset
+        </button>
+      </div>
+      <div className="row">
+        <label className="field">
+          Scale
+          <select value={worldScale} onChange={(e) => useEditor.getState().set({ worldScale: e.target.value as ScaleId })}>
+            {SCALE_IDS.map((id) => (
+              <option key={id} value={id}>
+                {SCALE_PRESETS[id].label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       <div className="status">
         {STATUS_TEXT[status]} · replans {replans}
         {dirty ? ' · unsaved' : ''}
+        {mocap.enabled && ` · mocap ${mocap.status}${mocap.status === 'live' ? ` ${mocap.fps} fps` : ''}`}
       </div>
       {xrError && <div role="alert">{xrError}</div>}
       {placement === 'choosing' && <p>Point at a table or floor to place the world.</p>}
+      {mocap.enabled && mocap.status === 'error' && <div className="status">{mocap.error}</div>}
       <div className="help">
         Drag empty ground to orbit. Select: drag an object to move it, yellow handle resizes, blue handle rotates,
-        green cube duplicates, purple cube changes style, red cube deletes.
-        Keys: R rotate 15°, [ ] height, D duplicate, M material/style, T roof, G snap, Del delete.
+        green cube duplicates, purple cube changes style, red cube deletes. In XR: grab with hands, wrist menu for
+        scale / rays / environments.
+        Keys: R rotate 15°, [ ] height, D duplicate, M material/style, T roof, G snap, X rays, V surface, Del delete.
         Ctrl+S save, Ctrl+Z / Ctrl+Shift+Z undo/redo. Drop a .json world file to import.
       </div>
     </div>
@@ -163,7 +213,6 @@ function Hud() {
 function useKeyboard() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // Typing into the inspector's fields must not trigger shortcuts.
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) return
 
       const mod = e.ctrlKey || e.metaKey
@@ -191,6 +240,8 @@ function useKeyboard() {
       if (tool) return worldActions.setTool(tool.id)
       if (e.key === 'b' || e.key === 'B') return blockRoute()
       if (e.key === 'g' || e.key === 'G') return useEditor.getState().set({ snap: !useEditor.getState().snap })
+      if (e.key === 'x' || e.key === 'X') return toggleRays()
+      if (e.key === 'v' || e.key === 'V') return toggleSurface()
       const sel = w.selectedId ? w.objects[w.selectedId] : null
       if (!sel) return
       if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected()
@@ -201,8 +252,8 @@ function useKeyboard() {
       else if ((e.key === 't' || e.key === 'T') && sel.kind === 'building')
         w.updateObject(sel.id, { roof: (sel.roof ?? (sel.style === 'house' ? 'pitched' : 'flat')) === 'pitched' ? 'flat' : 'pitched' })
       else if (e.key === 'r' || e.key === 'R') w.updateObject(sel.id, { rotationY: sel.rotationY + (e.shiftKey ? -1 : 1) * (Math.PI / 12) })
-      else if (e.key === ']') w.updateObject(sel.id, { size: [sel.size[0], sel.size[1] + 0.25, sel.size[2]] })
-      else if (e.key === '[') w.updateObject(sel.id, { size: [sel.size[0], Math.max(0.3, sel.size[1] - 0.25), sel.size[2]] })
+      else if (e.key === ']') w.updateObject(sel.id, { size: [sel.size[0], sel.size[1] + 0.5, sel.size[2]] })
+      else if (e.key === '[') w.updateObject(sel.id, { size: [sel.size[0], Math.max(0.3, sel.size[1] - 0.5), sel.size[2]] })
       else if (e.key === 'Escape') w.select(null)
     }
     window.addEventListener('keydown', onKey)

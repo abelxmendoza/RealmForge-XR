@@ -62,7 +62,7 @@ function ObjectPanel({ o }: { o: WorldObject }) {
         {labels.map((label, axis) => (
           <label key={label}>
             {label}
-            <input type="number" step={0.25} min={0.1} value={round(o.size[axis])} onChange={(e) => setSize(axis as 0 | 1 | 2, num(e.target.value, 0.05))} />
+            <input type="number" step={0.5} min={0.1} value={round(o.size[axis])} onChange={(e) => setSize(axis as 0 | 1 | 2, num(e.target.value, 0.05))} />
           </label>
         ))}
       </div>

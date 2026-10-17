@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { blocksNavigation, navObstacles, type WorldObject } from './types'
+import { WORLD, blocksNavigation, navObstacles, type WorldObject } from './types'
 import { snapAngle, snapFootprint, snapSize } from './snap'
 import { cycleVariant } from './catalog'
 import { forgeDistrict } from './presets'
@@ -79,8 +79,8 @@ describe('Forge District preset', () => {
   it('has unique ids and stays inside the map', () => {
     expect(new Set(world.objects.map((x) => x.id)).size).toBe(world.objects.length)
     for (const x of world.objects) {
-      expect(Math.abs(x.position[0])).toBeLessThanOrEqual(10)
-      expect(Math.abs(x.position[2])).toBeLessThanOrEqual(10)
+      expect(Math.abs(x.position[0])).toBeLessThanOrEqual(WORLD.half)
+      expect(Math.abs(x.position[2])).toBeLessThanOrEqual(WORLD.half)
     }
   })
 

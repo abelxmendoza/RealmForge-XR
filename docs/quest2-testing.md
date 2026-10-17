@@ -40,6 +40,10 @@ npm install
 npm run dev
 ```
 
+`npm run dev` goes through dotenvx. Without Abel's `.env.keys` it prints
+`[DECRYPTION_FAILED] could not decrypt …` and still starts; only the encrypted secrets are missing,
+and nothing in the editor needs them yet. On Windows PowerShell, use `npm.cmd` if script execution is disabled.
+
 The dev server is HTTPS (self-signed, via `@vitejs/plugin-basic-ssl`) on port 5173. Choose one:
 
 - **USB with adb (recommended).** Install Meta Quest Developer Hub, or Android platform-tools plus
@@ -67,35 +71,8 @@ The dev server is HTTPS (self-signed, via `@vitejs/plugin-basic-ssl`) on port 51
 
 Pages:
 
-- `/` is RealmForge XR (**Enter AR** / **Enter VR** / **Place city**).
+- `/` is RealmForge XR (**Enter AR** / **Enter VR**).
 - `/xr-test/` is the standalone passthrough test described below.
-
-## Main app smoke (`/`)
-
-The product page uses the same AR fallback chain as `/xr-test/` (`src/xr/session.ts`:
-`full (with depth)` → `no depth` → `minimal`). After Enter AR, pin the miniature city onto a
-Space Setup table with **Place city** (or key `P`).
-
-### Checklist — RealmForge on Quest 2
-
-- [ ] Open `/` (not only `/xr-test/`) over USB, LAN, or tunnel
-- [ ] **Enter AR** starts passthrough (HUD shows `AR no depth` or similar — depth may fail, that is OK)
-- [ ] Status line lists features that include `plane-detection` and preferably `anchors` / `hand-tracking`
-- [ ] **Place city** highlights planes (table orange, floor green); walls are ignored for pinning
-- [ ] Point + trigger/pinch on the table pins the miniature; status shows `on table` (or `on floor`)
-- [ ] City stays put while you walk (anchor when granted; otherwise last pose)
-- [ ] Tools still work: draw a wall, set goal, place robot, watch a path
-- [ ] **B Block route** forces a replan
-- [ ] **Unpin** restores the default floating pose; **Cancel place** exits choose mode
-- [ ] Holds usable framerate (~72 fps feel)
-
-Then on Quest 3S:
-
-- [ ] Enter AR may report `full (with depth)`
-- [ ] Same Place city → edit → robot flow with colour passthrough
-
-If Enter AR fails, the HUD shows which attempt errored. Fall back to `/xr-test/` to isolate headset
-vs app issues, then return here.
 
 ## The passthrough test page (`/xr-test/`)
 
@@ -136,6 +113,53 @@ Then on the Quest 3S, also check:
 - [ ] Panel shows **✔ mesh-detection** and **✔ depth-sensing** (session `full (with depth)`)
 - [ ] Objects snap onto the scanned room mesh (snap label `mesh:…`)
 - [ ] Real hands and furniture hide virtual objects behind them (depth occlusion)
+
+## Hand grab in the RealmForge app (`/`)
+
+Open `/` (not `/xr-test/`), press **Enter AR**, and keep the **Select** tool on. No rays should appear
+from your hands or controllers. Gestures are listed in the README under *Hand grab in XR*.
+
+- [ ] No pointer rays from hands or controllers
+- [ ] Pinch or fist on a building picks it up (it gets the selection outline) and it follows your hand
+- [ ] Object stays on the ground and inside the map while held
+- [ ] Twisting your wrist turns it; with snap on (G) it steps in 15°
+- [ ] With snap on, position steps along the grid; with snap off it moves freely
+- [ ] Second hand on the same object: pulling apart and together scales it uniformly; sizes step with snap on
+- [ ] One-hand grab never changes the object's size
+- [ ] Robot replans while you move a wall across its route
+- [ ] Fingertip poke still hits the green, purple and red buttons and places objects with the other tools
+- [ ] Controller: squeeze the grip while touching an object grabs it the same way
+- [ ] Small objects (trees, crates) are still grabbable
+- [ ] Grabbing the dark table edge moves the whole map; lower it to a comfortable height (or onto a real table)
+- [ ] Two hands on the table edge turn the map; it stays level
+- [ ] After moving the map, grabbing buildings and placing objects still lands where you touch
+
+## Life size, scale presets, wrist menu and rays
+
+- [ ] Turning the left palm toward your face shows the wrist menu; turning it away hides it
+- [ ] Right index finger pokes the wrist buttons (each press toggles once)
+- [ ] **Rays on** shows pointer rays live and they can drag objects; **Rays off** removes them; grabbing works in both
+- [ ] **1:60** tabletop board in front of you; buildings show storey rows and doors at scale
+- [ ] **1:20** world on your floor ahead of you, no table edge
+- [ ] **1:4** world on your floor with the robot start about 1.5 m ahead
+- [ ] **1:1** life size: stand next to the robot; a house door is about 2.1 m, an office door 2.4 m
+- [ ] Grabbing buildings works at every scale; handles and buttons stay pokeable
+- [ ] Shadows stay on the world after changing scale and after grabbing the map
+- [ ] **Recenter** brings the world back in front of you
+- [ ] **Real** surface: your real floor shows through the grid at 1:20, 1:4 and 1:1 (0.5 m and 5 m lines, orange map edge, 1 m origin cross)
+- [ ] Buildings and the robot still cast shadows onto your real floor
+- [ ] At 1:60 the city sits on your real table, visible through the middle of the board frame
+- [ ] With rays on, pointing at the floor with the Building tool places a building; grabbing it works
+- [ ] Wrist **Real / Virtual** button (and V on desktop) switches to the solid placeholder ground and back
+- [ ] Holds a usable frame rate at 1:1 with Forge District loaded (panel or feel)
+
+## Smartsuit mock skeleton
+
+On the PC run `npm run mocap:mock` (alongside the dev server), then press **Mocap** on the wrist menu.
+
+- [ ] Wrist button reads **Mocap live**
+- [ ] A skeleton walks a 1 m circle around where the XR session started
+- [ ] Works through the cloudflared tunnel (`wss://…/mocap` is proxied by the dev server)
 
 ## Debugging
 

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
-import type { WorldObject } from '../../world/types'
+import type { BuildingStyle, WorldObject } from '../../world/types'
 import { BUILDING_STYLES, buildingRoof, buildingStyle } from '../../world/catalog'
+import { DOOR, STOREY } from '../../world/scale'
 import { FACADE_TILE, facadeMaterial, flatMaterial, glowMaterial } from '../materials'
 import { gableRoof, tiledBox, useGeometry } from '../geometry'
 
@@ -43,8 +44,9 @@ function PitchedRoof({ w, h, d, color }: { w: number; h: number; d: number; colo
   const alongX = w >= d
   const span = alongX ? d : w
   const len = alongX ? w : d
-  const rise = Math.min(span * 0.45, 1.6)
-  const geo = useGeometry(() => gableRoof(len + 0.3, span + 0.3, rise), [len, span, rise])
+  // About a 35° pitch, so the roof grows with the house instead of capping at a fixed height.
+  const rise = span * 0.35
+  const geo = useGeometry(() => gableRoof(len + 0.6, span + 0.6, rise), [len, span, rise])
   return (
     <mesh position={[0, h, 0]} rotation={[0, alongX ? 0 : Math.PI / 2, 0]} geometry={geo} material={flatMaterial(color, { flatShading: true })} castShadow receiveShadow />
   )
@@ -54,34 +56,36 @@ function FlatRoof({ style, w, h, d }: { style: string; w: number; h: number; d: 
   return (
     <>
       {/* Parapet cap: reads as a crisp roof edge from above. */}
-      <mesh position={[0, h + 0.05, 0]} material={TRIM} receiveShadow>
-        <boxGeometry args={[w + 0.08, 0.1, d + 0.08]} />
+      <mesh position={[0, h + 0.25, 0]} material={TRIM} receiveShadow>
+        <boxGeometry args={[w + 0.2, 0.5, d + 0.2]} />
       </mesh>
       {style === 'tower' && (
         <>
-          <mesh position={[0, h + 0.35, 0]} material={DARK_METAL} castShadow>
-            <boxGeometry args={[w * 0.55, 0.5, d * 0.55]} />
+          {/* Mechanical penthouse, antenna mast and aircraft beacon. */}
+          <mesh position={[0, h + STOREY / 2, 0]} material={DARK_METAL} castShadow>
+            <boxGeometry args={[w * 0.45, STOREY, d * 0.45]} />
           </mesh>
-          <mesh position={[w * 0.12, h + 1.1, -d * 0.1]} material={METAL}>
-            <cylinderGeometry args={[0.03, 0.05, 1.2, 6]} />
+          <mesh position={[w * 0.12, h + STOREY + 3, -d * 0.1]} material={METAL}>
+            <cylinderGeometry args={[0.1, 0.18, 6, 6]} />
           </mesh>
-          <mesh position={[w * 0.12, h + 1.75, -d * 0.1]} material={BEACON}>
-            <sphereGeometry args={[0.09, 8, 6]} />
+          <mesh position={[w * 0.12, h + STOREY + 6.3, -d * 0.1]} material={BEACON}>
+            <sphereGeometry args={[0.3, 8, 6]} />
           </mesh>
         </>
       )}
       {style === 'office' && (
-        <mesh position={[-w * 0.2, h + 0.25, -d * 0.15]} material={METAL} castShadow>
-          <boxGeometry args={[Math.min(1, w * 0.3), 0.4, Math.min(0.8, d * 0.3)]} />
+        // Rooftop HVAC unit.
+        <mesh position={[-w * 0.2, h + 0.75, -d * 0.15]} material={METAL} castShadow>
+          <boxGeometry args={[Math.min(4, w * 0.3), 1.5, Math.min(3, d * 0.3)]} />
         </mesh>
       )}
       {style === 'industrial' && (
         <>
-          <mesh position={[w * 0.32, h + 0.6, -d * 0.25]} material={DARK_METAL} castShadow>
-            <cylinderGeometry args={[0.16, 0.2, 1.2, 8]} />
+          <mesh position={[w * 0.32, h + 2.5, -d * 0.25]} material={DARK_METAL} castShadow>
+            <cylinderGeometry args={[0.6, 0.8, 5, 8]} />
           </mesh>
-          <mesh position={[-w * 0.2, h + 0.18, 0]} material={METAL} castShadow>
-            <boxGeometry args={[w * 0.35, 0.25, d * 0.7]} />
+          <mesh position={[-w * 0.2, h + 0.5, 0]} material={METAL} castShadow>
+            <boxGeometry args={[w * 0.35, 1, d * 0.7]} />
           </mesh>
         </>
       )}
@@ -89,18 +93,15 @@ function FlatRoof({ style, w, h, d }: { style: string; w: number; h: number; d: 
   )
 }
 
-function Door({ style, w, h, d }: { style: string; w: number; h: number; d: number }) {
-  const [dw, dh, mat] =
-    style === 'house'
-      ? [0.55, 0.95, WOOD_DOOR]
-      : style === 'industrial'
-        ? [Math.min(1.8, w * 0.45), 1.5, GARAGE]
-        : [Math.min(0.9, w * 0.4), 1.05, GLASS_DOOR]
-  const doorH = Math.min(dh, h * 0.7)
+/** Real-size ground-floor door on the local +z face (see DOOR), shrunk only for very small buildings. */
+function Door({ style, w, h, d }: { style: BuildingStyle; w: number; h: number; d: number }) {
+  const [dw, dh] = DOOR[style]
+  const mat = style === 'house' ? WOOD_DOOR : style === 'industrial' ? GARAGE : GLASS_DOOR
+  const doorH = Math.min(dh, h * 0.8)
   const doorW = Math.min(dw, w * 0.8)
   return (
-    <mesh position={[0, doorH / 2, d / 2 + 0.03]} material={mat}>
-      <boxGeometry args={[doorW, doorH, 0.06]} />
+    <mesh position={[0, doorH / 2, d / 2 + 0.05]} material={mat}>
+      <boxGeometry args={[doorW, doorH, 0.1]} />
     </mesh>
   )
 }

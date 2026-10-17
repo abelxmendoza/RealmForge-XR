@@ -20,9 +20,9 @@ export function Platform({ o }: { o: WorldObject }) {
 }
 
 function RoadLine({ w, h, d }: { w: number; h: number; d: number }) {
-  // Runs along the longer side; one dash per map unit.
-  const len = Math.max(w, d) - 0.2
-  const geo = useGeometry(() => tiledPlane(len, 0.1, 1, 0.1), [len])
+  // Runs along the longer side; 15 cm line, one dash per 3 m (real road-marking spacing).
+  const len = Math.max(w, d) - 0.5
+  const geo = useGeometry(() => tiledPlane(len, 0.15, 3, 0.15), [len])
   return (
     <mesh position={[0, h + 0.004, 0]} rotation={[-Math.PI / 2, 0, w >= d ? 0 : Math.PI / 2]} geometry={geo} material={roadLineMaterial()} receiveShadow />
   )

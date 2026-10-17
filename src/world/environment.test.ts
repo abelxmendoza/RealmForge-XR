@@ -9,7 +9,7 @@ import {
   useEnvironment,
   DEFAULT_APPEARANCE,
 } from './environment'
-import { blocksNavigation, navObstacles, type WorldObject } from './types'
+import { WORLD, blocksNavigation, navObstacles, type WorldObject } from './types'
 import { useWorld } from './store'
 import { buildGrid, isBlocked, pathIsClear, worldToCell } from '../nav/grid'
 import { planPath } from '../nav/astar'
@@ -49,8 +49,8 @@ function assertNavigable(world: { objects: WorldObject[]; robotStart: [number, n
   expect(new Set(ids).size).toBe(ids.length)
   for (const o of world.objects) {
     expect(o.id.length).toBeGreaterThan(0)
-    expect(Math.abs(o.position[0])).toBeLessThanOrEqual(10)
-    expect(Math.abs(o.position[2])).toBeLessThanOrEqual(10)
+    expect(Math.abs(o.position[0])).toBeLessThanOrEqual(WORLD.half)
+    expect(Math.abs(o.position[2])).toBeLessThanOrEqual(WORLD.half)
   }
   const g = buildGrid(navObstacles(world.objects))
   expect(isBlocked(g, ...worldToCell(g, world.robotStart))).toBe(false)

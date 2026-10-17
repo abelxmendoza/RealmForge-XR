@@ -15,7 +15,7 @@ import {
   useWorldLibrary,
 } from './persistence'
 import { forgeDistrict } from './presets'
-import type { WorldObject } from './types'
+import { WORLD, type WorldObject } from './types'
 import { startNavigation, useNav } from '../nav/navigation'
 import { isBlocked, worldToCell } from '../nav/grid'
 
@@ -137,11 +137,11 @@ describe('validation', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
     const o = r.world.objects[0]
-    expect(o.position).toEqual([10, 0, -10])
-    expect(o.size[0]).toBeLessThanOrEqual(40)
+    expect(o.position).toEqual([40, 0, -40])
+    expect(o.size[0]).toBeLessThanOrEqual(WORLD.half * 4)
     expect(o.style).toBeUndefined()
     expect(o.solid).toBeUndefined()
-    expect(r.world.robotStart).toEqual([10, 10])
+    expect(r.world.robotStart).toEqual([40, 40])
     expect(r.warnings.length).toBeGreaterThanOrEqual(4)
   })
 
