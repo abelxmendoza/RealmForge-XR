@@ -12,8 +12,20 @@ export function bindRays(store: XRStore) {
     store.setController({ rayPointer: on })
   }
   apply(useEditor.getState().rays)
+  let pending: ReturnType<typeof setTimeout> | null = null
   return useEditor.subscribe((s, prev) => {
-    if (s.rays !== prev.rays) apply(s.rays)
+    if (s.rays === prev.rays) return
+    // Swapping pointers remounts the hand/controller pointer components. Do it after the current frame
+    // and pointer dispatch (the toggle usually comes from a wrist-menu press, mid-frame, with a pointer down).
+    if (pending) clearTimeout(pending)
+    pending = setTimeout(() => {
+      pending = null
+      try {
+        apply(useEditor.getState().rays)
+      } catch (err) {
+        console.error('Toggling XR rays failed', err)
+      }
+    }, 50)
   })
 }
 
