@@ -1,3 +1,4 @@
+import { ControlPalette } from '../xr/ControlPalette'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from '@react-three/drei'
@@ -69,6 +70,7 @@ export function Scene() {
       {mocapOn && !mocapInMap && <MocapSkeleton />}
       {!inXR && <OrbitControls makeDefault enabled={!dragging} target={orbitTarget} />}
 
+      <ControlPalette />
       <WorldPlacement>
         <group
           ref={(g) => {
