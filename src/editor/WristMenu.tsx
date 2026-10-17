@@ -5,6 +5,7 @@ import { Text } from '@react-three/drei'
 import { XRSpace, useXRInputSourceState } from '@react-three/xr'
 import { SCALE_IDS, SCALE_PRESETS, recenterWorld } from '../scene/worldRoot'
 import { FORGE } from '../theme/forge'
+import { useGuide } from '../guide/guideStore'
 import { useEditor } from './settings'
 import { toggleRays, toggleSurface } from './xrInput'
 
@@ -134,6 +135,8 @@ export function WristMenu({ extra }: { extra?: ReactNode }) {
 function MenuContent({ extra }: { extra?: ReactNode }) {
   const { rays, snap, worldScale, surface } = useEditor()
   const set = useEditor((s) => s.set)
+  const guideOpen = useGuide((s) => s.open)
+  const toggleGuide = useGuide((s) => s.toggleGuide)
   const rowY = (i: number) => 0.05 - i * (BTN_H + GAP)
   const quarter = (W - GAP * 3) / 4
   const half = (W - GAP) / 2
@@ -141,8 +144,8 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
   const col = (i: number, w: number) => -W / 2 + w / 2 + i * (w + GAP)
   return (
     <group>
-      <mesh position={[0, 0.005, -0.004]} raycast={() => null}>
-        <planeGeometry args={[W + 0.02, 0.15]} />
+      <mesh position={[0, -0.01, -0.004]} raycast={() => null}>
+        <planeGeometry args={[W + 0.02, 0.19]} />
         <meshBasicMaterial color={FORGE.panel} transparent opacity={0.9} />
       </mesh>
       <mesh position={[0, 0.068, -0.0035]} raycast={() => null}>
@@ -166,9 +169,16 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
         />
       ))}
       <MenuButton position={[col(0, half), rowY(2), 0]} width={half} label="Recenter" onPress={recenterWorld} />
-      {extra && <group position={[col(1, half), rowY(2), 0]}>{extra}</group>}
-      <Text position={[0, rowY(3) + 0.004, 0]} fontSize={0.008} color={FORGE.copper} anchorX="center" anchorY="middle" raycast={() => null}>
-        {`${SCALE_PRESETS[worldScale].label} · touch a button with your right fingertip`}
+      <MenuButton
+        position={[col(1, half), rowY(2), 0]}
+        width={half}
+        label={guideOpen ? 'Close guide' : 'Guide'}
+        active={guideOpen}
+        onPress={toggleGuide}
+      />
+      {extra && <group position={[col(0, W), rowY(3), 0]}>{extra}</group>}
+      <Text position={[0, rowY(4) + 0.004, 0]} fontSize={0.008} color={FORGE.copper} anchorX="center" anchorY="middle" raycast={() => null}>
+        {`${SCALE_PRESETS[worldScale].label} · Guide opens the help panel`}
       </Text>
     </group>
   )

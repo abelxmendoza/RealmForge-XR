@@ -1,5 +1,7 @@
 import { ConfirmationDialog } from './editor/ConfirmationDialog'
+import { ControlsGuide } from './editor/ControlsGuide'
 import { VoicePanel } from './editor/VoicePanel'
+import { useGuide } from './guide/guideStore'
 import { worldActions } from './world/actions'
 import { confirmReplace } from './world/confirmation'
 import { enterARWithFallback, useXRSessionMeta } from './xr/session'
@@ -64,6 +66,7 @@ export default function App() {
       <Hud />
       <Inspector />
       <VoicePanel />
+      <ControlsGuide />
       {/* DOM confirm works in Quest Browser WebXR; required so wrist-menu env loads can confirm. */}
       <ConfirmationDialog />
     </>
@@ -113,7 +116,9 @@ function Hud() {
   const surface = useEditor((s) => s.surface)
   const mocap = useMocap()
   const [hist, setHist] = useState({ canUndo: false, canRedo: false })
-  const [helpOpen, setHelpOpen] = useState(false)
+  const guideOpen = useGuide((s) => s.open)
+  const openGuide = useGuide((s) => s.openGuide)
+  const closeGuide = useGuide((s) => s.closeGuide)
   useEffect(() => subscribeHistory((s) => setHist({ canUndo: s.canUndo, canRedo: s.canRedo })), [])
   const statusTone = status === 'moving' || mocap.status === 'live' ? 'live' : status === 'no-path' || mocap.status === 'error' ? 'warn' : ''
   return (
@@ -159,6 +164,15 @@ function Hud() {
           )}
           <button type="button" className="ghost" onClick={() => xrStore.enterVR()}>
             Enter VR
+          </button>
+          <button
+            type="button"
+            className={guideOpen ? 'on' : 'primary'}
+            aria-pressed={guideOpen}
+            title="User & controls guide (?)"
+            onClick={() => (guideOpen ? closeGuide() : openGuide('start'))}
+          >
+            Guide
           </button>
         </div>
       </div>
@@ -259,19 +273,17 @@ function Hud() {
         </div>
       )}
       <div className="help">
-        <button type="button" className="help-toggle" aria-expanded={helpOpen} onClick={() => setHelpOpen((v) => !v)}>
-          Controls & shortcuts
+        <button
+          type="button"
+          className="help-toggle"
+          aria-expanded={guideOpen}
+          onClick={() => (guideOpen ? closeGuide() : openGuide('start'))}
+        >
+          Open user &amp; controls guide
         </button>
-        {helpOpen && (
-          <div className="help-body">
-            Drag empty ground to orbit. Select: drag an object to move it, yellow handle resizes, blue handle rotates,
-            green cube duplicates, purple cube changes style, red cube deletes. In XR: grab with hands, wrist menu and
-            control palette for scale / rays / environments.
-            <br />
-            Keys: R rotate 15°, [ ] height, D duplicate, M material/style, T roof, G snap, X rays, V surface, Del delete.
-            Ctrl+S save, Ctrl+Z / Ctrl+Shift+Z undo/redo. Drop a .json world file to import.
-          </div>
-        )}
+        <p className="hint-banner" style={{ marginTop: 8 }}>
+          In VR: wrist <strong>Guide</strong> or panel <strong>Guide</strong> — same help in headset.
+        </p>
       </div>
     </div>
   )
@@ -309,6 +321,11 @@ function useKeyboard() {
       if (e.key === 'g' || e.key === 'G') return useEditor.getState().set({ snap: !useEditor.getState().snap })
       if (e.key === 'x' || e.key === 'X') return toggleRays()
       if (e.key === 'v' || e.key === 'V') return toggleSurface()
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault()
+        useGuide.getState().toggleGuide()
+        return
+      }
       if (w.tool === 'asset' && (e.key === 'r' || e.key === 'R')) {
         worldActions.rotateCatalogAsset(e.shiftKey ? -1 : 1)
         return

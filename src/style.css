@@ -1231,3 +1231,104 @@ dialog button.danger-confirm:hover:not(:disabled) {
 .inspector .env-list li button.on .env-desc {
   color: rgba(26, 16, 12, 0.72);
 }
+
+/* ——— User & controls guide (desktop + Quest Browser) ——— */
+
+dialog.controls-guide {
+  max-width: min(560px, calc(100vw - 28px));
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--rf-line-strong);
+  border-radius: 16px;
+  background:
+    linear-gradient(160deg, rgba(224, 120, 69, 0.12), transparent 40%),
+    var(--rf-panel-solid);
+  color: var(--rf-text);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--rf-line);
+  animation: rf-dialog-in 280ms var(--rf-ease) both;
+}
+
+dialog.controls-guide::backdrop {
+  background: rgba(6, 8, 14, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.controls-guide-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 22px 18px;
+}
+
+.controls-guide-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.controls-guide-kicker {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rf-copper);
+}
+
+.controls-guide-head h2 {
+  margin: 0;
+  font-family: var(--rf-font-display);
+  font-size: 1.35rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+}
+
+.controls-guide-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.controls-guide-tabs button {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.controls-guide-body {
+  margin: 0;
+  padding: 12px 14px 12px 32px;
+  border-radius: var(--rf-radius-sm);
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--rf-line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: disc;
+}
+
+.controls-guide-body li {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--rf-text);
+}
+
+.controls-guide-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.controls-guide-foot p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--rf-faint);
+  max-width: 260px;
+}
+
+.controls-guide-foot .row {
+  display: flex;
+  gap: 8px;
+}

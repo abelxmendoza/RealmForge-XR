@@ -16,6 +16,7 @@ import { blockRoute } from '../editor/demo'
 import { usePlacement } from './placement'
 import { blankPaletteWorld, createPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteEnvironment, loadPaletteSave, savePaletteWorld } from './paletteActions'
 import { FORGE } from '../theme/forge'
+import { useGuide } from '../guide/guideStore'
 
 /** Actual Three.js controls: visible to both eyes and interactive with XR pointers. */
 export function ControlPalette() {
@@ -30,7 +31,10 @@ function PaletteContent() {
   const [page, setPage] = useState('Tools')
   const [hidden, setHidden] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState('Point and trigger / pinch to choose.')
+  const [message, setMessage] = useState('Point and trigger / pinch to choose. Open Guide anytime.')
+  const guideOpen = useGuide((s) => s.open)
+  const openGuide = useGuide((s) => s.openGuide)
+  const closeGuide = useGuide((s) => s.closeGuide)
   const [savePage, setSavePage] = useState(0)
   const [assetPage, setAssetPage] = useState(0)
   const [destinationPage, setDestinationPage] = useState(0)
@@ -130,9 +134,10 @@ function PaletteContent() {
       </> : <>
         {['Tools', 'Worlds', 'Edit', 'Brush', 'Assets', 'Routes'].map((tab, i) => <Tile key={tab} text={tab} x={(i - 2.5) * 0.11} y={0.21} width={0.103} active={page === tab || tab === 'Worlds' && page === 'Saved'} onClick={() => setPage(tab)} />)}
         {buttons.map((button, i) => <Tile key={page + button.label} text={button.label} x={i % 2 ? 0.165 : -0.165} y={0.135 - Math.floor(i / 2) * 0.07} width={0.31} disabled={busy || button.disabled} active={button.active} onClick={() => void run(button)} />)}
-        <Tile text="Undo" x={-0.22} y={-0.235} width={0.21} disabled={busy || !history.canUndo} onClick={() => worldActions.undo()} />
-        <Tile text="Redo" y={-0.235} width={0.21} disabled={busy || !history.canRedo} onClick={() => worldActions.redo()} />
-        <Tile text="Recenter panel" x={0.22} y={-0.235} width={0.21} onClick={() => { positioned.current = false }} />
+        <Tile text="Undo" x={-0.24} y={-0.235} width={0.15} disabled={busy || !history.canUndo} onClick={() => worldActions.undo()} />
+        <Tile text="Redo" x={-0.08} y={-0.235} width={0.15} disabled={busy || !history.canRedo} onClick={() => worldActions.redo()} />
+        <Tile text={guideOpen ? 'Close guide' : 'Guide'} x={0.08} y={-0.235} width={0.15} active={guideOpen} onClick={() => (guideOpen ? closeGuide() : openGuide('start'))} />
+        <Tile text="Recenter" x={0.24} y={-0.235} width={0.15} onClick={() => { positioned.current = false }} />
         <Tile text={busy ? 'Working…' : page === 'Assets' ? `${getAsset(editor.assetId)?.name} · ${Math.round(editor.assetRotation * 180 / Math.PI)}° · Aim at clear ground.` : message} y={-0.31} width={0.65} height={0.065} />
       </>}
     </>}

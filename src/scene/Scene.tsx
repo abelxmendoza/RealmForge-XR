@@ -1,4 +1,5 @@
 import { ControlPalette } from '../xr/ControlPalette'
+import { ControlsGuidePanel } from '../xr/ControlsGuidePanel'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from '@react-three/drei'
@@ -64,7 +65,9 @@ export function Scene() {
           extra={
             <>
               <WristEnvMenu />
-              <MocapMenuButton />
+              <group position={[0, -0.032, 0]}>
+                <MocapMenuButton />
+              </group>
             </>
           }
         />
@@ -73,6 +76,7 @@ export function Scene() {
       {!inXR && <OrbitControls makeDefault enabled={!dragging} target={orbitTarget} />}
 
       <ControlPalette />
+      <ControlsGuidePanel />
       <WorldPlacement>
         <group
           ref={(g) => {
