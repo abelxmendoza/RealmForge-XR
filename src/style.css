@@ -1,0 +1,8 @@
+html, body, #root { margin: 0; height: 100%; background: #1d2433; font-family: system-ui, sans-serif; }
+.hud { position: fixed; top: 12px; left: 12px; display: flex; flex-direction: column; gap: 8px; max-width: 560px; color: #eee; pointer-events: none; }
+.hud .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.hud button { pointer-events: auto; background: #2d3748; color: #eee; border: 1px solid #4a5568; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 13px; }
+.hud button.on { background: #f4a261; color: #1d2433; border-color: #f4a261; }
+.hud button:disabled { opacity: 0.4; cursor: default; }
+.hud .status { font-size: 14px; background: #0008; padding: 4px 8px; border-radius: 6px; width: fit-content; }
+.hud .help { font-size: 12px; opacity: 0.75; }
