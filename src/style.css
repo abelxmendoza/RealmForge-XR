@@ -7,6 +7,7 @@ html, body, #root { margin: 0; height: 100%; background: #1d2433; font-family: s
 .hud .status { font-size: 14px; background: #0008; padding: 4px 8px; border-radius: 6px; width: fit-content; }
 .hud .field { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 .hud select { pointer-events: auto; background: #2d3748; color: #eee; border: 1px solid #4a5568; border-radius: 6px; padding: 5px 6px; font-size: 13px; }
+.hud .status.err { background: #4a1515cc; color: #ffc9c9; white-space: pre-wrap; max-width: 520px; }
 .hud .help { font-size: 12px; opacity: 0.75; }
 
 /* Worldbuilding inspector (right side). */
