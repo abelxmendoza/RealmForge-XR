@@ -1,3 +1,5 @@
+import { selectCatalogAsset, rotateCatalogAsset, previewCatalogAsset, placeCatalogAsset, listDestinations, sendRobotToDestination } from './assetActions'
+export { selectCatalogAsset, rotateCatalogAsset, previewCatalogAsset, placeCatalogAsset, listDestinations, sendRobotToDestination } from './assetActions'
 /**
  * XR-compatible World Action API — thin facade over existing stores.
  *
@@ -181,6 +183,13 @@ export const worldActions = {
   // confirm
   objectCount,
   requireReplaceConfirm,
+
+  selectCatalogAsset,
+  rotateCatalogAsset,
+  previewCatalogAsset,
+  placeCatalogAsset,
+  listDestinations,
+  sendRobotToDestination,
 
   // tools
   setTool,

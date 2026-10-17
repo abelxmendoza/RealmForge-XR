@@ -83,3 +83,7 @@ dialog::backdrop { background: #0009; }
 .library .world-card .meta small { opacity: 0.65; font-size: 11px; }
 .library .world-card .actions { display: flex; gap: 4px; padding: 6px 8px 8px; flex-wrap: wrap; }
 .library .world-card .actions button { padding: 3px 7px; font-size: 11px; }
+.catalog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 8px 0; }
+.catalog-grid button { min-height: 36px; white-space: normal; }
+.catalog-destinations { list-style: none; padding: 0; max-height: 160px; overflow: auto; }
+.catalog-destinations button { width: 100%; margin-bottom: 4px; text-align: left; }

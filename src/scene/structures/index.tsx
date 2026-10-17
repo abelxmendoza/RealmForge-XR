@@ -1,3 +1,4 @@
+import { CatalogStructure } from './CatalogStructure'
 import { Edges } from '@react-three/drei'
 import type { WorldObject } from '../../world/types'
 import { Building } from './Building'
@@ -10,6 +11,7 @@ import { Crate, Streetlight, Tree } from './Decor'
  * so it can be reused by previews, XR menus or thumbnails.
  */
 export function Structure({ o }: { o: WorldObject }) {
+  if (o.assetId) return <CatalogStructure o={o} />
   switch (o.kind) {
     case 'building':
       return <Building o={o} />

@@ -1,3 +1,4 @@
+import type { AssetId, DestinationRole } from './assetTypes'
 /**
  * Shared world schema. This is the contract between the XR editor and navigation.
  *
@@ -38,6 +39,8 @@ export interface WorldObject {
   /** Buildings only. */
   roof?: RoofType
   /** Overrides the default of whether this object blocks navigation (see blocksNavigation). */
+  assetId?: AssetId
+  destinationRole?: DestinationRole
   solid?: boolean
 }
 

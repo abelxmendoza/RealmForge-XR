@@ -1,3 +1,5 @@
+import { getAsset } from '../world/assets'
+import { AssetCatalogPanel } from './AssetCatalogPanel'
 import { useWorld, type Tool } from '../world/store'
 import { STEP_HEIGHT, blocksNavigation, type MaterialId, type WorldObject } from '../world/types'
 import {
@@ -33,6 +35,7 @@ export function Inspector() {
   return (
     <div className="inspector">
       {selected ? <ObjectPanel o={selected} /> : <BrushPanel tool={tool} />}
+      <AssetCatalogPanel />
       <WorldPanel />
       <WorldsPanel />
       <WorldLibrary />
@@ -58,7 +61,7 @@ function ObjectPanel({ o }: { o: WorldObject }) {
   return (
     <section>
       <h3>
-        {KIND_LABELS[o.kind]} <span className={blocks ? 'tag block' : 'tag'}>{blocks ? 'blocks robot' : 'walkable'}</span>
+        {getAsset(o.assetId || '')?.name || KIND_LABELS[o.kind]} <span className={blocks ? 'tag block' : 'tag'}>{blocks ? 'blocks robot' : 'walkable'}</span>
       </h3>
       <div className="grid3">
         {labels.map((label, axis) => (
@@ -72,7 +75,7 @@ function ObjectPanel({ o }: { o: WorldObject }) {
         Rotation°
         <input type="number" step={15} value={deg} onChange={(e) => update({ rotationY: ((Number(e.target.value) || 0) * Math.PI) / 180 })} />
       </label>
-      {materials && (
+      {materials && !o.assetId && (
         <label>
           Material
           <select value={defaultMaterial(o)} onChange={(e) => update({ material: e.target.value as MaterialId })}>
@@ -84,7 +87,7 @@ function ObjectPanel({ o }: { o: WorldObject }) {
           </select>
         </label>
       )}
-      {o.kind === 'building' && (
+      {o.kind === 'building' && !o.assetId && (
         <>
           <label>
             Style
@@ -130,6 +133,7 @@ function ObjectPanel({ o }: { o: WorldObject }) {
           {o.kind === 'platform' && o.solid === undefined && <small> (auto: taller than {STEP_HEIGHT})</small>}
         </label>
       )}
+      {o.assetId && <label>Color<input type="color" value={o.color || '#8fa6c9'} onChange={(e) => update({ color: e.target.value })} /></label>}
       <div className="row">
         <button onClick={duplicateSelected}>D Duplicate</button>
         <button onClick={deleteSelected}>Del Delete</button>

@@ -40,6 +40,7 @@ const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'robot', label: 'Place robot', key: '5' },
   { id: 'platform', label: 'Platform / road', key: '6' },
   { id: 'decor', label: 'Decoration', key: '7' },
+  { id: 'asset', label: 'Catalog object', key: '8' },
 ]
 
 const STATUS_TEXT = {
@@ -242,6 +243,10 @@ function useKeyboard() {
       if (e.key === 'g' || e.key === 'G') return useEditor.getState().set({ snap: !useEditor.getState().snap })
       if (e.key === 'x' || e.key === 'X') return toggleRays()
       if (e.key === 'v' || e.key === 'V') return toggleSurface()
+      if (w.tool === 'asset' && (e.key === 'r' || e.key === 'R')) {
+        worldActions.rotateCatalogAsset(e.shiftKey ? -1 : 1)
+        return
+      }
       const sel = w.selectedId ? w.objects[w.selectedId] : null
       if (!sel) return
       if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected()

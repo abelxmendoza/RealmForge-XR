@@ -1,3 +1,4 @@
+import { isAssetId, isDestinationRole } from './assetTypes'
 import { WORLD, type ObjectKind, type Vec2, type Vec3, type WorldObject } from './types'
 import { BUILDING_STYLES, PLATFORM_MATERIALS, TREE_STYLES, WALL_MATERIALS } from './catalog'
 import type { WorldSnapshot } from './store'
@@ -83,6 +84,8 @@ function pickObject(o: WorldObject): WorldObject {
   if (o.material !== undefined) out.material = o.material
   if (o.style !== undefined) out.style = o.style
   if (o.roof !== undefined) out.roof = o.roof
+  if (o.assetId !== undefined) out.assetId = o.assetId
+  if (o.destinationRole !== undefined) out.destinationRole = o.destinationRole
   if (o.solid !== undefined) out.solid = o.solid
   return out
 }
@@ -181,6 +184,8 @@ function readObject(v: unknown, i: number, warnings: string[]): WorldObject | st
   opt('material', (x) => typeof x === 'string' && MATERIALS.has(x), (x) => (o.material = x as WorldObject['material']))
   opt('style', (x) => typeof x === 'string' && STYLES.has(x), (x) => (o.style = x as WorldObject['style']))
   opt('roof', (x) => typeof x === 'string' && ROOFS.has(x), (x) => (o.roof = x as WorldObject['roof']))
+  opt('assetId', isAssetId, (x) => (o.assetId = x as WorldObject['assetId']))
+  opt('destinationRole', isDestinationRole, (x) => (o.destinationRole = x as WorldObject['destinationRole']))
   opt('solid', (x) => typeof x === 'boolean', (x) => (o.solid = x as boolean))
   return o
 }

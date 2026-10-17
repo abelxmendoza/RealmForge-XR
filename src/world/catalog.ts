@@ -57,6 +57,7 @@ const next = <T>(list: readonly T[], cur: T) => list[(list.indexOf(cur) + 1) % l
  * Returns a patch for updateObject, or null when the kind has no variants.
  */
 export function cycleVariant(o: WorldObject): Partial<WorldObject> | null {
+  if (o.assetId) return { color: next(['#ed964b', '#65a9b6', '#7b8ea3', '#ffc857', '#72d995', '#bb9ded'], o.color || '') }
   switch (o.kind) {
     case 'wall':
       return { material: next(WALL_MATERIALS, defaultMaterial(o)) }

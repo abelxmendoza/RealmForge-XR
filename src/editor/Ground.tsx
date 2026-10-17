@@ -1,3 +1,5 @@
+import { worldActions } from '../world/actions'
+import { SelectionOutline } from '../scene/structures'
 import { useState } from 'react'
 import * as THREE from 'three'
 import { Line } from '@react-three/drei'
@@ -62,6 +64,12 @@ type Draft = { kind: 'wall' | 'platform'; a: Vec2; b: Vec2 }
 /** The map's ground. Clicking it applies the current tool. */
 export function Ground() {
   const tool = useWorld((s) => s.tool)
+  useEditor((s) => s.assetId)
+  useEditor((s) => s.assetRotation)
+  useEditor((s) => s.snap)
+  useWorld((s) => s.objects)
+  const [hover, setHover] = useState<Vec2 | null>(null)
+  const [placementError, setPlacementError] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
   const size = WORLD.half * 2
 
@@ -82,6 +90,12 @@ export function Ground() {
         e.stopPropagation()
         w.placeRobot(raw)
         return
+      case 'asset': {
+        e.stopPropagation()
+        const result = worldActions.placeCatalogAsset(raw)
+        setPlacementError(!result.ok)
+        return
+      }
       case 'building':
       case 'decor': {
         e.stopPropagation()
@@ -121,9 +135,22 @@ export function Ground() {
     }
   }
 
+  // Read reactive settings and geometry so ghost validity always matches the commit action.
+  const preview = tool === 'asset' && hover ? worldActions.previewCatalogAsset(hover) : null
   return (
     <>
-      <Board size={size} onPointerDown={onDown} />
+      <Board size={size} onPointerDown={onDown} onPointerMove={(e) => {
+        if (tool !== 'asset') return
+        const point = groundPoint(e)
+        if (point) { setHover(point); setPlacementError(false) }
+      }} onPointerOut={() => setHover(null)} />
+      {preview && <group position={preview.object.position} rotation={[0, preview.object.rotationY, 0]}>
+        <mesh position={[0, preview.object.size[1] / 2, 0]} raycast={() => null}>
+          <boxGeometry args={preview.object.size} />
+          <meshBasicMaterial color={preview.valid && !placementError ? '#45d6a0' : '#ff536b'} transparent opacity={0.15} depthWrite={false} />
+        </mesh>
+        <SelectionOutline size={preview.object.size} color={preview.valid && !placementError ? '#45d6a0' : '#ff536b'} />
+      </group>}
       {draft && <DraftPreview draft={draft} />}
     </>
   )
@@ -157,7 +184,7 @@ const SHADOW_GROUND = new THREE.ShadowMaterial({ opacity: 0.35, depthWrite: fals
  * at any tabletop scale (divided by the world ratio), so the rim stays grabbable; on the floor
  * (room scale and up) there is no table.
  */
-function Board({ size, onPointerDown }: { size: number; onPointerDown: (e: ThreeEvent<PointerEvent>) => void }) {
+function Board({ size, onPointerDown, onPointerMove, onPointerOut }: { size: number; onPointerDown: (e: ThreeEvent<PointerEvent>) => void; onPointerMove: (e: ThreeEvent<PointerEvent>) => void; onPointerOut: () => void }) {
   const ground = useGeometry(() => tiledPlane(size, size, 2), [size])
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
   const real = useEditor((s) => s.surface === 'real')
@@ -167,7 +194,7 @@ function Board({ size, onPointerDown }: { size: number; onPointerDown: (e: Three
   const major = real ? { color: '#7bdff2', opacity: 0.55 } : { color: '#e8f4ff', opacity: 0.18 }
   return (
     <>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} geometry={ground} material={real ? SHADOW_GROUND : groundMaterial()} receiveShadow onPointerDown={onPointerDown} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} geometry={ground} material={real ? SHADOW_GROUND : groundMaterial()} receiveShadow onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerOut={onPointerOut} />
       {/* Fine grid at the snapping step (only once it's big enough to read), major lines every 5 m. */}
       {ratio >= SCALE_PRESETS.room.ratio && (
         <gridHelper args={[size, size / SNAP, fine.color, fine.color]} position={[0, 0.006, 0]} material-transparent material-opacity={fine.opacity} material-depthWrite={false} raycast={() => null} />

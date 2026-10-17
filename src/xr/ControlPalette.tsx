@@ -1,3 +1,4 @@
+import { ASSETS, getAsset } from '../world/assets'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useXR } from '@react-three/xr'
@@ -30,9 +31,12 @@ function PaletteContent() {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('Point and trigger / pinch to choose.')
   const [savePage, setSavePage] = useState(0)
+  const [assetPage, setAssetPage] = useState(0)
+  const [destinationPage, setDestinationPage] = useState(0)
   const [history, setHistory] = useState(getHistoryState)
   const request = useSyncExternalStore(subscribeConfirmation, getConfirmation, getConfirmation)
   const tool = useWorld((s) => s.tool)
+  const objects = useWorld((s) => s.objects)
   const selected = useWorld((s) => s.selectedId ? s.objects[s.selectedId] : null)
   const editor = useEditor()
   const snap = editor.snap
@@ -82,6 +86,16 @@ function PaletteContent() {
     buttons.push({ label: 'New world (saved)', run: () => createPaletteWorld() }, { label: 'Blank world', run: blankPaletteWorld }, { label: 'Save world', run: savePaletteWorld },
       { label: 'Save as new', run: () => worldActions.saveWorld(activeName) },
       { label: 'Browse saved worlds', run: () => { worldActions.listSavedWorlds(); setSavePage(0); setPage('Saved') } })
+  } else if (page === 'Assets') {
+    const offset = Math.min(assetPage, Math.ceil(ASSETS.length / 6) - 1)
+    buttons = ASSETS.slice(offset * 6, offset * 6 + 6).map((asset) => ({ label: asset.name, active: tool === 'asset' && editor.assetId === asset.id, run: () => { worldActions.selectCatalogAsset(asset.id); setMessage('Aim at ground: green places, red is blocked.') } }))
+    buttons.push({ label: 'Rotate −90°', run: () => worldActions.rotateCatalogAsset(-1) }, { label: 'Rotate +90°', run: () => worldActions.rotateCatalogAsset(1) },
+      { label: 'Previous objects', disabled: offset === 0, run: () => setAssetPage(offset - 1) }, { label: 'More objects', disabled: (offset + 1) * 6 >= ASSETS.length, run: () => setAssetPage(offset + 1) })
+  } else if (page === 'Routes') {
+    const destinations = Object.values(objects).filter((object) => object.destinationRole)
+    const offset = Math.min(destinationPage, Math.max(0, Math.ceil(destinations.length / 6) - 1))
+    buttons = destinations.slice(offset * 6, offset * 6 + 6).map((object, i) => ({ label: `Go: ${getAsset(object.assetId || '')?.name || object.destinationRole} ${offset * 6 + i + 1}`, run: () => worldActions.sendRobotToDestination(object.id) }))
+    buttons.push({ label: 'Previous markers', disabled: offset === 0, run: () => setDestinationPage(offset - 1) }, { label: 'More markers', disabled: (offset + 1) * 6 >= destinations.length, run: () => setDestinationPage(offset + 1) })
   } else if (page === 'Brush') {
     const next = <T extends string,>(values: readonly T[], value: T): T => values[(values.indexOf(value) + 1) % values.length]
     buttons = [
@@ -99,26 +113,26 @@ function PaletteContent() {
       { label: 'Next saves', disabled: (offset + 1) * 6 >= saves.length, run: () => setSavePage(offset + 1) })
   } else {
     buttons = ([['rotate-left', 'Rotate -15°'], ['rotate-right', 'Rotate +15°'], ['grow', 'Wider / deeper'], ['shrink', 'Narrower'], ['raise', 'Taller'], ['lower', 'Shorter'], ['style', 'Material / style'], ['roof', 'Toggle roof'], ['duplicate', 'Duplicate']] as const)
-      .map(([action, label]) => ({ label, disabled: !selected, run: () => editPaletteSelection(action) }))
+      .map(([action, label]) => ({ label: action === 'style' && selected?.assetId ? 'Cycle color' : label, disabled: !selected || action === 'roof' && !!selected.assetId, run: () => editPaletteSelection(action) }))
     buttons.push({ label: 'Delete selected', disabled: !selected, run: deletePaletteSelection })
   }
 
   return <group ref={root} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
     <Tile text={hidden ? 'Show controls' : 'RealmForge controls'} y={0.32} width={0.65} height={0.065} onClick={() => { if (!request) setHidden(!hidden) }} />
     {!hidden && <>
-      <Tile text={`${status} · ${selected ? selected.kind + ' selected' : 'no selection'}`} x={-0.11} y={0.267} height={0.035} width={0.43} />
+      <Tile text={`${status} · ${selected ? (getAsset(selected.assetId || '')?.name || selected.kind) : 'no selection'}`} x={-0.11} y={0.267} height={0.035} width={0.43} />
       <Tile text={editor.rays ? 'Rays: on' : 'Rays: off'} x={0.22} y={0.267} height={0.035} width={0.21} active={editor.rays} onClick={toggleRays} />
       {request ? <>
         <Tile text={request.message} y={0.08} height={0.29} width={0.65} />
         <Tile text="Cancel" x={-0.165} y={-0.12} width={0.31} onClick={() => resolveConfirmation(request.id, false)} />
         <Tile text="Confirm" x={0.165} y={-0.12} width={0.31} active onClick={() => resolveConfirmation(request.id, true)} />
       </> : <>
-        {['Tools', 'Worlds', 'Edit', 'Brush'].map((tab, i) => <Tile key={tab} text={tab} x={(i - 1.5) * 0.165} y={0.21} width={0.155} active={page === tab || tab === 'Worlds' && page === 'Saved'} onClick={() => setPage(tab)} />)}
+        {['Tools', 'Worlds', 'Edit', 'Brush', 'Assets', 'Routes'].map((tab, i) => <Tile key={tab} text={tab} x={(i - 2.5) * 0.11} y={0.21} width={0.103} active={page === tab || tab === 'Worlds' && page === 'Saved'} onClick={() => setPage(tab)} />)}
         {buttons.map((button, i) => <Tile key={page + button.label} text={button.label} x={i % 2 ? 0.165 : -0.165} y={0.135 - Math.floor(i / 2) * 0.07} width={0.31} disabled={busy || button.disabled} active={button.active} onClick={() => void run(button)} />)}
         <Tile text="Undo" x={-0.22} y={-0.235} width={0.21} disabled={busy || !history.canUndo} onClick={() => worldActions.undo()} />
         <Tile text="Redo" y={-0.235} width={0.21} disabled={busy || !history.canRedo} onClick={() => worldActions.redo()} />
         <Tile text="Recenter panel" x={0.22} y={-0.235} width={0.21} onClick={() => { positioned.current = false }} />
-        <Tile text={busy ? 'Working…' : message} y={-0.31} width={0.65} height={0.065} />
+        <Tile text={busy ? 'Working…' : page === 'Assets' ? `${getAsset(editor.assetId)?.name} · ${Math.round(editor.assetRotation * 180 / Math.PI)}° · Aim at clear ground.` : message} y={-0.31} width={0.65} height={0.065} />
       </>}
     </>}
   </group>

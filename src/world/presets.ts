@@ -1,3 +1,5 @@
+import { buildAsset } from './assets'
+import type { AssetId } from './assetTypes'
 import { idFor, type WorldSnapshot } from './store'
 import type { BuildingStyle, MaterialId, ObjectKind, Vec3, WorldObject } from './types'
 import { BUILDING_STYLES } from './catalog'
@@ -203,6 +205,16 @@ export function warehouse(): WorldSnapshot {
     lamp(-5.6, -32),
     lamp(5.6, -32),
   ]
+  // Catalog equipment and usable destination pads leave the central route clear.
+  const equipment: [AssetId, number, number][] = [
+    ['storage-rack', -10, -10], ['workstation', 10, 10], ['conveyor', 10, -10],
+    ['cargo', -10, 10], ['barrier', -10, 5], ['loading-bay', 0, -34],
+    ['pickup-zone', 0, 24], ['delivery-zone', 0, -24], ['charging-pad', 3, 32], ['inspection-point', 0, 0],
+  ]
+  for (const [id, x, z] of equipment) {
+    const asset = buildAsset(id, [x, z], 0, false)!
+    objects.push({ ...asset, id: idFor(asset.kind) })
+  }
   return { objects, robotStart: [0, 32], goal: [0, -32.8] }
 }
 

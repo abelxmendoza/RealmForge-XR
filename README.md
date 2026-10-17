@@ -139,3 +139,10 @@ See [integration audit and merge order](docs/unified-integration.md),
 [XR menu contract](examples/unified-xr-contract.ts).
 Desktop voice supports start/stop, hold-to-talk, and a typed command fallback.
 World replacements use a shared confirmation dialog; an XR menu must provide its own consumer.
+
+## Warehouse object catalog
+
+The inspector's **Object catalog** and the VR palette's **Assets / Routes** tabs add warehouse equipment,
+placement previews and usable robot destinations. Load Autonomous Warehouse to see the seeded objects.
+Choose an item, aim at clear ground and click to place; key **8** selects catalog placement and **R** rotates it.
+See [warehouse catalog workflow and validation](docs/warehouse-catalog.md).
