@@ -4,6 +4,9 @@ import type { Vec2 } from '../world/types'
 /**
  * The map is drawn inside one group that turns map units into a tabletop miniature.
  * Store coordinates are always map-local; use groundPoint() to turn a pointer ray into one.
+ *
+ * Default pose is a floating tabletop in front of the desktop/VR camera.
+ * In AR, `src/xr/placement.ts` can re-pin this root onto a Space Setup table (+ optional anchor).
  */
 export const WORLD_ROOT = {
   position: new THREE.Vector3(0, 0.8, -1.1),

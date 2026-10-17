@@ -36,23 +36,26 @@ Update this when store fields, XR session modes, placement, or schemas change.
 
 Replans when `geometryVersion` or goal/robot placement changes (see nav module).
 
-### Scene placement (`src/scene/worldRoot.ts`)
+### Scene placement (`src/scene/worldRoot.ts` + `src/xr/placement.ts`)
 
-| Constant / ref | Meaning | Notes |
+| Constant / field | Meaning | Notes |
 | --- | --- | --- |
-| `WORLD_ROOT.position` | Miniature pose in room/desktop space | Fixed today: `(0, 0.8, -1.1)` |
-| `WORLD_ROOT.scale` | Map units → meters | `0.07` (tabletop) |
-| `worldRootRef` | Live `THREE.Group` | Used by `groundPoint()` for ray → map coords |
-
-**Planned (Phase 1):** mutable placement from plane hit + optional WebXR anchor id; document fields here when added.
+| `WORLD_ROOT.position` | Default miniature pose | `(0, 0.8, -1.1)` when unpinned |
+| `WORLD_ROOT.scale` | Map units → meters | `0.07` (tabletop); never changed by Place city |
+| `worldRootRef` | Live map `THREE.Group` | Used by `groundPoint()` for ray → map coords |
+| `usePlacement.status` | `free` \| `choosing` \| `pinned` | HUD Place city / Cancel place |
+| `usePlacement.position` / `quaternion` | Room-space pose when not following an anchor | Set on pin |
+| `usePlacement.anchor` | `XRAnchor` while pinned | Parent via `<XRSpace space={anchor.anchorSpace}>`; cleared on session end |
+| `usePlacement.surfaceLabel` | e.g. `table`, `floor` | From `XRPlane.semanticLabel` |
 
 ### XR session (main app)
 
-| Item | Current | Planned |
-| --- | --- | --- |
-| Store | `createXRStore()` in `App.tsx` | unchanged shell |
-| Enter AR/VR | bare `enterAR()` / `enterVR()` | feature fallback chain from xr-test |
-| Plane / mesh / depth / anchors | not requested | P0.1–P0.2 |
+| Item | Current |
+| --- | --- |
+| Store | `createXRStore({ offerSession: false, planeDetection, anchors, meshDetection, hitTest, handTracking, depthSensing: false })` |
+| Enter AR | `enterARWithFallback()` — `AR_ATTEMPTS` then `WebXRManager.setSession` |
+| Enter VR | `xrStore.enterVR()` |
+| Meta | `useXRSessionMeta`: `attempt`, `features`, `blend`, `lastError`, `entering` |
 
 ### Env
 
@@ -79,8 +82,13 @@ Nav helpers: `blocksNavigation`, `navObstacles`. Breaking kind/field changes mus
 
 ## State change log
 
-### 2026-10-17
+### 2026-10-17 (Phase 1 P0)
 
-- Merged branches; **no store/schema changes**.
-- Documented existing state surfaces for ongoing integration.
-- Next expected STATE update: XR placement fields on `WORLD_ROOT` and session feature flags after P0.1–P0.2.
+- Added `useXRSessionMeta` and `usePlacement` Zustand stores (not part of world schema).
+- `WORLD_ROOT` default pose unchanged; runtime pose now comes from placement (or anchor space).
+- World object schema unchanged (`geometryVersion` semantics unchanged).
+- Next expected: XR-safe Forge load confirms (Phase 2); no schema break planned.
+
+### 2026-10-17 (merge)
+
+- Merged branches; documented existing world/nav state surfaces.

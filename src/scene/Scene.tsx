@@ -1,8 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from '@react-three/drei'
 import { useXR } from '@react-three/xr'
-import { useFrame, type ThreeEvent } from '@react-three/fiber'
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useWorld } from '../world/store'
 import { Ground } from '../editor/Ground'
 import { Obstacles } from '../editor/Obstacles'
@@ -12,11 +12,22 @@ import { Robot } from '../agent/Robot'
 import { Route } from './Route'
 import { Lighting } from './Lighting'
 import { WORLD_ROOT, worldRootRef } from './worldRoot'
+import { WorldPlacement } from '../xr/WorldPlacement'
+import { bindWebXRManager } from '../xr/session'
+import { usePlacement } from '../xr/placement'
 
 export function Scene() {
   const dragging = useWorld((s) => s.dragging)
   const inXR = useXR((s) => s.session != null)
   const mode = useXR((s) => s.mode)
+  const gl = useThree((s) => s.gl)
+  const placementPos = usePlacement((s) => s.position)
+  const orbitTarget = useMemo(() => new THREE.Vector3(...placementPos), [placementPos])
+
+  useEffect(() => {
+    bindWebXRManager(gl.xr)
+    return () => bindWebXRManager(null)
+  }, [gl])
 
   // Mouse releases outside the canvas still end a drag.
   useEffect(() => {
@@ -33,23 +44,24 @@ export function Scene() {
     <>
       {mode !== 'immersive-ar' && <color attach="background" args={['#1d2433']} />}
       <Lighting />
-      {!inXR && <OrbitControls makeDefault enabled={!dragging} target={WORLD_ROOT.position} />}
+      {!inXR && <OrbitControls makeDefault enabled={!dragging} target={orbitTarget} />}
 
-      <group
-        ref={(g) => {
-          worldRootRef.current = g
-        }}
-        position={WORLD_ROOT.position}
-        scale={WORLD_ROOT.scale}
-        onPointerMove={dragMove}
-        onPointerUp={onUp}
-      >
-        <DragCatcher />
-        <Ground />
-        <Obstacles />
-        <Route />
-        <Robot />
-      </group>
+      <WorldPlacement>
+        <group
+          ref={(g) => {
+            worldRootRef.current = g
+          }}
+          scale={WORLD_ROOT.scale}
+          onPointerMove={dragMove}
+          onPointerUp={onUp}
+        >
+          <DragCatcher />
+          <Ground />
+          <Obstacles />
+          <Route />
+          <Robot />
+        </group>
+      </WorldPlacement>
     </>
   )
 }

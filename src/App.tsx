@@ -8,9 +8,22 @@ import { blockRoute } from './editor/demo'
 import { Inspector } from './editor/Inspector'
 import { cycleSelected, deleteSelected, duplicateSelected } from './editor/Obstacles'
 import { useEditor } from './editor/settings'
+import { enterARWithFallback, useXRSessionMeta } from './xr/session'
+import { usePlacement } from './xr/placement'
 
-/** Hands and controllers both emit the same pointer events, so the editor doesn't care which is used. */
-export const xrStore = createXRStore()
+/**
+ * Hands and controllers both emit the same pointer events, so the editor doesn't care which is used.
+ * offerSession is off — Enter AR runs our Quest 2/3S fallback chain (see src/xr/session.ts).
+ */
+export const xrStore = createXRStore({
+  offerSession: false,
+  depthSensing: false,
+  planeDetection: true,
+  anchors: true,
+  meshDetection: true,
+  hitTest: true,
+  handTracking: true,
+})
 
 const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'select', label: 'Select / move', key: '1' },
@@ -51,12 +64,37 @@ function Hud() {
   const status = useNav((s) => s.status)
   const replans = useNav((s) => s.replanCount)
   const snap = useEditor((s) => s.snap)
+  const attempt = useXRSessionMeta((s) => s.attempt)
+  const features = useXRSessionMeta((s) => s.features)
+  const lastError = useXRSessionMeta((s) => s.lastError)
+  const entering = useXRSessionMeta((s) => s.entering)
+  const placeStatus = usePlacement((s) => s.status)
+  const surfaceLabel = usePlacement((s) => s.surfaceLabel)
+
+  const onEnterAR = () => {
+    void enterARWithFallback()
+  }
+
+  const onPlaceCity = () => {
+    const p = usePlacement.getState()
+    if (p.status === 'choosing') p.cancelChoosing()
+    else p.startChoosing()
+  }
+
   return (
     <div className="hud">
       <div className="row">
         <strong>RealmForge XR</strong>
-        <button onClick={() => xrStore.enterAR()}>Enter AR</button>
+        <button disabled={entering} onClick={onEnterAR}>
+          {entering ? 'Starting AR…' : 'Enter AR'}
+        </button>
         <button onClick={() => xrStore.enterVR()}>Enter VR</button>
+        <button className={placeStatus === 'choosing' ? 'on' : ''} onClick={onPlaceCity}>
+          {placeStatus === 'choosing' ? 'Cancel place' : 'Place city'}
+        </button>
+        {placeStatus === 'pinned' && (
+          <button onClick={() => usePlacement.getState().resetToDefault()}>Unpin</button>
+        )}
       </div>
       <div className="row">
         {TOOLS.map((t) => (
@@ -80,11 +118,22 @@ function Hud() {
       </div>
       <div className="status">
         {STATUS_TEXT[status]} · replans {replans}
+        {attempt && (
+          <>
+            {' '}
+            · AR {attempt}
+            {features.length > 0 && ` (${features.filter((f) => f !== 'local-floor').slice(0, 4).join(', ')})`}
+          </>
+        )}
+        {placeStatus === 'choosing' && ' · point at a table/floor to place'}
+        {placeStatus === 'pinned' && surfaceLabel && ` · on ${surfaceLabel}`}
       </div>
+      {lastError && <div className="status err">AR failed: {lastError}</div>}
       <div className="help">
         Drag empty ground to orbit. Select: drag an object to move it, yellow handle resizes, blue handle rotates,
         green cube duplicates, purple cube changes style, red cube deletes.
         Keys: R rotate 15°, [ ] height, D duplicate, M material/style, T roof, G snap, Del delete.
+        Headset: Enter AR, then Place city and click a Space Setup table.
       </div>
     </div>
   )
@@ -100,6 +149,12 @@ function useKeyboard() {
       if (tool) return w.setTool(tool.id)
       if (e.key === 'b' || e.key === 'B') return blockRoute()
       if (e.key === 'g' || e.key === 'G') return useEditor.getState().set({ snap: !useEditor.getState().snap })
+      if (e.key === 'p' || e.key === 'P') {
+        const p = usePlacement.getState()
+        if (p.status === 'choosing') p.cancelChoosing()
+        else p.startChoosing()
+        return
+      }
       const sel = w.selectedId ? w.objects[w.selectedId] : null
       if (!sel) return
       if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected()
@@ -112,7 +167,10 @@ function useKeyboard() {
       else if (e.key === 'r' || e.key === 'R') w.updateObject(sel.id, { rotationY: sel.rotationY + (e.shiftKey ? -1 : 1) * (Math.PI / 12) })
       else if (e.key === ']') w.updateObject(sel.id, { size: [sel.size[0], sel.size[1] + 0.25, sel.size[2]] })
       else if (e.key === '[') w.updateObject(sel.id, { size: [sel.size[0], Math.max(0.3, sel.size[1] - 0.25), sel.size[2]] })
-      else if (e.key === 'Escape') w.select(null)
+      else if (e.key === 'Escape') {
+        if (usePlacement.getState().status === 'choosing') usePlacement.getState().cancelChoosing()
+        else w.select(null)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

@@ -67,8 +67,35 @@ The dev server is HTTPS (self-signed, via `@vitejs/plugin-basic-ssl`) on port 51
 
 Pages:
 
-- `/` is RealmForge XR (**Enter AR** / **Enter VR**).
+- `/` is RealmForge XR (**Enter AR** / **Enter VR** / **Place city**).
 - `/xr-test/` is the standalone passthrough test described below.
+
+## Main app smoke (`/`)
+
+The product page uses the same AR fallback chain as `/xr-test/` (`src/xr/session.ts`:
+`full (with depth)` → `no depth` → `minimal`). After Enter AR, pin the miniature city onto a
+Space Setup table with **Place city** (or key `P`).
+
+### Checklist — RealmForge on Quest 2
+
+- [ ] Open `/` (not only `/xr-test/`) over USB, LAN, or tunnel
+- [ ] **Enter AR** starts passthrough (HUD shows `AR no depth` or similar — depth may fail, that is OK)
+- [ ] Status line lists features that include `plane-detection` and preferably `anchors` / `hand-tracking`
+- [ ] **Place city** highlights planes (table orange, floor green); walls are ignored for pinning
+- [ ] Point + trigger/pinch on the table pins the miniature; status shows `on table` (or `on floor`)
+- [ ] City stays put while you walk (anchor when granted; otherwise last pose)
+- [ ] Tools still work: draw a wall, set goal, place robot, watch a path
+- [ ] **B Block route** forces a replan
+- [ ] **Unpin** restores the default floating pose; **Cancel place** exits choose mode
+- [ ] Holds usable framerate (~72 fps feel)
+
+Then on Quest 3S:
+
+- [ ] Enter AR may report `full (with depth)`
+- [ ] Same Place city → edit → robot flow with colour passthrough
+
+If Enter AR fails, the HUD shows which attempt errored. Fall back to `/xr-test/` to isolate headset
+vs app issues, then return here.
 
 ## The passthrough test page (`/xr-test/`)
 

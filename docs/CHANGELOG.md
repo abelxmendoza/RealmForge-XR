@@ -9,6 +9,9 @@ Dates are UTC.
 ### Added
 
 - Living docs for the best-of-both plan: `docs/plan.md`, `docs/BUILD_LOG.md`, `docs/STATE.md` (this file).
+- Main-app AR session fallback (`full (with depth)` → `no depth` → `minimal`) via `src/xr/session.ts`.
+- **Place city** (HUD + key `P`): pin the miniature `WORLD_ROOT` onto a Space Setup table/floor plane with optional WebXR anchor (`src/xr/placement.ts`, `WorldPlacement.tsx`).
+- Quest 2 smoke checklist for `/` in `docs/quest2-testing.md`.
 
 ### Merged (awaiting `main`)
 

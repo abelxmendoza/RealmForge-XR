@@ -18,6 +18,21 @@ Pair each entry with CHANGELOG (user-facing) and STATE (runtime) updates when st
 
 ---
 
+### 2026-10-17 — Phase 1 P0: AR fallback + place city
+
+- **Who:** Cursor agent (Abel + Emiliano integration)
+- **Phase:** 1
+- **Did:**
+  - Added `src/xr/session.ts`: Emiliano’s three-step `requestSession` fallback, bind to Three `WebXRManager`, session meta in Zustand.
+  - Added `src/xr/placement.ts` + `WorldPlacement.tsx`: Place city mode shows detected planes, pins miniature on table/floor click, creates WebXR anchor when available.
+  - Wired HUD: Enter AR (fallback), Place city / Unpin, status for attempt + surface; key `P`.
+  - `createXRStore({ offerSession: false, planeDetection, anchors, … })`.
+  - Main-app Quest 2 checklist in `docs/quest2-testing.md`; unit tests for attempt order + plane helpers.
+- **Why:** Demo-critical path — Quest 2 must enter AR and sit the city on a real table without depending on `/xr-test/`.
+- **Commit / PR:** PR #2 (follow-up on `cursor/merge-quest2-testing-96f4`)
+- **Verified:** `npm test` (21) + `npm run build` green; headset smoke still pending on device
+- **Follow-ups:** Quest 2 manual checklist; Phase 2 XR-safe Forge confirm
+
 ### 2026-10-17 — Merge + living docs
 
 - **Who:** Abel (product) + Emiliano (headset) combined via Cursor agent

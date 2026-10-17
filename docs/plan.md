@@ -24,9 +24,9 @@ Branch context: merge PR [#2](https://github.com/abelxmendoza/RealmForge-XR/pull
 
 | # | Feature | Source | Target | Done when |
 | --- | --- | --- | --- | --- |
-| P0.1 | AR session feature fallback (full → no depth → minimal) | `xr-test/main.js` `ATTEMPTS` | `App.tsx` / `createXRStore` enterAR path | Quest 2 can enter AR without mesh/depth |
-| P0.2 | Pin `WORLD_ROOT` to a Space Setup table plane + optional anchor | xr-test `findSnap` / `createAnchorFor` | `worldRoot.ts` + new XR placement module | City sits on a real table; survives brief tracking loss |
-| P0.3 | Document main-app Quest 2 smoke path | quest2 docs | README + quest2-testing.md | Checklist covers `/` not only `/xr-test/` |
+| P0.1 | AR session feature fallback (full → no depth → minimal) | `xr-test/main.js` `ATTEMPTS` | `src/xr/session.ts` + HUD Enter AR | Quest 2 can enter AR without mesh/depth |
+| P0.2 | Pin `WORLD_ROOT` to a Space Setup table plane + optional anchor | xr-test planes / anchors | `src/xr/placement.ts` + `WorldPlacement.tsx` | City sits on a real table; survives brief tracking loss |
+| P0.3 | Document main-app Quest 2 smoke path | quest2 docs | `docs/quest2-testing.md` + README | Checklist covers `/` not only `/xr-test/` |
 | P1.1 | XR-safe world actions (load Forge, confirm) | Inspector DOM gaps | In-world or HUD confirms usable with hands | No `window.confirm` required in headset |
 | P1.2 | Validate ray-drag vs grab for selected objects on Quest 2 | xr-test grab | Keep ray-drag unless grab wins in tests | Decision recorded in BUILD_LOG + STATE |
 | P1.3 | Keep `/xr-test/` checklist green as manual gate | Emiliano checklist | Pre-demo ritual | Every demo day runs the checklist |
@@ -63,10 +63,11 @@ Scale stays intentional: store coords are map-local; `WORLD_ROOT.scale = 0.07` i
 
 ### Phase 1 — Demo-critical XR (P0)
 
-1. Port session fallback into main app.
-2. Add “place city on table” interaction (select plane → pin `WORLD_ROOT` → optional anchor).
-3. Extend Quest 2 checklist for `/`.
-4. After each slice: update BUILD_LOG, CHANGELOG, STATE; run unit tests + headset smoke.
+1. [x] Port session fallback into main app (`src/xr/session.ts` + Enter AR button).
+2. [x] Add “place city on table” interaction (planes → pin `WORLD_ROOT` → optional anchor).
+3. [x] Extend Quest 2 checklist for `/` in `docs/quest2-testing.md`.
+4. [x] Update BUILD_LOG, CHANGELOG, STATE; unit tests + production build green.
+5. [ ] Headset smoke on Quest 2 (manual — see main-app checklist).
 
 ### Phase 2 — Interaction parity (P1)
 
