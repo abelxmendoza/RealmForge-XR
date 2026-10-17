@@ -14,6 +14,7 @@ import { Structure } from '../scene/structures'
 import { beginDrag } from './drag'
 import { useEditor } from './settings'
 import { useSelection } from './selection'
+import { usePlacement } from '../xr/placement'
 import { useEnvironment } from '../world/environment'
 
 const MIN_WALL = 0.6
@@ -172,7 +173,7 @@ const SHADOW_GROUND = new THREE.ShadowMaterial({ opacity: 0.35, depthWrite: fals
  * - real: transparent grid over your actual floor or table (passthrough shows through), with shadows,
  *   the map boundary and a 1 m origin cross, so true metres stay readable while you walk around
  * Either way the ground plane keeps its pointer handler, so pokes and rays still place things.
- * When the world sits on a table there is also a bevelled table edge. Edge sizes are real centimetres
+ * At tabletop scale the board has an edge: a low lip on the floor, or a bevelled table edge when Place pinned it to a real table. Edge sizes are real centimetres
  * at any tabletop scale (divided by the world ratio), so the rim stays grabbable; on the floor
  * (room scale and up) there is no table.
  */
@@ -239,6 +240,7 @@ function RealSurfaceMarks({ half }: { half: number }) {
 function TableEdge({ size, cm, rim, base }: { size: number; cm: (v: number) => number; rim: string; base: string }) {
   const rimMat = flatMaterial(rim, { roughness: 0.7 })
   const baseMat = flatMaterial(base, { roughness: 0.6 })
+  const onRealTable = usePlacement((p) => p.status === 'pinned' && p.surfaceLabel === 'table')
   return (
     <>
       {/*
@@ -258,11 +260,16 @@ function TableEdge({ size, cm, rim, base }: { size: number; cm: (v: number) => n
           WORLD_ROOT.yaw = state.current.rotation.y
         }}
       >
-        <group>
-          {/* Rim top sits 1 mm below the ground plane: coplanar faces z-fight. */}
-          <Frame inner={size} outer={size + cm(3)} y={-cm(0.1) - cm(0.6)} height={cm(1.2)} material={rimMat} raycastable />
-          <Frame inner={size} outer={size + cm(10)} y={-cm(1.4) - cm(2.5)} height={cm(5)} material={baseMat} raycastable />
-        </group>
+        {onRealTable ? (
+          <group>
+            {/* Pinned to a real table: rim and dark base under the board. Rim top 1 mm below the ground (no z-fight). */}
+            <Frame inner={size} outer={size + cm(3)} y={-cm(0.1) - cm(0.6)} height={cm(1.2)} material={rimMat} raycastable />
+            <Frame inner={size} outer={size + cm(10)} y={-cm(1.4) - cm(2.5)} height={cm(5)} material={baseMat} raycastable />
+          </group>
+        ) : (
+          // On the floor: a low lip around the board (nothing sinks into your floor). Still the grab handle.
+          <Frame inner={size} outer={size + cm(8)} y={cm(0.75)} height={cm(1.5)} material={rimMat} raycastable />
+        )}
       </GrabHandle>
     </>
   )

@@ -109,7 +109,7 @@ The same world can be shown at four scales (HUD **Scale** select or the wrist me
 
 | Preset | Board size | Where it goes |
 | --- | --- | --- |
-| Tabletop 1:60 | ~1.3 m | On a table at 0.8 m, just ahead of you; the table edge is grabbable |
+| Tabletop 1:60 | ~1.3 m | On your floor just ahead of you (Place pins it to a real table); grab its edge to move it |
 | Room 1:20 | ~4 m | On your floor, ahead of you |
 | Large 1:4 | ~20 m | On your floor; the robot start is 1.5 m ahead, buildings are knee to chest high |
 | Life size 1:1 | 80 m | On your floor at true size; stand next to the robot and walk up to a doorway |

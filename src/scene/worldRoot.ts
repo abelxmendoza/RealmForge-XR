@@ -10,18 +10,16 @@ export type ScaleId = 'tabletop' | 'room' | 'large' | 'life'
 
 /** World scale relative to your room. ratio = real metres per map metre. */
 export const SCALE_PRESETS: Record<ScaleId, { label: string; ratio: number }> = {
-  tabletop: { label: 'Tabletop 1:60', ratio: 1 / 60 }, // ~1.3 m board on a table
+  tabletop: { label: 'Tabletop 1:60', ratio: 1 / 60 }, // ~1.3 m board (on your floor; Place pins it to a real table)
   room: { label: 'Room 1:20', ratio: 1 / 20 }, // ~4 m, on the floor
   large: { label: 'Large 1:4', ratio: 1 / 4 }, // ~20 m, walk among knee-high buildings
   life: { label: 'Life size 1:1', ratio: 1 }, // stand next to real doorways
 }
 export const SCALE_IDS = Object.keys(SCALE_PRESETS) as ScaleId[]
 
-/** Board height when it sits on a table. */
-export const TABLE_HEIGHT = 0.8
-
 export const WORLD_ROOT = {
-  position: new THREE.Vector3(0, TABLE_HEIGHT, -1.1),
+  // The grid always starts on the floor (y = 0 in the floor-level reference space).
+  position: new THREE.Vector3(0, 0, -1.1),
   scale: SCALE_PRESETS.tabletop.ratio,
   /** World yaw (radians): set by the L gesture (primary axis), world pull and the map grab; kept by Recenter. */
   yaw: 0,
@@ -36,7 +34,7 @@ export const recenterWorld = () => {
   placement.pending = true
 }
 
-/** Whether the world sits on a table (true) or on your floor (false) at this scale. */
+/** Tabletop scale: the board is small enough to have an edge you grab to move it (on the floor or a pinned table). */
 export const onTable = (ratio: number) => ratio < SCALE_PRESETS.room.ratio
 
 /**
@@ -47,8 +45,9 @@ export const uiSize = (ratio: number, tabletopReal = 0.03) => (tabletopReal + 0.
 
 /**
  * Where to put the world for a scale preset, given the viewer's head position and facing.
- * On a table: centred ahead at table height. On the floor: small scales sit just ahead of you;
- * large and life size put `anchor` (the robot start) 1.5 m in front of you, so you begin next to it.
+ * Every scale starts on the floor (y = 0). Tabletop and room scale sit just ahead of you; large and
+ * life size put `anchor` (the robot start) 1.5 m in front of you, so you begin next to it.
+ * ("Place" can still pin the world to a real table; see xr/WorldPlacement.)
  */
 export function worldPlacement(id: ScaleId, head: THREE.Vector3, forward: THREE.Vector3, anchor: Vec2, yaw = 0): THREE.Vector3 {
   const ratio = SCALE_PRESETS[id].ratio
@@ -56,7 +55,7 @@ export function worldPlacement(id: ScaleId, head: THREE.Vector3, forward: THREE.
   if (f.lengthSq() < 1e-6) f.set(0, 0, -1)
   f.normalize()
   const halfReal = WORLD.half * ratio
-  if (onTable(ratio)) return new THREE.Vector3(head.x, TABLE_HEIGHT, head.z).addScaledVector(f, halfReal + 0.45)
+  if (onTable(ratio)) return new THREE.Vector3(head.x, 0, head.z).addScaledVector(f, halfReal + 0.45)
   if (id === 'room') return new THREE.Vector3(head.x, 0, head.z).addScaledVector(f, halfReal + 0.5)
   // The anchor turns with the world's yaw (three.js rotation.y: (x, z) → (x cos + z sin, −x sin + z cos)).
   const c = Math.cos(yaw)
