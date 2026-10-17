@@ -27,6 +27,13 @@ export const WORLD_ROOT = {
 
 export const worldRootRef: { current: THREE.Group | null } = { current: null }
 
+/** Set when the world should be (re)placed in front of you on the next frame (see WorldScaler in Scene). */
+export const placement = { pending: true }
+/** Put the world back in front of you at the current scale (wrist menu "Recenter"). */
+export const recenterWorld = () => {
+  placement.pending = true
+}
+
 /** Whether the world sits on a table (true) or on your floor (false) at this scale. */
 export const onTable = (ratio: number) => ratio < SCALE_PRESETS.room.ratio
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from '@react-three/drei'
 import { useXR } from '@react-three/xr'
@@ -12,7 +12,8 @@ import { tickDemo } from '../editor/demo'
 import { Robot } from '../agent/Robot'
 import { Route } from './Route'
 import { Lighting } from './Lighting'
-import { SCALE_PRESETS, WORLD_ROOT, worldPlacement, worldRootRef } from './worldRoot'
+import { WristMenu } from '../editor/WristMenu'
+import { SCALE_PRESETS, WORLD_ROOT, placement, worldPlacement, worldRootRef } from './worldRoot'
 
 export function Scene() {
   const dragging = useWorld((s) => s.dragging)
@@ -36,6 +37,7 @@ export function Scene() {
       {mode !== 'immersive-ar' && <color attach="background" args={['#1d2433']} />}
       <Lighting />
       <WorldScaler />
+      {inXR && <WristMenu />}
       {!inXR && <OrbitControls makeDefault enabled={!dragging} target={WORLD_ROOT.position} />}
 
       <group
@@ -66,16 +68,15 @@ function WorldScaler() {
   const worldScale = useEditor((s) => s.worldScale)
   const session = useXR((s) => s.session)
   const camera = useThree((s) => s.camera)
-  const pending = useRef(true)
   useEffect(() => {
-    pending.current = true
+    placement.pending = true
   }, [worldScale, session])
 
-  // Wait a frame so the XR camera has its first head pose before placing.
+  // Placed from the frame loop so the XR camera already has its head pose.
   useFrame(() => {
     const root = worldRootRef.current
-    if (!pending.current || !root) return
-    pending.current = false
+    if (!placement.pending || !root) return
+    placement.pending = false
     const head = camera.getWorldPosition(new THREE.Vector3())
     const forward = camera.getWorldDirection(new THREE.Vector3())
     const at = worldPlacement(worldScale, head, forward, useWorld.getState().robotStart)
