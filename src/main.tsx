@@ -1,23 +1,22 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import App from './App'
-import { startNavigation } from './nav/navigation'
-import { installHistory } from './world/history'
-import { installDirtyTracking } from './world/persistence'
-import { startMocapClient } from './mocap/client'
-import { installDevLog } from './devLog'
-import { installLineRaycastGuard } from './scene/lineRaycastGuard'
-import './style.css'
+import LandingPage from './landing/LandingPage'
+import { readEntry } from './landing/entry'
+import './landing/landing.css'
 
-installDevLog()
-installLineRaycastGuard()
-startNavigation()
-installHistory()
-installDirtyTracking()
-startMocapClient()
+const root = createRoot(document.getElementById('root')!)
+const entry = readEntry(window.location.search)
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+if (entry.editor) {
+  root.render(<div className="rf-loading" role="status"><p>Opening your world…</p></div>)
+  void import('./editor/EditorEntry').then(async ({ default: App, initializeEditor }) => {
+    await initializeEditor(entry.world)
+    document.title = 'RealmForge XR — World editor'
+    root.render(<StrictMode><App /></StrictMode>)
+  }).catch((error: unknown) => {
+    console.error('[RealmForge] Editor startup failed', error)
+    root.render(<div className="rf-loading" role="alert"><h1>Your world couldn’t open.</h1><p>Try reloading the editor or return to the project page.</p><a href="?editor=1">Retry editor</a><a href="?">Back to RealmForge XR</a></div>)
+  })
+} else {
+  root.render(<StrictMode><LandingPage /></StrictMode>)
+}

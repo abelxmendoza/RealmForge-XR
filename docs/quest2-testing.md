@@ -71,7 +71,7 @@ The dev server is HTTPS (self-signed, via `@vitejs/plugin-basic-ssl`) on port 51
 
 Pages:
 
-- `/` is RealmForge XR (**Enter AR** / **Enter VR**).
+- `/` is the project landing page. Choose **Launch editor**, or open `/?editor=1`, for **Enter AR** / **Enter VR**.
 - `/xr-test/` is the standalone passthrough test described below.
 
 ## The passthrough test page (`/xr-test/`)
@@ -116,7 +116,7 @@ Then on the Quest 3S, also check:
 
 ## Hand grab in the RealmForge app (`/`)
 
-Open `/` (not `/xr-test/`), press **Enter AR**, and keep the **Select** tool on. No rays should appear
+Open `/?editor=1` (not `/xr-test/`), press **Enter AR**, and keep the **Select** tool on. No rays should appear
 from your hands or controllers. Gestures are listed in the README under *Hand grab in XR*.
 
 - [ ] No pointer rays from hands or controllers

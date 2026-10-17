@@ -13,7 +13,7 @@ npm run build
 ```
 
 On the Quest 3S, open `https://<laptop-LAN-IP>:5173` in the Quest Browser, accept the self-signed
-certificate, then press **Enter AR** (passthrough) or **Enter VR**.
+certificate, choose **Launch editor**, then press **Enter AR** (passthrough) or **Enter VR**.
 
 ## Environment variables
 
@@ -146,3 +146,10 @@ The inspector's **Object catalog** and the VR palette's **Assets / Routes** tabs
 placement previews and usable robot destinations. Load Autonomous Warehouse to see the seeded objects.
 Choose an item, aim at clear ground and click to place; key **8** selects catalog placement and **R** rotates it.
 See [warehouse catalog workflow and validation](docs/warehouse-catalog.md).
+
+## Project landing page
+
+The root URL introduces RealmForge XR. **Launch editor** opens `?editor=1`; environment cards
+open the editor with the selected template (`?editor=1&world=warehouse`, for example).
+The world editor and XR modules load only when the editor is launched.
+See [landing page verification](docs/landing-page.md).

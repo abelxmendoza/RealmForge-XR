@@ -116,6 +116,11 @@ function Hud() {
   return (
     <div className="hud">
       <div className="row">
+        <a className="editor-home" href="?" title="Back to project page" onClick={async (event) => {
+          if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || !useWorldLibrary.getState().dirty) return
+          event.preventDefault()
+          if (await confirmReplace('Leave the editor? Save your world first to keep your unsaved changes.')) window.location.assign('?')
+        }}>← Home</a>
         <strong>
           RealmForge XR
           {dirty ? <span className="dirty-dot" title="Unsaved changes" /> : null}
