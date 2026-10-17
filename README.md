@@ -66,6 +66,7 @@ src/world/catalog.ts   object defaults, building styles, material lists, style c
 src/world/snap.ts      grid / angle snapping helpers
 src/world/presets.ts       preset layouts (Forge / Mars / Warehouse)
 src/world/environment.ts   environment config + loadEnvironment() API
+src/world/actions.ts       XR-safe World Action API (see docs/xr-world-actions.md)
 src/editor/*           pointer-driven editing (create, move, resize, rotate, duplicate) + inspector panel
 src/scene/structures/  how each object kind is drawn (buildings, walls, platforms, decorations)
 src/scene/materials.ts procedural canvas textures + shared, cached materials
