@@ -63,9 +63,9 @@ function GuideContent() {
         <GuideTile
           key={s.id}
           text={s.tab}
-          x={(i - (GUIDE_SECTIONS.length - 1) / 2) * 0.1}
+          x={(i - (GUIDE_SECTIONS.length - 1) / 2) * (0.72 / GUIDE_SECTIONS.length)}
           y={0.22}
-          width={0.092}
+          width={0.72 / GUIDE_SECTIONS.length - 0.008}
           height={0.038}
           active={s.id === sectionId}
           onClick={() => setSection(s.id)}
