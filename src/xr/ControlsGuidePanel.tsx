@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useXR } from '@react-three/xr'
 import * as THREE from 'three'
 import { FORGE } from '../theme/forge'
+import { BrandLogo3D } from './BrandLogo3D'
 import { GUIDE_SECTIONS, getGuideSection, nextGuideSection, prevGuideSection } from '../guide/controlsGuide'
 import { useGuide } from '../guide/guideStore'
 
@@ -58,6 +59,7 @@ function GuideContent() {
   return (
     <group ref={root} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
       <GuideTile text="User & controls guide" y={0.34} width={0.72} height={0.055} accent />
+      <BrandLogo3D position={[-0.33, 0.34, 0.002]} size={0.048} />
       <GuideTile text={section.title} y={0.28} width={0.72} height={0.045} />
       {GUIDE_SECTIONS.map((s, i) => (
         <GuideTile

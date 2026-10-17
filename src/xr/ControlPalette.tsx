@@ -19,6 +19,7 @@ import { blockRoute } from '../editor/demo'
 import { usePlacement } from './placement'
 import { blankPaletteWorld, createPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteEnvironment, loadPaletteSave, savePaletteWorld } from './paletteActions'
 import { FORGE } from '../theme/forge'
+import { BrandLogo3D } from './BrandLogo3D'
 import { useGuide } from '../guide/guideStore'
 import { useVoiceCommands } from '../voice/useVoiceCommands'
 import { VOICE_OPTIONS } from '../voice/sharedConfirm'
@@ -174,6 +175,7 @@ function PaletteContent() {
       active={voice.isListening}
       onClick={() => void (voice.isListening ? voice.stopListening() : voice.startListening())}
     />
+    <BrandLogo3D position={[-0.285, 0.32, 0.002]} size={0.056} />
     <Tile text={hidden ? 'Show controls' : 'RealmForge controls'} y={0.32} width={0.65} height={0.065} onClick={() => { if (!request) setHidden(!hidden) }} />
     {!hidden && <>
       <Tile text={`${actor ? getActorRuntime(actor.id)?.status || 'idle' : status} · ${actor ? actor.name : selected ? (getAsset(selected.assetId || '')?.name || selected.kind) : 'no selection'}`} x={-0.11} y={0.267} height={0.035} width={0.43} />

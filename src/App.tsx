@@ -1,3 +1,4 @@
+import { BRAND } from './theme/brand'
 import { ConfirmationDialog } from './editor/ConfirmationDialog'
 import { ControlsGuide } from './editor/ControlsGuide'
 import { VoicePanel } from './editor/VoicePanel'
@@ -141,7 +142,7 @@ function Hud() {
           ← Home
         </a>
         <div className="hud-logo">
-          <span className="hud-logo-mark" aria-hidden />
+          <img className="hud-logo-img" src={BRAND.logo} width="28" height="28" alt="" aria-hidden />
           <span>
             RealmForge XR
             {dirty ? <span className="dirty-dot" title="Unsaved changes" /> : null}

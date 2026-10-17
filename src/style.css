@@ -1483,3 +1483,6 @@ dialog.controls-guide::backdrop {
 .sim-panel .sim-status strong {
   color: #4dabf7;
 }
+
+/* RealmForge logo in the editor HUD. */
+.hud-logo-img { width: 28px; height: 28px; border-radius: 7px; object-fit: cover; flex-shrink: 0; box-shadow: 0 0 14px rgba(224, 120, 69, 0.4); }
