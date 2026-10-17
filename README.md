@@ -58,6 +58,8 @@ Every control is a pointer event, so mouse, controller rays and hand rays behave
 | 6 Platform / road | Drag out a rectangle. Asphalt makes a road with a centre line. |
 | 7 Decoration | Click to place a tree, streetlight or crate (pick in the inspector). |
 | B | Demo helper: slides a wall across the robot's route to force a replan. |
+| Enter AR | Starts passthrough with Quest fallback (`full` → `no depth` → `minimal`). |
+| P Place city | In AR: highlight Space Setup planes; click a table/floor to pin the miniature (optional anchor). |
 | R / Shift+R, `[` `]`, Del | Rotate 15°, lower/raise height, delete the selected object. |
 | D, M, T, G | Duplicate, cycle material/style, toggle flat/pitched roof, toggle grid snapping. |
 
