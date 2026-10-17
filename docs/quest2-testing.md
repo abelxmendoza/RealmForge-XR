@@ -134,6 +134,28 @@ from your hands or controllers. Gestures are listed in the README under *Hand gr
 - [ ] Two hands on the table edge turn the map; it stays level
 - [ ] After moving the map, grabbing buildings and placing objects still lands where you touch
 
+## Life size, scale presets, wrist menu and rays
+
+- [ ] Turning the left palm toward your face shows the wrist menu; turning it away hides it
+- [ ] Right index finger pokes the wrist buttons (each press toggles once)
+- [ ] **Rays on** shows pointer rays live and they can drag objects; **Rays off** removes them; grabbing works in both
+- [ ] **1:60** tabletop board in front of you; buildings show storey rows and doors at scale
+- [ ] **1:20** world on your floor ahead of you, no table edge
+- [ ] **1:4** world on your floor with the robot start about 1.5 m ahead
+- [ ] **1:1** life size: stand next to the robot; a house door is about 2.1 m, an office door 2.4 m
+- [ ] Grabbing buildings works at every scale; handles and buttons stay pokeable
+- [ ] Shadows stay on the world after changing scale and after grabbing the map
+- [ ] **Recenter** brings the world back in front of you
+- [ ] Holds a usable frame rate at 1:1 with Forge District loaded (panel or feel)
+
+## Smartsuit mock skeleton
+
+On the PC run `npm run mocap:mock` (alongside the dev server), then press **Mocap** on the wrist menu.
+
+- [ ] Wrist button reads **Mocap live**
+- [ ] A skeleton walks a 1 m circle around where the XR session started
+- [ ] Works through the cloudflared tunnel (`wss://…/mocap` is proxied by the dev server)
+
 ## Debugging
 
 With USB connected, open `chrome://inspect/#devices` in desktop Chrome and click **inspect** next to

@@ -8,8 +8,9 @@ MOLTEN Hackathon, Worldbuild track. Runs in the Meta Quest browser (WebXR) and o
 ```bash
 npm install
 npm run dev        # https://localhost:5173 (and your LAN IP, for the Quest)
-npm test           # grid + A* unit tests
+npm test           # grid, A*, world, grab, scale and mocap unit tests
 npm run build
+npm run mocap:mock # optional: synthetic Smartsuit skeleton (see docs/smartsuit.md)
 ```
 
 On the Quest 3S, open `https://<laptop-LAN-IP>:5173` in the Quest Browser, accept the self-signed
@@ -49,6 +50,7 @@ In XR there are no rays: you reach out and touch things (see [Hand grab in XR](#
 | B | Demo helper: slides a wall across the robot's route to force a replan. |
 | R / Shift+R, `[` `]`, Del | Rotate 15°, lower/raise height, delete the selected object. |
 | D, M, T, G | Duplicate, cycle material/style, toggle flat/pitched roof, toggle grid snapping. |
+| X | Toggle XR pointer rays (off by default: you grab and poke things directly). |
 
 A selected object shows drag handles (yellow sphere resizes, blue sphere rotates) and press
 buttons (green cube duplicates, purple cube cycles material/style, red cube deletes). They are
@@ -57,7 +59,7 @@ ordinary pointer targets: click them on desktop, poke them with a fingertip or g
 ### Hand grab in XR
 
 With the **Select** tool, grab an object directly with your hand (pinch or close your fist on it)
-or with a controller (squeeze the grip while touching it). No rays are used.
+or with a controller (squeeze the grip while touching it). Rays are off by default (toggle with X or the wrist menu).
 
 | Gesture | What it does |
 | --- | --- |
@@ -65,11 +67,41 @@ or with a controller (squeeze the grip while touching it). No rays are used.
 | One hand: twist your wrist | Turns the object (yaw only) |
 | Second hand grabs the same object | Two-hand rotate; pull hands apart or together to scale uniformly |
 | Release | The object stays where you left it; the robot replans |
-| Grab the dark table edge | Moves the whole map (up, down, closer); two hands turn it. Works with any tool |
+| Grab the dark table edge | Moves the whole map (up, down, closer); two hands turn it. Works with any tool (tabletop scale only) |
 
 Snapping (G) applies while you hold the object: position snaps so footprint edges land on the 0.5-unit
 grid, yaw to 15°, width and depth to 0.5 and height to 0.5. A one-hand grab never resizes an object.
 The grab logic lives in `src/editor/grab.ts` and uses `@react-three/handle` for the hand tracking math.
+
+### Wrist menu (XR)
+
+Turn your **left palm toward your face** (or tilt the top of the left controller toward you) and a small
+panel appears above your wrist. Poke it with your right index finger:
+
+- **Rays on/off**: pointer rays for distant objects (same as X). Grabbing and poking keep working either way
+- **Snap on/off**: same as G
+- **1:60 · 1:20 · 1:4 · 1:1**: world scale presets (below)
+- **Recenter**: puts the world back in front of you at the current scale
+- **Mocap**: connects the Smartsuit Pro skeleton ([docs/smartsuit.md](docs/smartsuit.md))
+
+## Life size and world scale
+
+Everything is modelled at **real-world size: 1 unit = 1 m**. Doors are 2.1–2.4 m (3.5 m garage doors),
+storeys are 3 m with window rows at real sill height, streetlights 6 m, and houses, offices and towers
+use real footprints. The map is an 80 × 80 m city block. Sizes live in `src/world/scale.ts` and the
+catalog.
+
+The same world can be shown at four scales (HUD **Scale** select or the wrist menu):
+
+| Preset | Board size | Where it goes |
+| --- | --- | --- |
+| Tabletop 1:60 | ~1.3 m | On a table at 0.8 m, just ahead of you; the table edge is grabbable |
+| Room 1:20 | ~4 m | On your floor, ahead of you |
+| Large 1:4 | ~20 m | On your floor; the robot start is 1.5 m ahead, buildings are knee to chest high |
+| Life size 1:1 | 80 m | On your floor at true size; stand next to the robot and walk up to a doorway |
+
+Handles, buttons and the goal flag keep a reachable real size at every scale, and lighting and shadows
+follow the world.
 
 The **inspector** (top right, desktop) sets exact dimensions, material, building style and roof,
 picks what the creation tools place, toggles snapping, and loads the **Forge District** demo city.
@@ -92,7 +124,9 @@ src/world/presets.ts   preset worlds (Forge District demo city)
 src/editor/*           pointer-driven editing (create, move, resize, rotate, duplicate) + inspector panel
 src/scene/structures/  how each object kind is drawn (buildings, walls, platforms, decorations)
 src/scene/materials.ts procedural canvas textures + shared, cached materials
-src/scene/*            scene graph, lighting, tabletop root transform, route + goal visuals
+src/scene/*            scene graph, lighting, world root (scale presets, placement), route + goal visuals
+src/world/scale.ts     real-world constants: storey height, door sizes, facade bays
+src/mocap/*            Smartsuit Pro (Rokoko) stream: parser, client, debug skeleton (+ tools/mocap-bridge.ts)
 ```
 
 ### Shared object contract
@@ -118,9 +152,9 @@ walls and buildings always block; platforms block only when taller than `STEP_HE
 roads and plazas are walkable; trees, streetlights and crates never block unless `solid` is set.
 Navigation builds its grid from `navObstacles(objects)`; the grid and A* code are unchanged.
 
-- **Units:** 1 map unit = 1 m at map scale. The map spans −10…10 on x and z with 0.5-unit grid cells.
-- **Miniature:** everything is drawn inside one root group (`src/scene/worldRoot.ts`) that is scaled
-  to 0.07 and placed at table height. Store values are always map-local; convert a pointer ray with
+- **Units:** 1 map unit = 1 m, at true size. The map spans −40…40 on x and z with 0.5 m grid cells.
+- **World scale:** everything is drawn inside one root group (`src/scene/worldRoot.ts`) scaled by the
+  current preset (1:60 to 1:1) and placed on a table or your floor. Store values are always map-local; convert a pointer ray with
   `groundPoint(event)`.
 - **Edits trigger navigation** through the store: `addObject`, `updateObject` and `removeObject`
   bump `geometryVersion`, and navigation rebuilds the grid and replans. XR input only needs to call
