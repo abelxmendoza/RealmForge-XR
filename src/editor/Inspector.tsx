@@ -15,7 +15,7 @@ import {
   treeStyle,
 } from '../world/catalog'
 import { PRESETS } from '../world/presets'
-import { replaceWorld } from '../world/persistence'
+import { loadEnvironment } from '../world/environment'
 import { WorldsPanel } from './WorldsPanel'
 import { useEditor, type DecorKind } from './settings'
 import { deleteSelected, duplicateSelected } from './Obstacles'
@@ -217,8 +217,6 @@ function BrushPanel({ tool }: { tool: Tool }) {
 
 function WorldPanel() {
   const snap = useEditor((s) => s.snap)
-  const load = (build: () => ReturnType<(typeof PRESETS)[number]['build']>, label: string) =>
-    replaceWorld({ ...build(), name: label.replace(/ \(.*\)$/, '') })
   return (
     <section>
       <h3>World</h3>
@@ -227,7 +225,7 @@ function WorldPanel() {
         Snap to grid (G)
       </label>
       {PRESETS.map((p) => (
-        <button key={p.id} onClick={() => load(p.build, p.label)}>
+        <button key={p.id} onClick={() => void loadEnvironment(p.id)} title="Replaces the current world (asks first)">
           Load {p.label}
         </button>
       ))}

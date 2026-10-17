@@ -10,6 +10,7 @@ import { tiledPlane, useGeometry } from '../scene/geometry'
 import { Structure } from '../scene/structures'
 import { beginDrag } from './drag'
 import { useEditor } from './settings'
+import { useEnvironment } from '../world/environment'
 
 const MIN_WALL = 0.6
 const MIN_PLATFORM = 0.5
@@ -144,20 +145,36 @@ function DraftPreview({ draft }: { draft: Draft }) {
 /** Tabletop board: textured ground, a faint construction grid and a bevelled table edge. */
 function Board({ size, onPointerDown }: { size: number; onPointerDown: (e: ThreeEvent<PointerEvent>) => void }) {
   const ground = useGeometry(() => tiledPlane(size, size, 2), [size])
+  const appearance = useEnvironment((s) => s.appearance)
+  const mat = groundMaterial(appearance.groundColor, appearance.groundTint)
   return (
     <>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} geometry={ground} material={groundMaterial()} receiveShadow onPointerDown={onPointerDown} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} geometry={ground} material={mat} receiveShadow onPointerDown={onPointerDown} />
       {/* Fine grid at the snapping step, major lines every 5 units. */}
-      <gridHelper args={[size, size / SNAP, '#ffffff', '#ffffff']} position={[0, 0.006, 0]} material-transparent material-opacity={0.07} material-depthWrite={false} raycast={() => null} />
-      <gridHelper args={[size, size / 5, '#e8f4ff', '#e8f4ff']} position={[0, 0.008, 0]} material-transparent material-opacity={0.18} material-depthWrite={false} raycast={() => null} />
+      <gridHelper
+        args={[size, size / SNAP, appearance.gridMinor, appearance.gridMinor]}
+        position={[0, 0.006, 0]}
+        material-transparent
+        material-opacity={0.07}
+        material-depthWrite={false}
+        raycast={() => null}
+      />
+      <gridHelper
+        args={[size, size / 5, appearance.gridMajor, appearance.gridMajor]}
+        position={[0, 0.008, 0]}
+        material-transparent
+        material-opacity={0.18}
+        material-depthWrite={false}
+        raycast={() => null}
+      />
       {/* Table edge so the miniature reads as an object in passthrough. */}
       <mesh position={[0, -0.07, 0]} raycast={() => null} receiveShadow>
         <boxGeometry args={[size + 0.4, 0.12, size + 0.4]} />
-        <meshStandardMaterial color="#d9d4c8" roughness={0.7} />
+        <meshStandardMaterial color={appearance.tableEdge} roughness={0.7} />
       </mesh>
       <mesh position={[0, -0.5, 0]} raycast={() => null}>
         <boxGeometry args={[size + 0.8, 0.76, size + 0.8]} />
-        <meshStandardMaterial color="#2c2f36" roughness={0.6} />
+        <meshStandardMaterial color={appearance.tableBase} roughness={0.6} />
       </mesh>
     </>
   )

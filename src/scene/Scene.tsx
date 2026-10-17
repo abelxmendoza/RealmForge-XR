@@ -12,11 +12,13 @@ import { Robot } from '../agent/Robot'
 import { Route } from './Route'
 import { Lighting } from './Lighting'
 import { WORLD_ROOT, worldRootRef } from './worldRoot'
+import { useEnvironment } from '../world/environment'
 
 export function Scene() {
   const dragging = useWorld((s) => s.dragging)
   const inXR = useXR((s) => s.session != null)
   const mode = useXR((s) => s.mode)
+  const background = useEnvironment((s) => s.appearance.lighting.background)
 
   // Mouse releases outside the canvas still end a drag.
   useEffect(() => {
@@ -31,7 +33,7 @@ export function Scene() {
 
   return (
     <>
-      {mode !== 'immersive-ar' && <color attach="background" args={['#1d2433']} />}
+      {mode !== 'immersive-ar' && <color attach="background" args={[background]} />}
       <Lighting />
       {!inXR && <OrbitControls makeDefault enabled={!dragging} target={WORLD_ROOT.position} />}
 

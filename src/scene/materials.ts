@@ -301,15 +301,15 @@ export function roadLineMaterial() {
   })
 }
 
-/** Ground board texture: soft noise, tiled. */
-export function groundMaterial() {
-  return memo('ground', () => {
+/** Ground board texture: soft noise, tiled. Tint comes from the active environment. */
+export function groundMaterial(tint = '#a9b8a8', base = '#c3cbc0') {
+  return memo(`ground:${tint}:${base}`, () => {
     const map = canvasTexture(128, (g, s) => {
-      g.fillStyle = '#c3cbc0'
+      g.fillStyle = base
       g.fillRect(0, 0, s, s)
       speckle(g, s, 1500, 0.1)
     })
-    return new THREE.MeshStandardMaterial({ map, color: '#a9b8a8', roughness: 1 })
+    return new THREE.MeshStandardMaterial({ map, color: tint, roughness: 1 })
   })
 }
 

@@ -47,7 +47,8 @@ buttons (green cube duplicates, purple cube cycles material/style, red cube dele
 ordinary pointer targets, so they work with controller and hand rays too.
 
 The **inspector** (top right, desktop) sets exact dimensions, material, building style and roof,
-picks what the creation tools place, toggles snapping, and loads the **Forge District** demo city.
+picks what the creation tools place, toggles snapping, and loads environments
+(**Forge District**, **Mars Outpost**, **Autonomous Warehouse** — see [docs/environments.md](docs/environments.md)).
 Loading a preset asks before replacing a world that has objects in it.
 
 On desktop, drag empty ground to orbit the camera.
@@ -63,7 +64,8 @@ src/nav/navigation.ts  replans on every geometry/goal/robot change; flags routes
 src/agent/Robot.tsx    primitive robot that follows waypoints
 src/world/catalog.ts   object defaults, building styles, material lists, style cycling
 src/world/snap.ts      grid / angle snapping helpers
-src/world/presets.ts   preset worlds (Forge District demo city)
+src/world/presets.ts       preset layouts (Forge / Mars / Warehouse)
+src/world/environment.ts   environment config + loadEnvironment() API
 src/editor/*           pointer-driven editing (create, move, resize, rotate, duplicate) + inspector panel
 src/scene/structures/  how each object kind is drawn (buildings, walls, platforms, decorations)
 src/scene/materials.ts procedural canvas textures + shared, cached materials
