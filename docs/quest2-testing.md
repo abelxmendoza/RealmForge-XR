@@ -166,6 +166,9 @@ See docs/gestures.md for the poses.
 - [ ] Near grab still works, and gestures don't fire while you're grabbing or using the wrist menu
 - [ ] Wrist **Gestures off** disables all of the above
 - [ ] Each gesture edit is one Undo
+- [ ] Controllers: left stick moves you, right stick snap-turns, both grips pull the world
+- [ ] Controllers: hold A aiming along a wall sets the axis; both triggers frame-select; right trigger on a distant rack + twist (or stick flicks) rotates it
+- [ ] Controllers: grip on an object still near-grabs it; grip on a wrist button presses it
 
 ## Smartsuit mock skeleton
 

@@ -29,6 +29,24 @@ tracking on Quest. Below: the principles, the gesture vocabulary, and how it's b
 Priority: two fists > frame > one-hand gestures. A hand that is near-grabbing an object or using the
 wrist menu is ignored, and pinch-rotate is skipped while rays are on (rays already pinch-drag).
 
+## Controllers
+
+Everything also works with Quest Touch / Touch Plus controllers. They trigger the same actions, with the
+same hold-before-act rule (`src/xr/gestures/controllerInput.ts`):
+
+| Controller | Same as | Does |
+| --- | --- | --- |
+| **Both grips** in empty air, move | Two fists | Pull the world past you; twist to turn it |
+| **Both triggers**, hold ~0.4 s | Frame | Select everything between the two controllers as a group |
+| **Hold A** ~0.7 s, aim the right controller | L | Set the primary axis to where it points |
+| **Right trigger** at a distance, twist | Pinch + roll | Select and rotate; **right stick** flicks add 15° steps while held |
+| **Right stick** left / right | – | Snap turn 30° |
+| **Left stick** | – | Move through the world (1.5 m/s, true scale) |
+| Grip **on** an object | Near grab | Move / turn / two-handed scale (unchanged) |
+| Grip on a wrist-menu button | Poke | Press it (tilt the top of the left controller toward you to show the menu) |
+
+With rays on (X / wrist menu) the triggers point and click instead, so frame and trigger-select pause.
+
 ## Walking past the boundary
 
 The app asks for WebXR's `unbounded` reference space. Quest Browser supports it in mixed reality, and it

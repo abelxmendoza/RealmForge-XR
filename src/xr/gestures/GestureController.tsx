@@ -11,6 +11,7 @@ import { WORLD_ROOT, worldRootRef } from '../../scene/worldRoot'
 import { REQUIRED_JOINTS, dist, handFeatures, rollAngle, type HandFeatures, type Handedness, type Joints, type V3 } from './handPose'
 import { GestureRecognizer, type GestureEvent } from './recognizer'
 import { applyPull, insideViewFrame, nearestEquivalent, pullStep, rotateAbout, rotateGroup, yawAligning } from './actions'
+import { ControllerRecognizer, type ControllerEvent, type ControllerSample } from './controllerInput'
 
 /**
  * Minority Report–style hand gestures (see docs/gestures.md). Reads both hands' joints from the XRFrame
@@ -20,6 +21,8 @@ import { applyPull, insideViewFrame, nearestEquivalent, pullStep, rotateAbout, r
  * - frame (two L's)   → select everything inside the frame as a group
  * - pinch (at a distance) + wrist roll → rotate the pinched object (or the group)
  * Near grabbing (touching an object) stays with @react-three/handle; wrist-menu pokes stay with the menu.
+ * Controllers get the same actions through ControllerRecognizer (grips = pull, triggers = frame / select,
+ * hold A = axis, sticks = move and turn).
  */
 
 /** Wrist roll → object yaw. Rolling clockwise (looking down your forearm) turns the object clockwise from above. */
@@ -28,6 +31,8 @@ const ROLL_GAIN = 1
 const NEAR_GRAB = 0.12
 
 const v = new THREE.Vector3()
+/** Where you're looking this frame (for head-relative stick movement). */
+const headForward = new THREE.Vector3(0, 0, -1)
 const toV3 = (p: THREE.Vector3): V3 => [p.x, p.y, p.z]
 
 /** Shared with the feedback visuals (read in their render loop; never React state). */
@@ -41,6 +46,8 @@ const ui = {
 
 interface PinchRotate {
   hand: Handedness
+  /** Extra yaw from controller stick flicks while holding the selection. */
+  extraYaw: number
   n0: V3
   ids: string[]
   start: Pick<WorldObject, 'position' | 'rotationY'>[]
@@ -50,6 +57,8 @@ interface PinchRotate {
 export function GestureController() {
   const gl = useThree((s) => s.gl)
   const recognizer = useMemo(() => new GestureRecognizer(), [])
+  const controllers = useMemo(() => new ControllerRecognizer(), [])
+  const lastT = useRef(0)
   const pinch = useRef<PinchRotate | null>(null)
   const pull = useRef<{ left: V3; right: V3 } | null>(null)
   const ownDrag = useRef(false)
@@ -64,8 +73,13 @@ export function GestureController() {
 
     // --- Read both hands.
     const hands: Record<Handedness, HandFeatures | null> = { left: null, right: null }
+    const pads: Record<Handedness, ControllerSample | null> = { left: null, right: null }
     for (const source of frame.session.inputSources) {
-      if (!source.hand || (source.handedness !== 'left' && source.handedness !== 'right')) continue
+      if (source.handedness !== 'left' && source.handedness !== 'right') continue
+      if (!source.hand) {
+        pads[source.handedness] = controllerSample(frame, refSpace, source)
+        continue
+      }
       const joints: Joints = {}
       for (const name of [...REQUIRED_JOINTS, 'thumb-metacarpal']) {
         const space = source.hand.get(name as XRHandJoint)
@@ -74,7 +88,9 @@ export function GestureController() {
       }
       hands[source.handedness] = handFeatures(joints, source.handedness)
     }
-    const head = toV3(gl.xr.getCamera().getWorldPosition(v))
+    const xrCam = gl.xr.getCamera()
+    const head = toV3(xrCam.getWorldPosition(v))
+    headForward.set(0, 0, -1).applyQuaternion(xrCam.getWorldQuaternion(new THREE.Quaternion()))
 
     // A hand is busy when something else owns it: a near grab is running, or it's using the wrist menu.
     const world = useWorld.getState()
@@ -83,8 +99,25 @@ export function GestureController() {
       !!f && wristMenuState.visible && (f.handedness === 'left' || dist(f.pinchPoint, toV3(wristMenuState.position)) < 0.2)
     const blocked = { left: grabbing || nearMenu(hands.left), right: grabbing || nearMenu(hands.right) }
 
-    const events = recognizer.update(state.clock.elapsedTime, hands.left, hands.right, blocked)
+    const t = state.clock.elapsedTime
+    const dt = Math.min(0.1, Math.max(0, t - lastT.current))
+    lastT.current = t
+    const events = recognizer.update(t, hands.left, hands.right, blocked)
     for (const e of events) handle(e, head)
+
+    // Controllers: same actions. A controller is busy when a near grab runs or it's at the wrist menu.
+    const padNearMenu = (c: ControllerSample | null) =>
+      !!c && wristMenuState.visible && (c.handedness === 'left' || dist(c.grip, toV3(wristMenuState.position)) < 0.2)
+    const padBlocked = { left: grabbing || padNearMenu(pads.left), right: grabbing || padNearMenu(pads.right) }
+    if (pads.left || pads.right) {
+      const padEvents = controllers.update(t, dt, pads.left, pads.right, padBlocked, useEditor.getState().rays)
+      for (const e of padEvents) {
+        // Trigger-select aims along the controller's own ray, not from your eyes.
+        const c = 'hand' in e && e.hand ? pads[e.hand] : null
+        handle(e, head, c ? { origin: c.rayOrigin, dir: c.rayDir } : undefined)
+      }
+      events.push(...(padEvents.filter((e) => e.type === 'frame-progress') as GestureEvent[]))
+    }
     // A frame let go of before it completed leaves no preview behind.
     if (!events.some((e) => e.type === 'frame-progress') && useSelection.getState().preview.length) useSelection.getState().setPreview([])
   })
@@ -94,10 +127,22 @@ export function GestureController() {
     useWorld.getState().setDragging(on) // one undo step per gesture (history coalesces while dragging)
   }
 
-  function handle(e: GestureEvent, head: V3) {
+  function handle(e: ControllerEvent, head: V3, ray?: { origin: V3; dir: V3 }) {
     const root = worldRootRef.current
     if (!root) return
     switch (e.type) {
+      case 'move':
+        moveYou(root, head, e.x, e.z)
+        return
+      case 'turn':
+        turnAboutHead(root, head, e.yaw)
+        return
+      case 'rotate-step':
+        if (pinch.current) {
+          pinch.current.extraYaw += e.yaw
+          pinch.current.lastYaw = NaN // force the next update to apply
+        }
+        return
       case 'l-progress':
         ui.lArrow = { from: e.f.pinchPoint, dir: e.f.indexDir, progress: e.progress }
         return
@@ -136,7 +181,7 @@ export function GestureController() {
       }
       case 'pinch-start':
         if (useEditor.getState().rays) return // rays already pinch-drag
-        startPinchRotate(root, e.hand, e.f, head)
+        startPinchRotate(root, e.hand, e.f, ray ?? { origin: head, dir: toV3(new THREE.Vector3(...e.f.pinchPoint).sub(new THREE.Vector3(...head)).normalize()) })
         return
       case 'pinch-move':
         if (pinch.current?.hand === e.hand) movePinchRotate(e.f)
@@ -153,8 +198,8 @@ export function GestureController() {
   }
 
   // --- Pinch + wrist roll → rotate.
-  function startPinchRotate(root: THREE.Group, hand: Handedness, f: HandFeatures, head: V3) {
-    raycaster.set(new THREE.Vector3(...head), new THREE.Vector3(...f.pinchPoint).sub(new THREE.Vector3(...head)).normalize())
+  function startPinchRotate(root: THREE.Group, hand: Handedness, f: HandFeatures, ray: { origin: V3; dir: V3 }) {
+    raycaster.set(new THREE.Vector3(...ray.origin), new THREE.Vector3(...ray.dir).normalize())
     raycaster.far = 200
     let id: string | null = null
     const pinchAt = new THREE.Vector3(...f.pinchPoint)
@@ -179,6 +224,7 @@ export function GestureController() {
     const objects = useWorld.getState().objects
     pinch.current = {
       hand,
+      extraYaw: 0,
       n0: f.palmNormal,
       ids,
       start: ids.map((i) => ({ position: [...objects[i].position] as WorldObject['position'], rotationY: objects[i].rotationY })),
@@ -190,7 +236,7 @@ export function GestureController() {
   function movePinchRotate(f: HandFeatures) {
     const p = pinch.current
     if (!p) return
-    let yaw = -rollAngle(p.n0, f.palmNormal, f.forward) * ROLL_GAIN
+    let yaw = -rollAngle(p.n0, f.palmNormal, f.forward) * ROLL_GAIN + p.extraYaw
     if (useEditor.getState().snap) yaw = snapAngle(yaw)
     if (Math.abs(yaw - p.lastYaw) < 1e-4) return
     p.lastYaw = yaw
@@ -229,6 +275,26 @@ function alignAxis(root: THREE.Group, indexDir: V3, head: V3) {
   setRootPose(root, x, z, target)
   ui.axisFlashUntil = performance.now() + 900
   ui.axisFlash = { at: head, yaw: target + parentYaw }
+}
+
+/** Controller stick: move *you* (x right, z forward relative to where you look) by moving the world the other way. */
+function moveYou(root: THREE.Group, head: V3, x: number, z: number) {
+  const fwd = headForward.clone().setY(0)
+  if (fwd.lengthSq() < 1e-6) return
+  fwd.normalize()
+  const right = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0, 1, 0))
+  const step = new THREE.Vector3().addScaledVector(fwd, z).addScaledVector(right, x)
+  // Move the world by −step, expressed in the root's parent space.
+  const a = toParent(root, head)
+  const b = toParent(root, toV3(new THREE.Vector3(...head).sub(step)))
+  setRootPose(root, root.position.x + (b[0] - a[0]), root.position.z + (b[2] - a[2]), root.rotation.y)
+}
+
+/** Controller snap turn: the world turns about you (so you face a new way in it). */
+function turnAboutHead(root: THREE.Group, head: V3, yaw: number) {
+  const pivot = toParent(root, head)
+  const [x, z] = rotateAbout([root.position.x, root.position.z], [pivot[0], pivot[2]], yaw)
+  setRootPose(root, x, z, root.rotation.y + yaw)
 }
 
 /** Two-fist pull: the world follows your fists 1:1 on the floor and turns with them. */
@@ -332,4 +398,34 @@ function GestureFeedback() {
       </mesh>
     </>
   )
+}
+
+// --- Controller pose -> ControllerSample (xr-standard gamepad: 0 trigger, 1 squeeze, 4 A/X; axes 2/3 thumbstick).
+
+function controllerSample(frame: XRFrame, refSpace: XRReferenceSpace, source: XRInputSource): ControllerSample | null {
+  const ray = frame.getPose(source.targetRaySpace, refSpace)
+  if (!ray) return null
+  const grip = (source.gripSpace && frame.getPose(source.gripSpace, refSpace)) || ray
+  const o = grip.transform.orientation
+  const q = new THREE.Quaternion(o.x, o.y, o.z, o.w)
+  const ro = ray.transform.orientation
+  const rq = new THREE.Quaternion(ro.x, ro.y, ro.z, ro.w)
+  const pad = source.gamepad
+  const button = (i: number) => pad?.buttons[i]?.value ?? 0
+  const axes = pad?.axes ?? []
+  const stick: [number, number] = axes.length >= 4 ? [axes[2], axes[3]] : [axes[0] ?? 0, axes[1] ?? 0]
+  const p = grip.transform.position
+  const r = ray.transform.position
+  return {
+    handedness: source.handedness as Handedness,
+    grip: [p.x, p.y, p.z],
+    up: toV3(new THREE.Vector3(0, 1, 0).applyQuaternion(q)),
+    forward: toV3(new THREE.Vector3(0, 0, -1).applyQuaternion(q)),
+    rayOrigin: [r.x, r.y, r.z],
+    rayDir: toV3(new THREE.Vector3(0, 0, -1).applyQuaternion(rq)),
+    trigger: button(0),
+    squeeze: button(1),
+    primary: !!pad?.buttons[4]?.pressed,
+    stick,
+  }
 }

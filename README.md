@@ -83,6 +83,9 @@ The grab logic lives in `src/editor/grab.ts` and uses `@react-three/handle` for 
 | **Frame** (both hands in mirrored L's), hold | Selects everything inside the frame as a group |
 | **Pinch** at a distance + **roll your wrist** | Rotates the object (or the group) |
 
+**Controllers** do the same: both grips pull the world, both triggers frame, hold A sets the axis, right
+trigger + twist rotates, left stick moves you and right stick snap-turns.
+
 The app asks for WebXR `unbounded` tracking so you can walk past the play-area boundary. Design notes,
 tuning and limits are in [docs/gestures.md](docs/gestures.md).
 
