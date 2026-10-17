@@ -1527,3 +1527,11 @@ dialog.controls-guide::backdrop {
 /* Worlds library: resume the auto-saved session. */
 .library section.resume { border: 1px solid var(--rf-ember, #e07845); border-radius: 10px; padding: 10px 12px; background: rgba(224, 120, 69, 0.08); }
 .library section.resume button.primary { background: linear-gradient(180deg, var(--rf-ember-hot, #ff9a5c), var(--rf-ember, #e07845)); color: #1a100c; border-color: transparent; font-weight: 600; }
+
+/* Voice dock: one mic button + optional typed command. */
+.voice-mic .voice-row { display: flex; gap: 6px; pointer-events: auto; }
+.voice-mic .voice-type { pointer-events: auto; border-radius: 999px; padding: 8px 12px; border: 1px solid var(--rf-line, #4a5568); background: var(--rf-panel, #141a26); color: var(--rf-text, #eee); font-size: 12px; cursor: pointer; }
+.voice-mic .voice-typed { pointer-events: auto; display: flex; gap: 6px; }
+.voice-mic .voice-typed input { width: 280px; padding: 7px 10px; border-radius: 999px; border: 1px solid var(--rf-line, #4a5568); background: var(--rf-panel, #141a26); color: var(--rf-text, #eee); font-size: 13px; }
+.voice-mic .voice-typed button { border-radius: 999px; padding: 7px 14px; border: 0; background: var(--rf-ember, #e07845); color: #1a100c; font-weight: 600; cursor: pointer; }
+.voice-mic .heard.ok { color: #9ff0c9; }

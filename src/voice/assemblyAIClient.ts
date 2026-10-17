@@ -132,6 +132,9 @@ export async function startAssemblyAISession(
     const params = new URLSearchParams({
       sample_rate: String(SAMPLE_RATE),
       speech_model: 'universal-3-6-pro',
+      // Wait a little longer before ending a turn, so a short command isn't split into pieces.
+      min_end_of_turn_silence_when_confident: '800',
+      max_turn_silence: '1800',
       token,
     })
     const endpoint = `${WS_BASE}?${params.toString()}`

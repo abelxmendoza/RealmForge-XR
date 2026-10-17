@@ -169,7 +169,7 @@ function PaletteContent() {
 
   return <group ref={root} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
     <Tile
-      text={voice.isListening ? `Listening… ${voice.lastPartial ? `"${voice.lastPartial}" · ` : ''}tap to run` : 'Voice command: tap to talk'}
+      text={voice.isListening ? (voice.lastPartial ? `"${voice.lastPartial}" · pause to run` : 'Listening… speak now') : 'Voice command: tap and speak'}
       y={0.39}
       width={0.65}
       height={0.065}

@@ -98,8 +98,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     title: 'Voice commands',
     tab: 'Voice',
     lines: [
-      'Tap the mic (web: bottom · VR: top of panel),',
-      'speak, tap again. Web: or hold Space to talk.',
+      'Tap the mic (web: bottom · VR: top of panel)',
+      'and speak. It runs when you pause. Web: hold Space.',
       '"Add three trees near the robot"',
       '"Build two tall towers 20 m north of the goal"',
       '"Move them 10 meters left" · "move it to the goal"',
