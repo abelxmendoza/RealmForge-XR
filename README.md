@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/brand/logo-512.webp" width="160" alt="RealmForge XR logo" />
+</p>
+
 # RealmForge XR
 
 Shape a miniature world with your hands, drop in a robot, and watch it re-route when you move a wall.
