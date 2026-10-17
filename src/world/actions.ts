@@ -8,6 +8,7 @@
  * here. Pass `confirmReplace` from an XR dialog or desktop UI.
  */
 
+import { createWorld, duplicateWorld, listTemplates, nextWorldName } from './library'
 import { useWorld, type Tool, type WorldSnapshot } from './store'
 import type { Vec2, WorldObject } from './types'
 import {
@@ -173,6 +174,9 @@ export async function loadSavedWorldAction(id: string, opts: ConfirmOptions = {}
  * Namespace object for menu wiring — same functions as named exports.
  * Prefer named imports in app code; use `worldActions` in XR menus for a single import.
  */
+export { createWorld, duplicateWorld, listTemplates, nextWorldName }
+export type { TemplateId, WorldTemplate } from './library'
+
 export const worldActions = {
   // confirm
   objectCount,
@@ -216,6 +220,12 @@ export const worldActions = {
   renameSavedWorld,
   deleteSavedWorld,
   exportWorld,
+
+  // library (new worlds from templates, copies)
+  listTemplates,
+  createWorld,
+  duplicateWorld,
+  nextWorldName,
 } as const
 
 export type WorldActions = typeof worldActions

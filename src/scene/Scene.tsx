@@ -13,6 +13,7 @@ import { tickDemo } from '../editor/demo'
 import { Robot } from '../agent/Robot'
 import { Route } from './Route'
 import { Lighting } from './Lighting'
+import { ThumbnailCapture } from './ThumbnailCapture'
 import { MenuButton, WristMenu } from '../editor/WristMenu'
 import { MocapSkeleton } from '../mocap/MocapSkeleton'
 import { toggleMocap, useMocap } from '../mocap/store'
@@ -56,6 +57,7 @@ export function Scene() {
     <>
       {mode !== 'immersive-ar' && <color attach="background" args={[background]} />}
       <Lighting />
+      <ThumbnailCapture />
       <WorldScaler />
       {inXR && (
         <WristMenu

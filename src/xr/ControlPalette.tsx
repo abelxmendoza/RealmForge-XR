@@ -13,7 +13,7 @@ import { useNav } from '../nav/navigation'
 import { toggleRays } from '../editor/xrInput'
 import { blockRoute } from '../editor/demo'
 import { usePlacement } from './placement'
-import { blankPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteEnvironment, loadPaletteSave, savePaletteWorld } from './paletteActions'
+import { blankPaletteWorld, createPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteEnvironment, loadPaletteSave, savePaletteWorld } from './paletteActions'
 
 /** Actual Three.js controls: visible to both eyes and interactive with XR pointers. */
 export function ControlPalette() {
@@ -79,7 +79,7 @@ function PaletteContent() {
       { label: 'Place world (AR)', disabled: !inAR, run: () => usePlacement.getState().startChoosing() })
   } else if (page === 'Worlds') {
     buttons = worldActions.listEnvironments().map((env) => ({ label: env.name, run: () => loadPaletteEnvironment(env.id) }))
-    buttons.push({ label: 'Blank world', run: blankPaletteWorld }, { label: 'Save world', run: savePaletteWorld },
+    buttons.push({ label: 'New world (saved)', run: () => createPaletteWorld() }, { label: 'Blank world', run: blankPaletteWorld }, { label: 'Save world', run: savePaletteWorld },
       { label: 'Save as new', run: () => worldActions.saveWorld(activeName) },
       { label: 'Browse saved worlds', run: () => { worldActions.listSavedWorlds(); setSavePage(0); setPage('Saved') } })
   } else if (page === 'Brush') {

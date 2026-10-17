@@ -44,6 +44,8 @@ export interface SaveOptions {
 
 const INDEX_KEY = 'realmforge.worlds.v1'
 const worldKey = (id: string) => `realmforge.world.v1.${id}`
+/** Small preview image per saved world (written by world/library.ts). */
+export const thumbnailKey = (id: string) => `realmforge.thumb.v1.${id}`
 
 interface LibraryState {
   worlds: SavedWorldMeta[]
@@ -266,12 +268,51 @@ export function renameSavedWorld(id: string, name: string): Result {
   return { ok: true }
 }
 
+/**
+ * Copy a saved world into a NEW saved entry without touching the active world.
+ * The copy keeps the original's thumbnail.
+ */
+export function copySavedWorld(id: string, name?: string): SaveResult {
+  const s = storage()
+  if (!s) return { ok: false, error: 'Browser storage is not available here.' }
+  const index = readIndex()
+  const meta = index.find((m) => m.id === id)
+  let raw: string | null = null
+  try {
+    raw = s.getItem(worldKey(id))
+  } catch (e) {
+    return { ok: false, error: describe(e) }
+  }
+  if (!meta || raw === null) return { ok: false, error: 'That saved world no longer exists.' }
+  const parsed = parseWorld(raw, idFor)
+  if (!parsed.ok) return { ok: false, error: `Saved world is damaged: ${parsed.error}` }
+  const file = serializeWorld(parsed.world, cleanName(name, `Copy of ${meta.name}`))
+  if (parsed.world.environmentId) file.environmentId = parsed.world.environmentId
+  const copy: SavedWorldMeta = { id: newSaveId(), name: file.name, savedAt: file.savedAt, objectCount: file.objects.length }
+  try {
+    s.setItem(worldKey(copy.id), JSON.stringify(file))
+    const thumb = s.getItem(thumbnailKey(id))
+    if (thumb) s.setItem(thumbnailKey(copy.id), thumb)
+    writeIndex([...index, copy])
+  } catch (e) {
+    try {
+      s.removeItem(worldKey(copy.id))
+      s.removeItem(thumbnailKey(copy.id))
+    } catch {
+      // ignore
+    }
+    return { ok: false, error: describe(e) }
+  }
+  return { ok: true, value: copy }
+}
+
 /** Delete a saved world. The active world in the editor is not touched. */
 export function deleteSavedWorld(id: string): Result {
   const s = storage()
   if (!s) return { ok: false, error: 'Browser storage is not available here.' }
   try {
     s.removeItem(worldKey(id))
+    s.removeItem(thumbnailKey(id))
     writeIndex(readIndex().filter((m) => m.id !== id))
   } catch (e) {
     return { ok: false, error: describe(e) }

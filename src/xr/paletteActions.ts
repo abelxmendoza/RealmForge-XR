@@ -3,6 +3,7 @@ import { confirmReplace, requestConfirmation } from '../world/confirmation'
 import { replaceWorld } from '../world/persistence'
 import { useWorld } from '../world/store'
 import { cycleVariant } from '../world/catalog'
+import { createWorld, nextWorldName, type TemplateId } from '../world/library'
 
 export async function loadPaletteEnvironment(id: string) {
   return worldActions.loadEnvironment(id, { confirmReplace })
@@ -12,6 +13,10 @@ export async function loadPaletteSave(id: string) {
 }
 export async function savePaletteWorld() {
   return worldActions.quickSave(undefined, { confirmOverwrite: (message) => requestConfirmation({ type: 'OVERWRITE_SAVE', message }) })
+}
+/** Start a new world (auto-named "My world N") and save it to the library straight away. */
+export async function createPaletteWorld(template: TemplateId = 'blank') {
+  return createWorld(nextWorldName(), template, { confirmReplace })
 }
 export async function blankPaletteWorld() {
   return replaceWorld({ name: 'Blank world', objects: [], robotStart: [0, 5], goal: null }, { confirmReplace })

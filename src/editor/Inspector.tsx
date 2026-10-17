@@ -18,6 +18,7 @@ import { PRESETS } from '../world/presets'
 import { worldActions } from '../world/actions'
 import { confirmReplace } from '../world/confirmation'
 import { WorldsPanel } from './WorldsPanel'
+import { WorldLibrary, openWorldLibrary } from './WorldLibrary'
 import { useEditor, type DecorKind } from './settings'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 
@@ -34,6 +35,7 @@ export function Inspector() {
       {selected ? <ObjectPanel o={selected} /> : <BrushPanel tool={tool} />}
       <WorldPanel />
       <WorldsPanel />
+      <WorldLibrary />
     </div>
   )
 }
@@ -221,6 +223,9 @@ function WorldPanel() {
   return (
     <section>
       <h3>World</h3>
+      <button className="primary" onClick={openWorldLibrary} title="New worlds, saved worlds (L)">
+        Worlds library (L)
+      </button>
       <label className="check">
         <input type="checkbox" checked={snap} onChange={(e) => useEditor.getState().set({ snap: e.target.checked })} />
         Snap to grid (G)
