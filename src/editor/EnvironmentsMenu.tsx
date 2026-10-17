@@ -35,14 +35,14 @@ export function EnvironmentsMenu({ compact = false }: { compact?: boolean }) {
 
   if (compact) {
     return (
-      <div className="hud-panel env-menu-compact" role="group" aria-label="Environments">
-        <span className="env-menu-label">Env</span>
+      <div className="hud-panel env-menu-compact" role="group" aria-label="World templates">
+        <span className="env-menu-label">Templates</span>
         {envs.map((env) => (
           <button
             key={env.id}
             type="button"
             className={activeId === env.id ? 'on' : ''}
-            title={env.description}
+            title={loading ? 'Loading a template…' : `Load ${env.name}: ${env.description}`}
             aria-pressed={activeId === env.id}
             disabled={loading}
             onClick={() => load(env.id)}

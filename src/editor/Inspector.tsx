@@ -307,7 +307,7 @@ function WorldPanel() {
 
       <label className="check">
         <input type="checkbox" checked={snap} onChange={(e) => useEditor.getState().set({ snap: e.target.checked })} />
-        Snap to grid (G)
+        Align to grid
       </label>
     </section>
   )

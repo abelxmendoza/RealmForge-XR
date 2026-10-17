@@ -126,14 +126,14 @@ export function WorldsPanel() {
         <input type="text" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} disabled={busy} />
       </label>
       <div className="row">
-        <button type="button" className="primary" disabled={busy} onClick={() => void saveQuick()} title="Ctrl+S — update active save, or save as new">
-          Save
+        <button type="button" className="primary" disabled={busy} onClick={() => void saveQuick()} title="Save this world (Ctrl+S)">
+          Save World
         </button>
-        <button type="button" disabled={busy} onClick={() => void save()}>
-          Save as new
+        <button type="button" disabled={busy} onClick={() => void save()} title="Save a new copy under this name">
+          Save as New
         </button>
-        <button type="button" disabled={!activeId || busy} onClick={() => void update()} title="Overwrite the save this world came from">
-          Update save
+        <button type="button" disabled={!activeId || busy} onClick={() => void update()} title={activeId ? 'Overwrite the save this world came from' : 'Open a saved world first'}>
+          Update Save
         </button>
       </div>
       <div className="row">
@@ -141,16 +141,17 @@ export function WorldsPanel() {
           type="button"
           className="ghost"
           disabled={busy}
+          title="Download a JSON file of this world"
           onClick={() => {
             if (busy) return
             setFeedback({ kind: 'busy', action: 'Export' })
             void menuDownloadWorld(name).then(({ feedback: next }) => apply(next))
           }}
         >
-          Export JSON
+          Export
         </button>
-        <button type="button" className="ghost" disabled={busy} onClick={() => fileInput.current?.click()}>
-          Import JSON
+        <button type="button" className="ghost" disabled={busy} title="Import a previously exported JSON world" onClick={() => fileInput.current?.click()}>
+          Import
         </button>
         <button type="button" disabled={!hist.canUndo || busy} onClick={() => undo()} title="Ctrl+Z">
           Undo

@@ -155,17 +155,36 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
       </mesh>
       <BrandLogo3D position={[-0.042, 0.068, 0]} size={0.016} />
       <Text position={[0.008, 0.068, 0]} fontSize={0.011} color={FORGE.text} anchorX="center" anchorY="middle" raycast={() => null}>
-        RealmForge
+        View
       </Text>
-      <MenuButton position={[col(0, third), rowY(0), 0]} width={third} label={`Rays ${rays ? 'on' : 'off'}`} active={rays} onPress={toggleRays} />
-      <MenuButton position={[col(1, third), rowY(0), 0]} width={third} label={`Snap ${snap ? 'on' : 'off'}`} active={snap} onPress={() => set({ snap: !snap })} />
-      <MenuButton position={[col(2, third), rowY(0), 0]} width={third} label={surface === 'real' ? 'Real' : 'Virtual'} active={surface === 'real'} onPress={toggleSurface} />
+      {/* Same View section as desktop: pointer rays, grid align, floor mode, scale. Build/Edit/Save stay on the floating panel. */}
+      <MenuButton
+        position={[col(0, third), rowY(0), 0]}
+        width={third}
+        label={rays ? 'Rays On' : 'Rays Off'}
+        active={rays}
+        onPress={toggleRays}
+      />
+      <MenuButton
+        position={[col(1, third), rowY(0), 0]}
+        width={third}
+        label={snap ? 'Grid On' : 'Grid Off'}
+        active={snap}
+        onPress={() => set({ snap: !snap })}
+      />
+      <MenuButton
+        position={[col(2, third), rowY(0), 0]}
+        width={third}
+        label={surface === 'real' ? 'Your Floor' : 'Virtual'}
+        active={surface === 'real'}
+        onPress={toggleSurface}
+      />
       {SCALE_IDS.map((id, i) => (
         <MenuButton
           key={id}
           position={[col(i, quarter), rowY(1), 0]}
           width={quarter}
-          label={SCALE_PRESETS[id].label.split(' ').pop()!}
+          label={SCALE_PRESETS[id].short}
           active={worldScale === id}
           onPress={() => set({ worldScale: id })}
         />
@@ -174,13 +193,13 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
       <MenuButton
         position={[col(1, half), rowY(2), 0]}
         width={half}
-        label={guideOpen ? 'Close guide' : 'Guide'}
+        label={guideOpen ? 'Close Help' : 'Help'}
         active={guideOpen}
         onPress={toggleGuide}
       />
       {extra && <group position={[col(0, W), rowY(3), 0]}>{extra}</group>}
       <Text position={[0, rowY(4) + 0.004, 0]} fontSize={0.008} color={FORGE.copper} anchorX="center" anchorY="middle" raycast={() => null}>
-        {`${SCALE_PRESETS[worldScale].label} · Guide opens the help panel`}
+        {`${SCALE_PRESETS[worldScale].short} · panel has Build / Edit / Save`}
       </Text>
     </group>
   )
