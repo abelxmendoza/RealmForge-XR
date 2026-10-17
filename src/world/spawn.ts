@@ -81,6 +81,9 @@ export function objectFor(spec: SpawnSpec, at: Vec2): Omit<WorldObject, 'id'> | 
       const base: Vec3 = road ? [16, 0.05, 4] : PLATFORM_DEFAULTS.size
       return { kind: 'platform', position: [at[0], 0, at[1]], size: [base[0] * s, base[1], base[2] * s], rotationY: 0, material: spec.material ?? 'concrete' }
     }
+    default:
+      // Kinds without a voice default (e.g. catalog-only kinds) need an assetId.
+      return null
   }
 }
 
