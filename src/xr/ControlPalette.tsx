@@ -17,6 +17,8 @@ import { usePlacement } from './placement'
 import { blankPaletteWorld, createPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteEnvironment, loadPaletteSave, savePaletteWorld } from './paletteActions'
 import { FORGE } from '../theme/forge'
 import { useGuide } from '../guide/guideStore'
+import { useVoiceCommands } from '../voice/useVoiceCommands'
+import { VOICE_OPTIONS } from '../voice/sharedConfirm'
 
 /** Actual Three.js controls: visible to both eyes and interactive with XR pointers. */
 export function ControlPalette() {
@@ -35,6 +37,13 @@ function PaletteContent() {
   const guideOpen = useGuide((s) => s.open)
   const openGuide = useGuide((s) => s.openGuide)
   const closeGuide = useGuide((s) => s.closeGuide)
+  const voice = useVoiceCommands(VOICE_OPTIONS)
+  // Show what voice heard and did on the palette's message line.
+  useEffect(() => {
+    if (voice.lastError) setMessage(`Voice: ${voice.lastError}`)
+    else if (voice.lastResult && 'message' in voice.lastResult) setMessage(`Voice: ${voice.lastResult.message}`)
+    else if (voice.lastTranscript) setMessage(`Heard: "${voice.lastTranscript}"`)
+  }, [voice.lastTranscript, voice.lastResult, voice.lastError])
   const [savePage, setSavePage] = useState(0)
   const [assetPage, setAssetPage] = useState(0)
   const [destinationPage, setDestinationPage] = useState(0)
@@ -123,6 +132,14 @@ function PaletteContent() {
   }
 
   return <group ref={root} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
+    <Tile
+      text={voice.isListening ? `Listening… ${voice.lastPartial ? `"${voice.lastPartial}" · ` : ''}tap to run` : 'Voice command: tap to talk'}
+      y={0.39}
+      width={0.65}
+      height={0.065}
+      active={voice.isListening}
+      onClick={() => void (voice.isListening ? voice.stopListening() : voice.startListening())}
+    />
     <Tile text={hidden ? 'Show controls' : 'RealmForge controls'} y={0.32} width={0.65} height={0.065} onClick={() => { if (!request) setHidden(!hidden) }} />
     {!hidden && <>
       <Tile text={`${status} · ${selected ? (getAsset(selected.assetId || '')?.name || selected.kind) : 'no selection'}`} x={-0.11} y={0.267} height={0.035} width={0.43} />
