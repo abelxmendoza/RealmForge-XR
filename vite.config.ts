@@ -7,5 +7,6 @@ import { assemblyaiTokenPlugin } from './vite/assemblyaiTokenPlugin'
 // assemblyaiTokenPlugin serves GET /api/assemblyai/token (server-side ASSEMBLYAI_API_KEY only).
 export default defineConfig({
   plugins: [react(), basicSsl(), assemblyaiTokenPlugin()],
-  server: { host: true },
+  server: { host: true, allowedHosts: ['.trycloudflare.com'] },
+  build: { rollupOptions: { input: { main: 'index.html', xrTest: 'xr-test/index.html' } } },
 })

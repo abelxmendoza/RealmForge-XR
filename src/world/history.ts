@@ -94,7 +94,7 @@ export function undo(): boolean {
   const prev = undoStack.pop()
   if (!prev) return false
   redoStack.push(snapshotOf(useWorld.getState()))
-  withHistorySuppressed(() => useWorld.getState().loadWorld(prev))
+  withHistorySuppressed(() => useWorld.getState().restoreWorld(prev))
   publish()
   return true
 }
@@ -103,7 +103,7 @@ export function redo(): boolean {
   const next = redoStack.pop()
   if (!next) return false
   undoStack.push(snapshotOf(useWorld.getState()))
-  withHistorySuppressed(() => useWorld.getState().loadWorld(next))
+  withHistorySuppressed(() => useWorld.getState().restoreWorld(next))
   publish()
   return true
 }

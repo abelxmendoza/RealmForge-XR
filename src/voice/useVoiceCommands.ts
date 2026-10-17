@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import {
   VoiceController,
+  getSharedVoiceController,
   type VoiceControllerOptions,
   type VoiceControllerState,
 } from './voiceController'
@@ -26,6 +27,8 @@ export type VoiceCommandsApi = VoiceControllerState & {
   controller: VoiceController
 }
 
+let consumers = 0
+
 function subscribeController(controller: VoiceController, onStoreChange: () => void): () => void {
   return controller.subscribe(() => onStoreChange())
 }
@@ -41,8 +44,8 @@ export function useVoiceCommands(opts: UseVoiceCommandsOptions = {}): VoiceComma
 
   if (!controllerRef.current) {
     controllerRef.current = isolated
-      ? new VoiceController(controllerOpts)
-      : new VoiceController(controllerOpts)
+      ? new VoiceController({ ...controllerOpts, registerMock: false })
+      : getSharedVoiceController({ ...controllerOpts, registerMock: false })
   }
   const controller = controllerRef.current
 
@@ -58,11 +61,11 @@ export function useVoiceCommands(opts: UseVoiceCommandsOptions = {}): VoiceComma
   )
 
   useEffect(() => {
-    return () => {
-      void controller.dispose()
-      controllerRef.current = null
-    }
-  }, [controller])
+    if (!isolated) ++consumers
+    controller.setEnabled(true)
+    controller.connectMock()
+    return () => { if (isolated || --consumers === 0) void controller.dispose() }
+  }, [controller, isolated])
 
   return {
     ...state,

@@ -31,6 +31,7 @@ export interface WorldState {
   duplicateObject: (id: string) => string | null
   /** Replace the whole world (objects, robot, goal). Callers confirm with the user first. */
   loadWorld: (w: WorldSnapshot) => void
+  restoreWorld: (w: WorldSnapshot) => void
   setGoal: (p: Vec2 | null) => void
   placeRobot: (p: Vec2) => void
   setTool: (t: Tool) => void
@@ -124,6 +125,17 @@ export const useWorld = create<WorldState>((set) => ({
       selectedId: null,
       geometryVersion: s.geometryVersion + 1,
       robotVersion: s.robotVersion + 1,
+    }))
+  },
+  restoreWorld: (w) => {
+    reserveIds(w.objects.map((o) => o.id))
+    set((s) => ({
+      objects: Object.fromEntries(w.objects.map((o) => [o.id, { ...o }])),
+      robotStart: [...w.robotStart],
+      goal: w.goal ? [...w.goal] : null,
+      selectedId: s.selectedId && w.objects.some((o) => o.id === s.selectedId) ? s.selectedId : null,
+      geometryVersion: s.geometryVersion + 1,
+      robotVersion: s.robotVersion + (s.robotStart[0] !== w.robotStart[0] || s.robotStart[1] !== w.robotStart[1] ? 1 : 0),
     }))
   },
   setGoal: (p) => set({ goal: p }),

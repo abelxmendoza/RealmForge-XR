@@ -14,6 +14,7 @@ const SAMPLE_RATE = 16_000
 
 export type AssemblyAIClientOptions = {
   /** Override token endpoint (default `/api/assemblyai/token`). */
+  signal?: AbortSignal
   tokenUrl?: string
   onTranscript: (result: TranscriptResult) => void
   onError: (message: string) => void
@@ -26,8 +27,8 @@ export type AssemblyAISession = {
 
 type TokenResponse = { token?: string; error?: string }
 
-async function fetchTemporaryToken(tokenUrl: string): Promise<string> {
-  const res = await fetch(tokenUrl, { method: 'GET' })
+async function fetchTemporaryToken(tokenUrl: string, signal?: AbortSignal): Promise<string> {
+  const res = await fetch(tokenUrl, { method: 'GET', signal })
   let data: TokenResponse
   try {
     data = (await res.json()) as TokenResponse
@@ -56,6 +57,8 @@ export async function startAssemblyAISession(
   let processor: ScriptProcessorNode | null = null
   let ws: WebSocket | null = null
   let stopped = false
+  let finishTurn: (() => void) | null = null
+  let stopping: Promise<void> | null = null
 
   const cleanup = async () => {
     if (stopped) return
@@ -109,7 +112,8 @@ export async function startAssemblyAISession(
       throw new Error('Microphone API unavailable in this browser')
     }
 
-    const token = await fetchTemporaryToken(tokenUrl)
+    const token = await fetchTemporaryToken(tokenUrl, opts.signal)
+    opts.signal?.throwIfAborted()
 
     stream = await navigator.mediaDevices.getUserMedia({
       audio: {
@@ -120,9 +124,13 @@ export async function startAssemblyAISession(
       video: false,
     })
 
+    if (opts.signal?.aborted) {
+      stream.getTracks().forEach((track) => track.stop())
+      opts.signal.throwIfAborted()
+    }
+
     const params = new URLSearchParams({
       sample_rate: String(SAMPLE_RATE),
-      formatted_finals: 'true',
       speech_model: 'universal-3-6-pro',
       token,
     })
@@ -135,6 +143,7 @@ export async function startAssemblyAISession(
         cleanupOpenListeners()
         resolve()
       }
+      const onAbort = () => { cleanupOpenListeners(); reject(new Error('Listening cancelled')) }
       const onError = () => {
         cleanupOpenListeners()
         reject(new Error('AssemblyAI WebSocket connection failed'))
@@ -142,11 +151,16 @@ export async function startAssemblyAISession(
       const cleanupOpenListeners = () => {
         ws?.removeEventListener('open', onOpen)
         ws?.removeEventListener('error', onError)
+        ws?.removeEventListener('close', onError)
+        opts.signal?.removeEventListener('abort', onAbort)
       }
       ws.addEventListener('open', onOpen)
       ws.addEventListener('error', onError)
+      ws.addEventListener('close', onError)
+      opts.signal?.addEventListener('abort', onAbort, { once: true })
     })
 
+    const completedTurns = new Set<number>()
     ws.onmessage = (ev) => {
       if (stopped) return
       try {
@@ -155,15 +169,16 @@ export async function startAssemblyAISession(
           transcript?: string
           end_of_turn?: boolean
           turn_is_formatted?: boolean
+          turn_order?: number
         }
         if (msg.type === 'Turn' && typeof msg.transcript === 'string' && msg.transcript.trim()) {
           const isFinal = Boolean(msg.end_of_turn)
-          // Prefer formatted finals when available; still accept unformatted end_of_turn.
-          if (isFinal || msg.turn_is_formatted) {
-            opts.onTranscript({ text: msg.transcript.trim(), isFinal: isFinal || Boolean(msg.turn_is_formatted) })
-          } else {
-            opts.onTranscript({ text: msg.transcript.trim(), isFinal: false })
+          if (isFinal && msg.turn_order !== undefined) {
+            if (completedTurns.has(msg.turn_order)) return
+            completedTurns.add(msg.turn_order)
           }
+          opts.onTranscript({ text: msg.transcript.trim(), isFinal })
+          if (isFinal) finishTurn?.()
         }
       } catch {
         /* ignore malformed frames */
@@ -201,7 +216,21 @@ export async function startAssemblyAISession(
     opts.onStatus?.('listening')
 
     return {
-      stop: cleanup,
+      stop: () => stopping ??= (async () => {
+        // Release microphone immediately, then drain the final turn before terminating.
+        processor?.disconnect()
+        source?.disconnect()
+        stream?.getTracks().forEach((track) => track.stop())
+        if (!stopped && ws?.readyState === WebSocket.OPEN) {
+          await new Promise<void>((resolve) => {
+            const timer = setTimeout(resolve, 1200)
+            finishTurn = () => { clearTimeout(timer); resolve() }
+            ws!.send(JSON.stringify({ type: 'ForceEndpoint' }))
+          })
+          finishTurn = null
+        }
+        await cleanup()
+      })(),
     }
   } catch (err) {
     await cleanup()

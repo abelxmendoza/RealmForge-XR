@@ -26,6 +26,7 @@ export type VoiceControllerState = {
 
 export type VoiceControllerOptions = {
   /** Default: assemblyai when available; mock always works for submitMockTranscript. */
+  registerMock?: boolean
   provider?: VoiceProviderMode
   confirm?: ConfirmHandler
   tokenUrl?: string
@@ -36,6 +37,10 @@ export type VoiceControllerOptions = {
 type Listener = (state: VoiceControllerState) => void
 
 export class VoiceController {
+  private cachedState: VoiceControllerState | null = null
+  private starting: Promise<void> | null = null
+  private generation = 0
+  private abortStart: AbortController | null = null
   private enabled = true
   private isListening = false
   private lastTranscript: string | null = null
@@ -61,13 +66,18 @@ export class VoiceController {
     this.confirm = opts.confirm
     this.tokenUrl = opts.tokenUrl
     this.fallbackToMock = opts.fallbackToMock ?? true
+    if (opts.registerMock !== false) this.connectMock()
+  }
+
+  connectMock(): void {
+    if (this.removeMockHandler) return
     this.removeMockHandler = addMockTranscriptHandler((r) => {
       void this.handleTranscript(r)
     })
   }
 
   getState(): VoiceControllerState {
-    return {
+    return this.cachedState ??= {
       enabled: this.enabled,
       isListening: this.isListening,
       lastTranscript: this.lastTranscript,
@@ -89,6 +99,7 @@ export class VoiceController {
   }
 
   private emit(): void {
+    this.cachedState = null
     const state = this.getState()
     for (const l of this.listeners) l(state)
   }
@@ -111,7 +122,15 @@ export class VoiceController {
   /**
    * Push-to-talk: start mic + STT (AssemblyAI) or arm mock input.
    */
-  async startListening(): Promise<void> {
+  startListening(): Promise<void> {
+    if (this.starting) return this.starting
+    this.starting = this.startSession().finally(() => { this.starting = null })
+    return this.starting
+  }
+
+  private async startSession(): Promise<void> {
+    const generation = ++this.generation
+    this.abortStart = new AbortController()
     if (!this.enabled) {
       this.lastError = 'Voice recognition is disabled'
       this.emit()
@@ -129,16 +148,18 @@ export class VoiceController {
     }
 
     try {
-      this.session = await startAssemblyAISession({
+      const session = await startAssemblyAISession({
         tokenUrl: this.tokenUrl,
+        signal: this.abortStart.signal,
         onTranscript: (r) => {
-          void this.handleTranscript(r)
+          if (generation === this.generation) void this.handleTranscript(r)
         },
         onError: (message) => {
           this.lastError = message
           this.emit()
         },
         onStatus: (status) => {
+          if (generation !== this.generation) return
           if (status === 'listening') {
             this.isListening = true
             this.emit()
@@ -150,9 +171,15 @@ export class VoiceController {
           }
         },
       })
+      if (generation !== this.generation || !this.enabled) {
+        await session.stop()
+        return
+      }
+      this.session = session
       this.isListening = true
       this.emit()
     } catch (err) {
+      if (generation !== this.generation) return
       const message = err instanceof Error ? err.message : 'Failed to start listening'
       this.lastError = message
       this.isListening = false
@@ -167,6 +194,10 @@ export class VoiceController {
   }
 
   async stopListening(): Promise<void> {
+    if (!this.session) {
+      ++this.generation
+      this.abortStart?.abort()
+    }
     if (this.session) {
       await this.session.stop()
       this.session = null
@@ -223,7 +254,10 @@ export class VoiceController {
         return this.lastResult
       }
 
+      this.lastError = null
+      this.lastResult = null
       this.lastCommand = parsed.command
+      this.emit()
       emitVoiceEvent({
         type: 'VOICE_COMMAND_RECOGNIZED',
         transcript: text,
@@ -252,10 +286,12 @@ export class VoiceController {
 
   /** Dispose — stop mic and detach mock handler. Call on unmount / XR session end. */
   async dispose(): Promise<void> {
-    await this.stopListening()
+    this.enabled = false
+    const stopping = this.stopListening()
     this.removeMockHandler?.()
     this.removeMockHandler = null
     this.listeners.clear()
+    await stopping
   }
 }
 

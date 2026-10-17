@@ -1,3 +1,5 @@
+import { useEnvironment } from './environment'
+import { confirmReplace } from './confirmation'
 import { create } from 'zustand'
 import { idFor, useWorld } from './store'
 import { cleanName, parseWorld, serializeWorld, worldToJSON, type ParsedWorld, type WorldFile } from './serialize'
@@ -9,7 +11,7 @@ import { clearHistory, withHistorySuppressed } from './history'
  * desktop UI can both call these functions. UI can subscribe to `useWorldLibrary` for the list.
  *
  * Every function that could replace the active world asks `confirmReplace` first when the
- * current world has objects. Pass your own (e.g. an XR dialog); the default uses window.confirm.
+ * current world has objects. Pass your own (e.g. an XR dialog); without a UI consumer, replacement is denied.
  */
 
 export interface SavedWorldMeta {
@@ -128,13 +130,15 @@ const newSaveId = () => `w${Date.now().toString(36)}${Math.random().toString(36)
 /** The active world as a WorldFile (what save and export write). */
 export function currentWorldFile(name = useWorldLibrary.getState().activeName): WorldFile {
   const { objects, robotStart, goal } = useWorld.getState()
-  return serializeWorld({ objects, robotStart, goal }, name)
+  const file = serializeWorld({ objects, robotStart, goal }, name)
+  const environmentId = useEnvironment.getState().activeId
+  return environmentId ? { ...file, environmentId } : file
 }
 
 async function confirmIfNeeded(message: string, opts: ReplaceOptions): Promise<boolean> {
   const count = Object.keys(useWorld.getState().objects).length
   if (count === 0) return true
-  const ask = opts.confirmReplace ?? ((m: string) => (typeof window !== 'undefined' && typeof window.confirm === 'function' ? window.confirm(m) : false))
+  const ask = opts.confirmReplace ?? confirmReplace
   return ask(`${message}\n\nThe current world (${count} objects) will be replaced. Unsaved changes are lost.`)
 }
 
@@ -147,6 +151,7 @@ function applyWorld(world: ParsedWorld, activeId: string | null) {
     useWorld.getState().loadWorld(world)
   })
   clearHistory()
+  useEnvironment.getState().setActive(world.environmentId ?? null)
   useWorldLibrary.setState({ activeId, activeName: world.name })
   markClean()
 }

@@ -42,3 +42,8 @@ html, body, #root { margin: 0; height: 100%; background: #1d2433; font-family: s
   vertical-align: middle;
 }
 .hud strong { display: inline-flex; align-items: center; }
+
+.voice-panel { position: absolute; bottom: 12px; left: 12px; width: min(330px, calc(100vw - 48px)); padding: 12px; border-radius: 10px; background: #182130ee; color: #eee; max-height: 36vh; overflow: auto; }
+.voice-panel p { margin: 6px 0; }
+dialog { max-width: 420px; border: 1px solid #789; border-radius: 12px; background: #182130; color: #eee; padding: 24px; }
+dialog::backdrop { background: #0009; }

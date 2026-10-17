@@ -109,3 +109,11 @@ Navigation builds its grid from `navObstacles(objects)`; the grid and A* code ar
 
 The robot uses grid A* over an occupancy grid built from obstacle footprints. It is not a physics
 or robotics simulation.
+
+## Unified integration handoff
+
+See [integration audit and merge order](docs/unified-integration.md),
+[demo readiness and hardware record](docs/demo-readiness.md), and
+[XR menu contract](examples/unified-xr-contract.ts).
+Desktop voice supports start/stop, hold-to-talk, and a typed command fallback.
+World replacements use a shared confirmation dialog; an XR menu must provide its own consumer.

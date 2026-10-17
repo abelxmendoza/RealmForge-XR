@@ -1,4 +1,10 @@
-import { useEffect, useState } from 'react'
+import { ConfirmationDialog } from './editor/ConfirmationDialog'
+import { VoicePanel } from './editor/VoicePanel'
+import { worldActions } from './world/actions'
+import { confirmReplace } from './world/confirmation'
+import { enterARWithFallback, useXRSessionMeta } from './xr/session'
+import { usePlacement } from './xr/placement'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { XR, createXRStore } from '@react-three/xr'
 import { Scene } from './scene/Scene'
@@ -12,7 +18,7 @@ import { importWorld, quickSave, useWorldLibrary } from './world/persistence'
 import { redo, undo, subscribeHistory } from './world/history'
 
 /** Hands and controllers both emit the same pointer events, so the editor doesn't care which is used. */
-export const xrStore = createXRStore()
+export const xrStore = createXRStore({ offerSession: false, depthSensing: false, planeDetection: true, anchors: true, meshDetection: true, hitTest: true, handTracking: true })
 
 const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'select', label: 'Select / move', key: '1' },
@@ -32,6 +38,7 @@ const STATUS_TEXT = {
 } as const
 
 export default function App() {
+  const immersive = useSyncExternalStore(xrStore.subscribe, () => xrStore.getState().session != null)
   useKeyboard()
   useJsonFileDrop()
   return (
@@ -43,6 +50,8 @@ export default function App() {
       </Canvas>
       <Hud />
       <Inspector />
+      <VoicePanel />
+      {!immersive && <ConfirmationDialog />}
     </>
   )
 }
@@ -76,11 +85,14 @@ function useJsonFileDrop() {
 
 function Hud() {
   const tool = useWorld((s) => s.tool)
-  const setTool = useWorld((s) => s.setTool)
+  const setTool = worldActions.setTool
   const selectedId = useWorld((s) => s.selectedId)
   const status = useNav((s) => s.status)
   const replans = useNav((s) => s.replanCount)
   const snap = useEditor((s) => s.snap)
+  const placement = usePlacement((s) => s.status)
+  const xrError = useXRSessionMeta((s) => s.lastError)
+  const entering = useXRSessionMeta((s) => s.entering)
   const dirty = useWorldLibrary((s) => s.dirty)
   const [hist, setHist] = useState({ canUndo: false, canRedo: false })
   useEffect(() => subscribeHistory((s) => setHist({ canUndo: s.canUndo, canRedo: s.canRedo })), [])
@@ -88,7 +100,9 @@ function Hud() {
     <div className="hud">
       <div className="row">
         <strong>RealmForge XR{dirty ? <span className="dirty-dot" title="Unsaved changes" /> : null}</strong>
-        <button onClick={() => xrStore.enterAR()}>Enter AR</button>
+        <button disabled={entering} onClick={() => void enterARWithFallback()}>Enter AR</button>
+        <button onClick={() => { const p = usePlacement.getState(); if (p.status === 'choosing') p.cancelChoosing(); else p.startChoosing() }}>{placement === 'choosing' ? 'Cancel place' : 'Place city'}</button>
+        {placement === 'pinned' && <button onClick={() => usePlacement.getState().resetToDefault()}>Unpin</button>}
         <button onClick={() => xrStore.enterVR()}>Enter VR</button>
       </div>
       <div className="row">
@@ -115,12 +129,14 @@ function Hud() {
         <button disabled={!hist.canRedo} onClick={() => redo()} title="Ctrl+Shift+Z">
           Redo
         </button>
-        <button onClick={() => useWorld.getState().reset()}>Reset</button>
+        <button onClick={async () => { if (await confirmReplace('Reset the current world?')) useWorld.getState().reset() }}>Reset</button>
       </div>
       <div className="status">
         {STATUS_TEXT[status]} · replans {replans}
         {dirty ? ' · unsaved' : ''}
       </div>
+      {xrError && <div role="alert">{xrError}</div>}
+      {placement === 'choosing' && <p>Point at a table or floor to place the world.</p>}
       <div className="help">
         Drag empty ground to orbit. Select: drag an object to move it, yellow handle resizes, blue handle rotates,
         green cube duplicates, purple cube changes style, red cube deletes.
@@ -158,7 +174,7 @@ function useKeyboard() {
 
       const w = useWorld.getState()
       const tool = TOOLS.find((t) => t.key === e.key)
-      if (tool) return w.setTool(tool.id)
+      if (tool) return worldActions.setTool(tool.id)
       if (e.key === 'b' || e.key === 'B') return blockRoute()
       if (e.key === 'g' || e.key === 'G') return useEditor.getState().set({ snap: !useEditor.getState().snap })
       const sel = w.selectedId ? w.objects[w.selectedId] : null

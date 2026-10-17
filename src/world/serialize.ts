@@ -25,6 +25,7 @@ export interface WorldFile {
   version: typeof WORLD_VERSION
   name: string
   savedAt: string
+  environmentId?: 'forge-district' | 'mars-outpost' | 'warehouse'
   objects: WorldObject[]
   robotStart: Vec2
   goal: Vec2 | null
@@ -32,6 +33,7 @@ export interface WorldFile {
 
 /** A validated world ready for store.loadWorld(), plus its name. */
 export interface ParsedWorld extends WorldSnapshot {
+  environmentId?: WorldFile['environmentId']
   name: string
 }
 
@@ -140,7 +142,9 @@ export function parseWorld(input: unknown, newId: (kind: ObjectKind) => string):
     seen.add(r.id)
     objects.push(r)
   }
-  return { ok: true, world: { name: cleanName(data.name), objects, robotStart, goal }, warnings }
+  const environmentId = typeof data.environmentId === 'string' && ['forge-district', 'mars-outpost', 'warehouse'].includes(data.environmentId)
+    ? data.environmentId as WorldFile['environmentId'] : undefined
+  return { ok: true, world: { name: cleanName(data.name), objects, robotStart, goal, ...(environmentId ? { environmentId } : {}) }, warnings }
 }
 
 /** One object, or an error string when it can't be used at all. */

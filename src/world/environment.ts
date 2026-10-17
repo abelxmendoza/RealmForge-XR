@@ -192,7 +192,7 @@ function applyBrushDefaults(env: EnvironmentConfig) {
 export type LoadEnvironmentOptions = {
   /**
    * Required when the current world has objects. Core logic never calls `window.confirm`
-   * (XR has no browser dialog). Desktop UI should pass `(msg) => window.confirm(msg)`;
+   * (XR has no browser dialog). Desktop UI should pass the shared `confirmReplace`;
    * Emiliano should pass an in-headset yes/no.
    */
   confirmReplace?: ReplaceOptions['confirmReplace']
@@ -229,7 +229,7 @@ export async function loadEnvironment(id: EnvironmentId | string, opts: LoadEnvi
   }
 
   // Already confirmed (or world empty) — do not let replaceWorld fall back to window.confirm.
-  const result = await replaceWorld({ ...snap, name: env.name }, { confirmReplace: () => true })
+  const result = await replaceWorld({ ...snap, name: env.name, environmentId: env.id }, { confirmReplace: () => true })
   if (!result.ok) return result
   useEnvironment.getState().setActive(env.id)
   applyBrushDefaults(env)

@@ -15,7 +15,8 @@ import {
   treeStyle,
 } from '../world/catalog'
 import { PRESETS } from '../world/presets'
-import { loadEnvironment } from '../world/environment'
+import { worldActions } from '../world/actions'
+import { confirmReplace } from '../world/confirmation'
 import { WorldsPanel } from './WorldsPanel'
 import { useEditor, type DecorKind } from './settings'
 import { deleteSelected, duplicateSelected } from './Obstacles'
@@ -228,9 +229,9 @@ function WorldPanel() {
         <button
           key={p.id}
           onClick={() =>
-            void loadEnvironment(p.id, {
-              // UI-layer confirm only — core loadEnvironment never calls window.confirm.
-              confirmReplace: (msg) => window.confirm(msg),
+            void worldActions.loadEnvironment(p.id, {
+              // One confirmation channel for desktop, voice, and headset consumers.
+              confirmReplace,
             })
           }
           title="Replaces the current world (asks first)"

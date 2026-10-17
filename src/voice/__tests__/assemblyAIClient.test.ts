@@ -141,3 +141,20 @@ describe('AssemblyAI client cleanup', () => {
     expect(onError).toHaveBeenCalledWith('Microphone permission denied')
   })
 })
+
+describe('missing credentials', () => {
+  it('reports a missing key without requesting the microphone', async () => {
+    const originalFetch = globalThis.fetch
+    const originalMedia = navigator.mediaDevices
+    const getUserMedia = vi.fn()
+    Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia }, configurable: true })
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503, json: async () => ({ error: 'ASSEMBLYAI_API_KEY is not configured' }) })
+    try {
+      await expect(startAssemblyAISession({ onTranscript: vi.fn(), onError: vi.fn() })).rejects.toThrow(/not configured/)
+      expect(getUserMedia).not.toHaveBeenCalled()
+    } finally {
+      globalThis.fetch = originalFetch
+      Object.defineProperty(navigator, 'mediaDevices', { value: originalMedia, configurable: true })
+    }
+  })
+})

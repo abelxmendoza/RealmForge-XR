@@ -1,3 +1,4 @@
+import { requestConfirmation } from '../world/confirmation'
 import { useEffect, useRef, useState, type DragEvent } from 'react'
 import {
   deleteSavedWorld,
@@ -42,8 +43,8 @@ export function WorldsPanel() {
     const r = saveWorld(name)
     setMsg(r.ok ? `Saved "${r.value.name}".` : r.error)
   }
-  const update = () => {
-    if (!activeId || !window.confirm(`Overwrite the saved world "${activeName}" with the current world?`)) return
+  const update = async () => {
+    if (!activeId || !(await requestConfirmation({ type: 'OVERWRITE_SAVE', message: `Overwrite the saved world "${activeName}" with the current world?` }))) return
     const r = saveWorld(name, { overwriteId: activeId })
     setMsg(r.ok ? `Updated "${r.value.name}".` : r.error)
   }
@@ -57,8 +58,8 @@ export function WorldsPanel() {
     const r = renameSavedWorld(id, next)
     if (!r.ok) setMsg(r.error)
   }
-  const remove = (id: string, label: string) => {
-    if (!window.confirm(`Delete the saved world "${label}"? This cannot be undone.`)) return
+  const remove = async (id: string, label: string) => {
+    if (!(await requestConfirmation({ type: 'DELETE', message: `Delete the saved world "${label}"? This cannot be undone.` }))) return
     const r = deleteSavedWorld(id)
     setMsg(r.ok ? `Deleted "${label}".` : r.error)
   }
