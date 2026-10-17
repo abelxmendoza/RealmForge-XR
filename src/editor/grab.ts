@@ -7,7 +7,7 @@ export const MIN_SIZE = 0.4
 /** Smallest height, matching the `[` key. */
 export const MIN_HEIGHT = 0.3
 /** Height step when snapping, matching the `[` `]` keys. */
-const HEIGHT_STEP = 0.25
+const HEIGHT_STEP = 0.5
 
 /** A hand grab's transform in map-local units: where the object is, its yaw, and a uniform scale factor. */
 export interface GrabTransform {

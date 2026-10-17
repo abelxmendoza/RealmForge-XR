@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import type { BuildingStyle, MaterialId } from '../world/types'
+import { FACADE_BAY } from '../world/scale'
 
 /**
  * Procedural textures and shared materials for the miniature world.
@@ -137,13 +138,11 @@ const SURFACE_PAINT: Record<MaterialId, Paint> = {
   },
 }
 
-/** Facade textures for buildings: [colour map, emissive map (lit windows)]. One repeat = FACADE_TILE. */
-export const FACADE_TILE: Record<BuildingStyle, [w: number, h: number]> = {
-  tower: [2, 2],
-  office: [2, 1],
-  house: [1.25, 1],
-  industrial: [1, 1],
-}
+/**
+ * Facade textures for buildings: [colour map, emissive map (lit windows)]. One repeat = FACADE_TILE,
+ * which is one real window bay by one storey (see world/scale.ts), so windows sit at true heights.
+ */
+export const FACADE_TILE: Record<BuildingStyle, [w: number, h: number]> = FACADE_BAY
 
 type FacadePaint = (g: CanvasRenderingContext2D, e: CanvasRenderingContext2D, s: number) => void
 

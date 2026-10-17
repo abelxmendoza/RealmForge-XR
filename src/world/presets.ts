@@ -23,76 +23,76 @@ const slab = (material: MaterialId, x: number, z: number, w: number, h: number, 
   obj('platform', x, z, [w, h, d], { material, ...extra })
 const wall = (material: MaterialId, x: number, z: number, length: number, height: number, rotationY = 0) =>
   obj('wall', x, z, [length, height, 0.3], { material, rotationY })
-const tree = (x: number, z: number, style: 'round' | 'pine' = 'round', s = 1) => obj('tree', x, z, [1.2 * s, 2.4 * s, 1.2 * s], { style })
-const lamp = (x: number, z: number, rotationY = 0) => obj('streetlight', x, z, [0.4, 2.6, 0.4], { rotationY })
-const crate = (x: number, z: number, material: MaterialId = 'wood', s = 0.8) => obj('crate', x, z, [s, s, s], { material, solid: true })
+const tree = (x: number, z: number, style: 'round' | 'pine' = 'round', s = 1) => obj('tree', x, z, [4 * s, 8 * s, 4 * s], { style })
+const lamp = (x: number, z: number, rotationY = 0) => obj('streetlight', x, z, [0.4, 6, 0.4], { rotationY })
+const crate = (x: number, z: number, material: MaterialId = 'wood', s = 1.2) => obj('crate', x, z, [s, s, s], { material, solid: true })
 
 /**
- * "Forge District": a miniature futuristic city. Downtown towers (north-west), an industrial yard
- * with the goal (north-east), a residential block (south-east) and an open plaza where the
- * robot starts (south-west). Roads and plazas are walkable; buildings, walls, the loading dock
- * and the crates block navigation.
+ * "Forge District": a small futuristic city at real-world size (1 unit = 1 m; heights are whole
+ * 3 m storeys). Downtown towers (north-west), an industrial yard with the goal (north-east), a
+ * residential block (south-east) and an open plaza where the robot starts (south-west). Roads and
+ * plazas are walkable; buildings, walls, the loading dock and the crates block navigation.
  */
 export function forgeDistrict(): WorldSnapshot {
   const objects: WorldObject[] = [
-    // Roads: main avenue (east–west), cross street split around the junction, industrial spur, side street.
-    road(0, 1, 20, 1.6),
-    road(-1, -4.9, 1.6, 10.2),
-    road(-1, 5.9, 1.6, 8.2),
-    road(5.25, -4.4, 1.4, 9.2),
-    road(5.25, 6, 8.5, 1.2),
+    // Roads (6–7 m wide): main avenue (east–west), cross street split around the junction, industrial spur, side street.
+    road(0, 4, 80, 6.4),
+    road(-4, -19.6, 6.4, 40.8),
+    road(-4, 23.6, 6.4, 32.8),
+    road(21, -17.6, 5.6, 36.8),
+    road(21, 24, 34, 4.8),
 
     // Plaza: the open area for agents.
-    slab('concrete', -6, 5.5, 7, 0.06, 6),
-    wall('brick', -6, 9.2, 6, 0.8),
-    tree(-9, 3, 'round'),
-    tree(-3.2, 3.1, 'round', 0.9),
-    tree(-9, 8, 'pine'),
-    tree(-3.2, 8, 'pine', 1.1),
+    slab('concrete', -24, 22, 28, 0.15, 24),
+    wall('brick', -24, 36.8, 24, 1.2),
+    tree(-36, 12, 'round'),
+    tree(-12.8, 12.4, 'round', 0.9),
+    tree(-36, 32, 'pine'),
+    tree(-12.8, 32, 'pine', 1.1),
 
     // Downtown towers.
-    building('tower', -7.5, -7.5, 2.5, 7, 2.5),
-    building('tower', -4, -7.5, 2.5, 5.5, 2.5, { color: '#a7c4dc' }),
-    building('office', -7.5, -3.25, 3, 3.5, 2.5),
-    building('tower', -4, -3.5, 2, 4.5, 2, { color: '#c6d3e2' }),
-    lamp(-8, 2.1),
-    lamp(-4, 2.1),
-    lamp(-6, -0.1, Math.PI),
-    lamp(-2.5, -0.1, Math.PI),
-    tree(-9.3, -0.8, 'pine', 0.8),
+    building('tower', -30, -30, 10, 27, 10),
+    building('tower', -16, -30, 10, 21, 10, { color: '#a7c4dc' }),
+    building('office', -30, -13, 12, 12, 10),
+    building('tower', -16, -14, 8, 18, 8, { color: '#c6d3e2' }),
+    lamp(-32, 8.4),
+    lamp(-16, 8.4),
+    lamp(-24, -0.4, Math.PI),
+    lamp(-10, -0.4, Math.PI),
+    tree(-37.2, -3.2, 'pine', 0.8),
 
     // Industrial district.
-    building('industrial', 2.75, -3, 3.5, 2.5, 3),
-    building('industrial', 2.75, -7.5, 3.5, 2.8, 3.5, { color: '#b5a99a' }),
-    slab('metal', 2.75, -5.3, 2.5, 0.5, 0.8),
-    // Fenced yard with a gate on its west side (z −6…−3.5); the goal sits inside.
-    wall('metal', 8.25, -9.5, 3.5, 1.4),
-    wall('metal', 6.5, -7.75, 3.5, 1.4, Math.PI / 2),
-    wall('metal', 8.25, -3.5, 3.5, 1.4),
-    crate(8.6, -5, 'metal'),
-    crate(9.4, -5, 'metal'),
-    crate(9.4, -5.8, 'wood'),
-    crate(7.6, -8.7, 'wood'),
-    crate(8.4, -8.7, 'wood', 0.6),
-    crate(4.2, -0.6, 'wood', 0.6),
-    lamp(3, 2.1),
-    lamp(7, 2.1),
-    lamp(1, -0.1, Math.PI),
-    lamp(9, -0.1, Math.PI),
+    building('industrial', 11, -12, 14, 9, 12),
+    building('industrial', 11, -30, 14, 9, 14, { color: '#b5a99a' }),
+    slab('metal', 11, -21.2, 10, 1.2, 3.2),
+    // Fenced yard with a gate on its west side (z −24…−14); the goal sits inside.
+    wall('metal', 33, -38, 14, 2.5),
+    wall('metal', 26, -31, 14, 2.5, Math.PI / 2),
+    wall('metal', 33, -14, 14, 2.5),
+    crate(34.4, -20, 'metal'),
+    crate(37.6, -20, 'metal'),
+    crate(37.6, -23.2, 'wood'),
+    crate(30.4, -34.8, 'wood'),
+    crate(33.6, -34.8, 'wood', 0.9),
+    crate(16.8, -2.4, 'wood', 0.9),
+    lamp(12, 8.4),
+    lamp(28, 8.4),
+    lamp(4, -0.4, Math.PI),
+    lamp(36, -0.4, Math.PI),
 
-    // Residential block.
-    building('house', 2.5, 4, 2.5, 2, 2.5),
-    building('house', 6, 4, 2.5, 2.2, 3, { color: '#d9c7a8' }),
-    building('house', 2.5, 8, 2.5, 2, 2.5, { rotationY: Math.PI, color: '#e8dcc4' }),
-    building('office', 6, 8, 2.5, 2.5, 2.5, { color: '#cfd8d0' }),
-    slab('grass', 8.75, 8.25, 2.4, 0.05, 3),
-    tree(8.6, 7.5, 'round'),
-    tree(9.2, 9.1, 'round', 0.8),
-    tree(8.8, 3, 'pine'),
-    tree(8.8, 4.8, 'round', 0.9),
-    tree(0.6, 9.3, 'round', 0.8),
+    // Residential block: two-storey houses and a small three-storey office.
+    building('house', 10, 16, 9, 6, 8),
+    building('house', 24, 16, 9, 6, 10, { color: '#d9c7a8' }),
+    building('house', 10, 32, 9, 6, 8, { rotationY: Math.PI, color: '#e8dcc4' }),
+    building('office', 24, 32, 10, 9, 10, { color: '#cfd8d0' }),
+    slab('grass', 35, 33, 9.6, 0.1, 12),
+    tree(34.4, 30, 'round'),
+    tree(36.8, 36.4, 'round', 0.8),
+    tree(35.2, 12, 'pine'),
+    tree(35.2, 19.2, 'round', 0.9),
+    tree(2.4, 37.2, 'round', 0.8),
   ]
-  return { objects, robotStart: [-6, 5.5], goal: [8.6, -7] }
+  return { objects, robotStart: [-24, 22], goal: [34.4, -28] }
 }
 
 export const PRESETS = [{ id: 'forge-district', label: 'Forge District (demo city)', build: forgeDistrict }] as const

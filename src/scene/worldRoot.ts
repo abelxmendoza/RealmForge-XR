@@ -7,7 +7,8 @@ import type { Vec2 } from '../world/types'
  */
 export const WORLD_ROOT = {
   position: new THREE.Vector3(0, 0.8, -1.1),
-  scale: 0.07,
+  // 1:60 tabletop: the 80 m life-size map becomes a ~1.3 m board.
+  scale: 1 / 60,
 }
 
 export const worldRootRef: { current: THREE.Group | null } = { current: null }

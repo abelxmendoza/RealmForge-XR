@@ -59,9 +59,9 @@ export function navObstacles(objects: Record<string, WorldObject> | Iterable<Wor
   return list.filter(blocksNavigation)
 }
 
-/** Map bounds and grid resolution. Map spans [-HALF, HALF] on x and z. */
+/** Map bounds and grid resolution. Map spans [-HALF, HALF] on x and z: an 80 m × 80 m city block at life size. */
 export const WORLD = {
-  half: 10,
+  half: 40,
   cell: 0.5,
   /** Robot clearance radius used to inflate obstacles. */
   robotRadius: 0.35,

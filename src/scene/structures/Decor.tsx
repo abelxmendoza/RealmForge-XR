@@ -43,24 +43,25 @@ export function Tree({ o }: { o: WorldObject }) {
 
 /** Streetlight with an unlit glowing lamp and a fake light pool on the ground (no real light: cheap on Quest). */
 export function Streetlight({ o }: { o: WorldObject }) {
+  // Real street-lamp proportions: 1.5 m arm, slim pole, 3 m light pool.
   const h = o.size[1]
-  const arm = 0.45
+  const arm = 1.5
   return (
     <group>
-      <mesh position={[0, 0.08, 0]} material={POLE}>
-        <cylinderGeometry args={[0.1, 0.12, 0.16, 8]} />
+      <mesh position={[0, 0.2, 0]} material={POLE}>
+        <cylinderGeometry args={[0.2, 0.25, 0.4, 8]} />
       </mesh>
       <mesh position={[0, h / 2, 0]} material={POLE} castShadow>
-        <cylinderGeometry args={[0.035, 0.05, h, 6]} />
+        <cylinderGeometry args={[0.07, 0.11, h, 6]} />
       </mesh>
-      <mesh position={[arm / 2, h - 0.03, 0]} material={POLE}>
-        <boxGeometry args={[arm, 0.05, 0.06]} />
+      <mesh position={[arm / 2, h - 0.06, 0]} material={POLE}>
+        <boxGeometry args={[arm, 0.1, 0.12]} />
       </mesh>
-      <mesh position={[arm - 0.04, h - 0.1, 0]} material={LAMP}>
-        <boxGeometry args={[0.22, 0.07, 0.14]} />
+      <mesh position={[arm - 0.15, h - 0.2, 0]} material={LAMP}>
+        <boxGeometry args={[0.6, 0.15, 0.3]} />
       </mesh>
-      <mesh position={[arm - 0.04, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
-        <circleGeometry args={[0.85, 20]} />
+      <mesh position={[arm - 0.15, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
+        <circleGeometry args={[3, 20]} />
         <meshBasicMaterial color="#ffe7a3" transparent opacity={0.16} depthWrite={false} toneMapped={false} />
       </mesh>
     </group>

@@ -68,7 +68,7 @@ or with a controller (squeeze the grip while touching it). No rays are used.
 | Grab the dark table edge | Moves the whole map (up, down, closer); two hands turn it. Works with any tool |
 
 Snapping (G) applies while you hold the object: position snaps so footprint edges land on the 0.5-unit
-grid, yaw to 15°, width and depth to 0.5 and height to 0.25. A one-hand grab never resizes an object.
+grid, yaw to 15°, width and depth to 0.5 and height to 0.5. A one-hand grab never resizes an object.
 The grab logic lives in `src/editor/grab.ts` and uses `@react-three/handle` for the hand tracking math.
 
 The **inspector** (top right, desktop) sets exact dimensions, material, building style and roof,

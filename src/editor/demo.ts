@@ -33,7 +33,7 @@ export function blockRoute() {
   const [dx, dz] = hit.dir
   const rotationY = Math.atan2(-dx, -dz)
   const target: Vec2 = [clampToWorld(hit.p[0], 1), clampToWorld(hit.p[1], 1)]
-  const length = Math.max(5, wall?.size[0] ?? 0)
+  const length = Math.max(20, wall?.size[0] ?? 0)
 
   if (!wall) {
     const id = w.addObject({ kind: 'wall', position: [target[0], 0, target[1]], size: [length, WALL_DEFAULTS.height, WALL_DEFAULTS.thickness], rotationY, color: WALL_DEFAULTS.color })
