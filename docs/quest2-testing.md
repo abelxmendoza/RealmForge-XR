@@ -130,6 +130,9 @@ from your hands or controllers. Gestures are listed in the README under *Hand gr
 - [ ] Fingertip poke still hits the green, purple and red buttons and places objects with the other tools
 - [ ] Controller: squeeze the grip while touching an object grabs it the same way
 - [ ] Small objects (trees, crates) are still grabbable
+- [ ] Grabbing the dark table edge moves the whole map; lower it to a comfortable height (or onto a real table)
+- [ ] Two hands on the table edge turn the map; it stays level
+- [ ] After moving the map, grabbing buildings and placing objects still lands where you touch
 
 ## Debugging
 

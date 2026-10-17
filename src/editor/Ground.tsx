@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
+import { Handle as GrabHandle } from '@react-three/handle'
 import { WALL_DEFAULTS, clampToWorld, useWorld } from '../world/store'
 import { WORLD, type Vec2, type Vec3, type WorldObject } from '../world/types'
 import { BUILDING_STYLES, DECOR_DEFAULTS, PLATFORM_DEFAULTS } from '../world/catalog'
 import { SNAP, snapFootprint, snapPoint } from '../world/snap'
-import { groundPoint } from '../scene/worldRoot'
+import { WORLD_ROOT, groundPoint, worldRootRef } from '../scene/worldRoot'
 import { groundMaterial } from '../scene/materials'
 import { tiledPlane, useGeometry } from '../scene/geometry'
 import { Structure } from '../scene/structures'
@@ -155,10 +156,27 @@ function Board({ size, onPointerDown }: { size: number; onPointerDown: (e: Three
         <boxGeometry args={[size + 0.4, 0.12, size + 0.4]} />
         <meshStandardMaterial color="#d9d4c8" roughness={0.7} />
       </mesh>
-      <mesh position={[0, -0.5, 0]} raycast={() => null}>
-        <boxGeometry args={[size + 0.8, 0.76, size + 0.8]} />
-        <meshStandardMaterial color="#2c2f36" roughness={0.6} />
-      </mesh>
+      {/*
+        The dark base is the map's grab handle in XR: grab its rim with one hand to move the whole map
+        (up, down, closer), or with both hands to turn it. Grab pointers only, so desktop is unaffected.
+      */}
+      <GrabHandle
+        targetRef={worldRootRef}
+        filter={(e) => e.pointerType === 'grab'}
+        rotate="y"
+        scale={false}
+        apply={(state, target) => {
+          target.position.copy(state.current.position)
+          target.quaternion.copy(state.current.quaternion)
+          // Keep the shared default in sync so a re-render of <Scene> can't snap the map back.
+          WORLD_ROOT.position.copy(state.current.position)
+        }}
+      >
+        <mesh position={[0, -0.5, 0]}>
+          <boxGeometry args={[size + 0.8, 0.76, size + 0.8]} />
+          <meshStandardMaterial color="#2c2f36" roughness={0.6} />
+        </mesh>
+      </GrabHandle>
     </>
   )
 }
