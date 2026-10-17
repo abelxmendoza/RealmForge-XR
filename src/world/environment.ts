@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { BuildingStyle, MaterialId } from './types'
 import type { WorldSnapshot } from './store'
+import { useWorld } from './store'
 import { forgeDistrict, marsOutpost, warehouse } from './presets'
 import { replaceWorld, type ReplaceOptions, type ReplaceResult } from './persistence'
 import { useEditor } from '../editor/settings'
@@ -188,19 +189,47 @@ function applyBrushDefaults(env: EnvironmentConfig) {
   })
 }
 
+export type LoadEnvironmentOptions = {
+  /**
+   * Required when the current world has objects. Core logic never calls `window.confirm`
+   * (XR has no browser dialog). Desktop UI should pass `(msg) => window.confirm(msg)`;
+   * Emiliano should pass an in-headset yes/no.
+   */
+  confirmReplace?: ReplaceOptions['confirmReplace']
+}
+
 /**
- * Load a named environment: confirms when the current world has objects, replaces
- * the world snapshot, updates appearance, and applies brush defaults.
+ * Load a named environment: replaces the world snapshot, updates appearance, and applies
+ * brush defaults. Never silently destroys a non-empty world — pass `confirmReplace`.
  *
  * @example
- * await loadEnvironment('mars-outpost')
+ * // empty world or already confirmed
+ * await loadEnvironment('mars-outpost', { confirmReplace: () => true })
+ * // XR menu
  * await loadEnvironment('warehouse', { confirmReplace: showXRConfirm })
  */
-export async function loadEnvironment(id: EnvironmentId | string, opts: ReplaceOptions = {}): Promise<ReplaceResult> {
+export async function loadEnvironment(id: EnvironmentId | string, opts: LoadEnvironmentOptions = {}): Promise<ReplaceResult> {
   if (!isEnvironmentId(id)) return { ok: false, error: `Unknown environment: ${id}` }
   const env = ENVIRONMENTS[id]
   const snap = env.buildWorld()
-  const result = await replaceWorld({ ...snap, name: env.name }, opts)
+  const count = Object.keys(useWorld.getState().objects).length
+
+  if (count > 0) {
+    if (!opts.confirmReplace) {
+      return {
+        ok: false,
+        error: 'Confirmation required to replace a non-empty world. Pass confirmReplace (XR dialog or desktop confirm).',
+        cancelled: true,
+      }
+    }
+    const ok = await opts.confirmReplace(
+      `Load "${env.name}"?\n\nThe current world (${count} objects) will be replaced. Unsaved changes are lost.`,
+    )
+    if (!ok) return { ok: false, error: 'Cancelled.', cancelled: true }
+  }
+
+  // Already confirmed (or world empty) — do not let replaceWorld fall back to window.confirm.
+  const result = await replaceWorld({ ...snap, name: env.name }, { confirmReplace: () => true })
   if (!result.ok) return result
   useEnvironment.getState().setActive(env.id)
   applyBrushDefaults(env)

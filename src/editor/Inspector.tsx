@@ -225,7 +225,16 @@ function WorldPanel() {
         Snap to grid (G)
       </label>
       {PRESETS.map((p) => (
-        <button key={p.id} onClick={() => void loadEnvironment(p.id)} title="Replaces the current world (asks first)">
+        <button
+          key={p.id}
+          onClick={() =>
+            void loadEnvironment(p.id, {
+              // UI-layer confirm only — core loadEnvironment never calls window.confirm.
+              confirmReplace: (msg) => window.confirm(msg),
+            })
+          }
+          title="Replaces the current world (asks first)"
+        >
           Load {p.label}
         </button>
       ))}

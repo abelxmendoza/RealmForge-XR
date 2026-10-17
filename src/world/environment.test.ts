@@ -15,6 +15,7 @@ import { buildGrid, isBlocked, pathIsClear, worldToCell } from '../nav/grid'
 import { planPath } from '../nav/astar'
 import { startNavigation, useNav } from '../nav/navigation'
 import { useEditor } from '../editor/settings'
+import { exportWorld, importWorld, saveWorld, loadSavedWorld, listSavedWorlds } from './persistence'
 
 /** In-memory localStorage so replaceWorld/confirm paths work in Node. */
 class MemoryStorage {
@@ -134,6 +135,24 @@ describe('loadEnvironment', () => {
     expect(r.ok).toBe(false)
   })
 
+  it('refuses a non-empty replace when confirmReplace is omitted (no window.confirm)', async () => {
+    useWorld.getState().loadWorld({
+      objects: [{ id: 'wall-keep', kind: 'wall', position: [0, 0, 0], size: [2, 1, 0.3], rotationY: 0 }],
+      robotStart: [0, 5],
+      goal: [0, -5],
+    })
+    const r = await loadEnvironment('forge-district')
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.cancelled).toBe(true)
+    expect(useWorld.getState().objects['wall-keep']).toBeTruthy()
+  })
+
+  it('loads into an empty world without requiring confirmReplace', async () => {
+    const r = await loadEnvironment('mars-outpost')
+    expect(r.ok).toBe(true)
+    expect(useEnvironment.getState().activeId).toBe('mars-outpost')
+  })
+
   it('keeps navigation and replanning after a switch', async () => {
     startNavigation()
     const before = useNav.getState().replanCount
@@ -163,5 +182,18 @@ describe('loadEnvironment', () => {
     expect(useWorld.getState().objects[id].kind).toBe('building')
     useWorld.getState().setTool('wall')
     expect(useWorld.getState().tool).toBe('wall')
+  })
+
+  it('stays compatible with world persistence save / load / export', async () => {
+    expect((await loadEnvironment('warehouse', { confirmReplace: yes })).ok).toBe(true)
+    const saved = saveWorld('Warehouse run')
+    expect(saved.ok).toBe(true)
+    if (!saved.ok) return
+    const { json } = exportWorld('Warehouse run')
+    useWorld.getState().loadWorld({ objects: [], robotStart: [0, 0], goal: null })
+    expect((await importWorld(json, { confirmReplace: yes })).ok).toBe(true)
+    expect(Object.keys(useWorld.getState().objects).length).toBeGreaterThan(5)
+    expect(listSavedWorlds().some((w) => w.name === 'Warehouse run')).toBe(true)
+    expect((await loadSavedWorld(saved.value.id, { confirmReplace: yes })).ok).toBe(true)
   })
 })
