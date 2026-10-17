@@ -113,7 +113,8 @@ ground instead. At life size the floor is out of fingertip reach, so turn on ray
 when placing objects, then grab them by hand.
 
 The **inspector** (top right, desktop) sets exact dimensions, material, building style and roof,
-picks what the creation tools place, toggles snapping, and loads the **Forge District** demo city.
+picks what the creation tools place, toggles snapping, and loads environments
+(**Forge District**, **Mars Outpost**, **Autonomous Warehouse** — see [docs/environments.md](docs/environments.md)).
 Loading a preset asks before replacing a world that has objects in it.
 
 On desktop, drag empty ground to orbit the camera.
@@ -121,22 +122,31 @@ On desktop, drag empty ground to orbit the camera.
 ## How it fits together
 
 ```
-src/world/types.ts     shared schema + map constants (the contract)
-src/world/store.ts     Zustand world store: objects, goal, robot start, editor tool/selection
-src/nav/grid.ts        obstacle footprints -> occupancy grid (rotated rects, inflated by robot radius)
-src/nav/astar.ts       8-connected grid A* + line-of-sight smoothing
-src/nav/navigation.ts  replans on every geometry/goal/robot change; flags routes an edit blocked
-src/agent/Robot.tsx    primitive robot that follows waypoints
-src/world/catalog.ts   object defaults, building styles, material lists, style cycling
-src/world/snap.ts      grid / angle snapping helpers
-src/world/presets.ts   preset worlds (Forge District demo city)
-src/editor/*           pointer-driven editing (create, move, resize, rotate, duplicate) + inspector panel
-src/scene/structures/  how each object kind is drawn (buildings, walls, platforms, decorations)
-src/scene/materials.ts procedural canvas textures + shared, cached materials
-src/scene/*            scene graph, lighting, world root (scale presets, placement), route + goal visuals
-src/world/scale.ts     real-world constants: storey height, door sizes, facade bays
-src/mocap/*            Smartsuit Pro (Rokoko) stream: parser, client, debug skeleton (+ tools/mocap-bridge.ts)
+src/world/types.ts         shared schema + map constants (the contract)
+src/world/store.ts         Zustand world store: objects, goal, robot start, editor tool/selection
+src/world/serialize.ts     versioned realmforge-world JSON + validation
+src/world/persistence.ts   localStorage save/load, export/import (UI-agnostic)
+src/world/history.ts       undo/redo with drag coalescing (UI-agnostic)
+src/nav/grid.ts            obstacle footprints -> occupancy grid (rotated rects, inflated by robot radius)
+src/nav/astar.ts           8-connected grid A* + line-of-sight smoothing
+src/nav/navigation.ts      replans on every geometry/goal/robot change; flags routes an edit blocked
+src/agent/Robot.tsx        primitive robot that follows waypoints
+src/world/catalog.ts       object defaults, building styles, material lists, style cycling
+src/world/snap.ts          grid / angle snapping helpers
+src/world/scale.ts         real-world constants: storey height, door sizes, facade bays
+src/world/presets.ts       preset layouts (Forge / Mars / Warehouse)
+src/world/environment.ts   environment config + loadEnvironment() API
+src/world/actions.ts       XR-safe World Action API (see docs/xr-world-actions.md)
+src/voice/*                AssemblyAI voice commands (see docs/voice-commands.md)
+src/editor/*               pointer-driven editing (create, move, resize, rotate, duplicate), hand grab, wrist menu, inspector
+src/scene/structures/      how each object kind is drawn (buildings, walls, platforms, decorations)
+src/scene/materials.ts     procedural canvas textures + shared, cached materials
+src/scene/*                scene graph, lighting, world root (scale presets, placement), route + goal visuals
+src/xr/*                   AR session fallback, "Place city" plane pinning and anchors
+src/mocap/*                Smartsuit Pro (Rokoko) stream: parser, client, debug skeleton (+ tools/mocap-bridge.ts)
 ```
+
+World save/load and undo/redo for XR and desktop: see `docs/world-persistence.md`.
 
 ### Shared object contract
 
@@ -173,3 +183,11 @@ Navigation builds its grid from `navObstacles(objects)`; the grid and A* code ar
 
 The robot uses grid A* over an occupancy grid built from obstacle footprints. It is not a physics
 or robotics simulation.
+
+## Unified integration handoff
+
+See [integration audit and merge order](docs/unified-integration.md),
+[demo readiness and hardware record](docs/demo-readiness.md), and
+[XR menu contract](examples/unified-xr-contract.ts).
+Desktop voice supports start/stop, hold-to-talk, and a typed command fallback.
+World replacements use a shared confirmation dialog; an XR menu must provide its own consumer.

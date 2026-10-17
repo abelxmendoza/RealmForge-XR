@@ -8,11 +8,12 @@ import { WORLD, type Vec2, type Vec3, type WorldObject } from '../world/types'
 import { BUILDING_STYLES, DECOR_DEFAULTS, PLATFORM_DEFAULTS } from '../world/catalog'
 import { SNAP, snapFootprint, snapPoint } from '../world/snap'
 import { SCALE_PRESETS, WORLD_ROOT, groundPoint, onTable, worldRootRef } from '../scene/worldRoot'
-import { groundMaterial } from '../scene/materials'
+import { flatMaterial, groundMaterial } from '../scene/materials'
 import { tiledPlane, useGeometry } from '../scene/geometry'
 import { Structure } from '../scene/structures'
 import { beginDrag } from './drag'
 import { useEditor } from './settings'
+import { useEnvironment } from '../world/environment'
 
 const MIN_WALL = 0.6
 const MIN_PLATFORM = 0.5
@@ -161,20 +162,22 @@ function Board({ size, onPointerDown }: { size: number; onPointerDown: (e: Three
   const ground = useGeometry(() => tiledPlane(size, size, 2), [size])
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
   const real = useEditor((s) => s.surface === 'real')
+  // Virtual ground, grid and table colours follow the active environment (Forge / Mars / Warehouse).
+  const appearance = useEnvironment((s) => s.appearance)
   const table = onTable(ratio)
   const cm = (v: number) => v / 100 / ratio
-  const fine = real ? { color: '#ffffff', opacity: 0.25 } : { color: '#ffffff', opacity: 0.07 }
-  const major = real ? { color: '#7bdff2', opacity: 0.55 } : { color: '#e8f4ff', opacity: 0.18 }
+  const fine = real ? { color: '#ffffff', opacity: 0.25 } : { color: appearance.gridMinor, opacity: 0.07 }
+  const major = real ? { color: '#7bdff2', opacity: 0.55 } : { color: appearance.gridMajor, opacity: 0.18 }
   return (
     <>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} geometry={ground} material={real ? SHADOW_GROUND : groundMaterial()} receiveShadow onPointerDown={onPointerDown} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} geometry={ground} material={real ? SHADOW_GROUND : groundMaterial(appearance.groundColor, appearance.groundTint)} receiveShadow onPointerDown={onPointerDown} />
       {/* Fine grid at the snapping step (only once it's big enough to read), major lines every 5 m. */}
       {ratio >= SCALE_PRESETS.room.ratio && (
         <gridHelper args={[size, size / SNAP, fine.color, fine.color]} position={[0, 0.006, 0]} material-transparent material-opacity={fine.opacity} material-depthWrite={false} raycast={() => null} />
       )}
       <gridHelper args={[size, size / 5, major.color, major.color]} position={[0, 0.008, 0]} material-transparent material-opacity={major.opacity} material-depthWrite={false} raycast={() => null} />
       {real && <RealSurfaceMarks half={size / 2} />}
-      {table && <TableEdge size={size} cm={cm} />}
+      {table && <TableEdge size={size} cm={cm} rim={appearance.tableEdge} base={appearance.tableBase} />}
     </>
   )
 }
@@ -198,19 +201,19 @@ function RealSurfaceMarks({ half }: { half: number }) {
   )
 }
 
-const RIM_MAT = new THREE.MeshStandardMaterial({ color: '#d9d4c8', roughness: 0.7 })
-const BASE_MAT = new THREE.MeshStandardMaterial({ color: '#2c2f36', roughness: 0.6 })
 
 /**
  * Table edge so the miniature reads as an object in passthrough; its dark base is the map's grab handle.
  * Built as a frame around the board (not a slab under it), so with the real surface your actual table
  * shows through the middle.
  */
-function TableEdge({ size, cm }: { size: number; cm: (v: number) => number }) {
+function TableEdge({ size, cm, rim, base }: { size: number; cm: (v: number) => number; rim: string; base: string }) {
+  const rimMat = flatMaterial(rim, { roughness: 0.7 })
+  const baseMat = flatMaterial(base, { roughness: 0.6 })
   return (
     <>
       {/* Top sits 1 mm below the ground plane: coplanar faces z-fight. */}
-      <Frame inner={size} outer={size + cm(3)} y={-cm(0.1) - cm(0.6)} height={cm(1.2)} material={RIM_MAT} />
+      <Frame inner={size} outer={size + cm(3)} y={-cm(0.1) - cm(0.6)} height={cm(1.2)} material={rimMat} />
       {/*
         The dark base is the map's grab handle in XR: grab its rim with one hand to move the whole map
         (up, down, closer), or with both hands to turn it. Grab pointers only, so desktop is unaffected.
@@ -227,7 +230,7 @@ function TableEdge({ size, cm }: { size: number; cm: (v: number) => number }) {
           WORLD_ROOT.position.copy(state.current.position)
         }}
       >
-        <Frame inner={size} outer={size + cm(6)} y={-cm(1.4) - cm(2.5)} height={cm(5)} material={BASE_MAT} raycastable />
+        <Frame inner={size} outer={size + cm(6)} y={-cm(1.4) - cm(2.5)} height={cm(5)} material={baseMat} raycastable />
       </GrabHandle>
     </>
   )

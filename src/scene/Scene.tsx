@@ -16,8 +16,13 @@ import { MenuButton, WristMenu } from '../editor/WristMenu'
 import { MocapSkeleton } from '../mocap/MocapSkeleton'
 import { toggleMocap, useMocap } from '../mocap/store'
 import { SCALE_PRESETS, WORLD_ROOT, placement, worldPlacement, worldRootRef } from './worldRoot'
+import { WorldPlacement } from '../xr/WorldPlacement'
+import { bindWebXRManager } from '../xr/session'
+import { useEnvironment } from '../world/environment'
+import { usePlacement } from '../xr/placement'
 
 export function Scene() {
+  const background = useEnvironment((s) => s.appearance.lighting.background)
   const dragging = useWorld((s) => s.dragging)
   const inXR = useXR((s) => s.session != null)
   const mode = useXR((s) => s.mode)
@@ -25,6 +30,12 @@ export function Scene() {
   const mocapOn = useMocap((s) => s.enabled)
   const mocapInMap = useMocap((s) => s.placement === 'map')
   const robotStart = useWorld((s) => s.robotStart)
+  const gl = useThree((s) => s.gl)
+
+  useEffect(() => {
+    bindWebXRManager(gl.xr)
+    return () => bindWebXRManager(null)
+  }, [gl])
 
   // Mouse releases outside the canvas still end a drag.
   useEffect(() => {
@@ -39,7 +50,7 @@ export function Scene() {
 
   return (
     <>
-      {mode !== 'immersive-ar' && <color attach="background" args={['#1d2433']} />}
+      {mode !== 'immersive-ar' && <color attach="background" args={[background]} />}
       <Lighting />
       <WorldScaler />
       {inXR && <WristMenu extra={<MocapMenuButton />} />}
@@ -47,27 +58,33 @@ export function Scene() {
       {mocapOn && !mocapInMap && <MocapSkeleton />}
       {!inXR && <OrbitControls makeDefault enabled={!dragging} target={WORLD_ROOT.position} />}
 
-      <group
-        ref={(g) => {
-          worldRootRef.current = g
-        }}
-        position={WORLD_ROOT.position}
-        scale={ratio}
-        onPointerMove={dragMove}
-        onPointerUp={onUp}
-      >
-        <DragCatcher />
-        <Ground />
-        <Obstacles />
-        <Route />
-        <Robot />
-        {/* Or inside the world, standing at the robot start and scaled with the world. */}
-        {mocapOn && mocapInMap && (
-          <group position={[robotStart[0], 0, robotStart[1]]}>
-            <MocapSkeleton />
-          </group>
-        )}
-      </group>
+      {/*
+        WorldPlacement ("Place city"): identity until you pin the world to a detected table/floor plane,
+        then this whole subtree follows that plane (or its anchor). WorldScaler positions the root inside it.
+      */}
+      <WorldPlacement>
+        <group
+          ref={(g) => {
+            worldRootRef.current = g
+          }}
+          position={WORLD_ROOT.position}
+          scale={ratio}
+          onPointerMove={dragMove}
+          onPointerUp={onUp}
+        >
+          <DragCatcher />
+          <Ground />
+          <Obstacles />
+          <Route />
+          <Robot />
+          {/* Or inside the world, standing at the robot start and scaled with the world. */}
+          {mocapOn && mocapInMap && (
+            <group position={[robotStart[0], 0, robotStart[1]]}>
+              <MocapSkeleton />
+            </group>
+          )}
+        </group>
+      </WorldPlacement>
     </>
   )
 }
@@ -75,24 +92,32 @@ export function Scene() {
 /**
  * Places the world for the chosen scale preset relative to where you are: when the preset changes
  * and when an XR session starts (your head is somewhere else once the headset is on).
+ * When "Place city" has pinned the world to a plane, WorldPlacement already carries the pose, so the
+ * root just sits at the pinned point (local origin) at the current scale.
  * Writes WORLD_ROOT.position too, so re-renders and the map grab start from the same spot.
  */
 function WorldScaler() {
   const worldScale = useEditor((s) => s.worldScale)
   const session = useXR((s) => s.session)
+  const pinned = usePlacement((s) => s.status === 'pinned')
   const camera = useThree((s) => s.camera)
   useEffect(() => {
     placement.pending = true
-  }, [worldScale, session])
+  }, [worldScale, session, pinned])
 
   // Placed from the frame loop so the XR camera already has its head pose.
   useFrame(() => {
     const root = worldRootRef.current
     if (!placement.pending || !root) return
     placement.pending = false
-    const head = camera.getWorldPosition(new THREE.Vector3())
-    const forward = camera.getWorldDirection(new THREE.Vector3())
-    const at = worldPlacement(worldScale, head, forward, useWorld.getState().robotStart)
+    let at: THREE.Vector3
+    if (usePlacement.getState().status === 'pinned') {
+      at = new THREE.Vector3(0, 0, 0)
+    } else {
+      const head = camera.getWorldPosition(new THREE.Vector3())
+      const forward = camera.getWorldDirection(new THREE.Vector3())
+      at = worldPlacement(worldScale, head, forward, useWorld.getState().robotStart)
+    }
     root.position.copy(at)
     root.quaternion.identity()
     WORLD_ROOT.position.copy(at)

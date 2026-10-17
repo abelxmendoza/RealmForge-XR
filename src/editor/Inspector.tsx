@@ -15,6 +15,9 @@ import {
   treeStyle,
 } from '../world/catalog'
 import { PRESETS } from '../world/presets'
+import { worldActions } from '../world/actions'
+import { confirmReplace } from '../world/confirmation'
+import { WorldsPanel } from './WorldsPanel'
 import { useEditor, type DecorKind } from './settings'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 
@@ -30,6 +33,7 @@ export function Inspector() {
     <div className="inspector">
       {selected ? <ObjectPanel o={selected} /> : <BrushPanel tool={tool} />}
       <WorldPanel />
+      <WorldsPanel />
     </div>
   )
 }
@@ -214,11 +218,6 @@ function BrushPanel({ tool }: { tool: Tool }) {
 
 function WorldPanel() {
   const snap = useEditor((s) => s.snap)
-  const load = (build: () => ReturnType<(typeof PRESETS)[number]['build']>, label: string) => {
-    const count = Object.keys(useWorld.getState().objects).length
-    if (count > 0 && !window.confirm(`Replace the current world (${count} objects) with "${label}"?`)) return
-    useWorld.getState().loadWorld(build())
-  }
   return (
     <section>
       <h3>World</h3>
@@ -227,7 +226,16 @@ function WorldPanel() {
         Snap to grid (G)
       </label>
       {PRESETS.map((p) => (
-        <button key={p.id} onClick={() => load(p.build, p.label)}>
+        <button
+          key={p.id}
+          onClick={() =>
+            void worldActions.loadEnvironment(p.id, {
+              // One confirmation channel for desktop, voice, and headset consumers.
+              confirmReplace,
+            })
+          }
+          title="Replaces the current world (asks first)"
+        >
           Load {p.label}
         </button>
       ))}

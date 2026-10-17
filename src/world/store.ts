@@ -29,8 +29,14 @@ export interface WorldState {
   removeObject: (id: string) => void
   /** Copy an object next to the original and select the copy. Returns the new id. */
   duplicateObject: (id: string) => string | null
-  /** Replace the whole world (objects, robot, goal). Callers confirm with the user first. */
+  /** Replace the whole world (objects, robot, goal). Always teleports the robot to robotStart. Callers confirm with the user first. */
   loadWorld: (w: WorldSnapshot) => void
+  /**
+   * Restore a snapshot for undo/redo. Bumps geometryVersion so navigation rebuilds;
+   * only bumps robotVersion (and teleports the live robot) when robotStart actually changed.
+   * Preserves selection when the selected id still exists in the snapshot.
+   */
+  restoreWorld: (w: WorldSnapshot) => void
   setGoal: (p: Vec2 | null) => void
   placeRobot: (p: Vec2) => void
   setTool: (t: Tool) => void
@@ -41,8 +47,17 @@ export interface WorldState {
 
 let nextId = 1
 export const newId = (prefix = 'obj') => `${prefix}-${nextId++}`
+/** Keep newId() ahead of ids that came from outside (loaded or imported worlds), so they never collide. */
+export function reserveIds(ids: Iterable<string>) {
+  for (const id of ids) {
+    const m = /-(\d+)$/.exec(id)
+    if (m) nextId = Math.max(nextId, Number(m[1]) + 1)
+  }
+}
 const ID_PREFIX: Record<ObjectKind, string> = { wall: 'wall', building: 'bld', platform: 'plat', tree: 'tree', streetlight: 'lamp', crate: 'crate' }
 export const idFor = (kind: ObjectKind) => newId(ID_PREFIX[kind] ?? 'obj')
+
+const sameVec2 = (a: Vec2, b: Vec2) => a[0] === b[0] && a[1] === b[1]
 
 export const WALL_DEFAULTS = { height: 3, thickness: 0.3, color: '#c9b79c' }
 export const BUILDING_DEFAULTS: { size: Vec3; color: string } = { size: [12, 12, 12], color: '#8fa6c9' }
@@ -108,15 +123,31 @@ export const useWorld = create<WorldState>((set) => ({
     set((s) => ({ objects: { ...s.objects, [copy.id]: copy }, selectedId: copy.id, geometryVersion: s.geometryVersion + 1 }))
     return copy.id
   },
-  loadWorld: (w) =>
+  loadWorld: (w) => {
+    reserveIds(w.objects.map((o) => o.id))
     set((s) => ({
       objects: Object.fromEntries(w.objects.map((o) => [o.id, { ...o }])),
-      robotStart: [...w.robotStart],
-      goal: w.goal ? [...w.goal] : null,
+      robotStart: [...w.robotStart] as Vec2,
+      goal: w.goal ? ([...w.goal] as Vec2) : null,
       selectedId: null,
       geometryVersion: s.geometryVersion + 1,
       robotVersion: s.robotVersion + 1,
-    })),
+    }))
+  },
+  restoreWorld: (w) => {
+    reserveIds(w.objects.map((o) => o.id))
+    set((s) => {
+      const robotChanged = !sameVec2(s.robotStart, w.robotStart)
+      return {
+        objects: Object.fromEntries(w.objects.map((o) => [o.id, { ...o }])),
+        robotStart: [...w.robotStart] as Vec2,
+        goal: w.goal ? ([...w.goal] as Vec2) : null,
+        selectedId: s.selectedId && w.objects.some((o) => o.id === s.selectedId) ? s.selectedId : null,
+        geometryVersion: s.geometryVersion + 1,
+        ...(robotChanged ? { robotVersion: s.robotVersion + 1 } : {}),
+      }
+    })
+  },
   setGoal: (p) => set({ goal: p }),
   placeRobot: (p) => set((s) => ({ robotStart: p, robotVersion: s.robotVersion + 1 })),
   setTool: (tool) => set({ tool }),
