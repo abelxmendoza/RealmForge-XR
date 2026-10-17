@@ -16,6 +16,7 @@ import { Structure } from '../scene/structures'
 import { beginDrag } from './drag'
 import { useEditor } from './settings'
 import { useSelection } from './selection'
+import { HAPTIC, pulse } from '../xr/haptics'
 import { usePlacement } from '../xr/placement'
 import { useEnvironment } from '../world/environment'
 
@@ -78,6 +79,20 @@ export function applyGroundHover(e: ThreeEvent<PointerEvent>) {
   if (point) useGroundUI.setState({ hover: point, placementError: false })
 }
 export const clearGroundHover = () => useGroundUI.setState({ hover: null })
+/** Set the asset tool's aim point directly (XR hands / controllers aiming without rays). */
+export function setGroundHover(point: Vec2 | null) {
+  const cur = useGroundUI.getState().hover
+  if (!point && !cur) return
+  if (point && cur && Math.hypot(point[0] - cur[0], point[1] - cur[1]) < 0.05) return
+  useGroundUI.setState({ hover: point, placementError: false })
+}
+/** Place the selected library asset at `point` (map metres); haptic tick on success. */
+export function placeAssetAt(point: Vec2): boolean {
+  const result = worldActions.placeCatalogAsset(point)
+  useGroundUI.setState({ placementError: !result.ok })
+  if (result.ok) pulse('active', HAPTIC.place)
+  return result.ok
+}
 
 /**
  * Apply the current tool at a ground press. Used by the ground itself and by walkable objects
@@ -105,8 +120,7 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
       return
     case 'asset': {
       e.stopPropagation()
-      const result = worldActions.placeCatalogAsset(raw)
-      useGroundUI.setState({ placementError: !result.ok })
+      placeAssetAt(raw)
       return
     }
     case 'building':

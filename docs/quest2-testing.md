@@ -170,6 +170,18 @@ See docs/gestures.md for the poses.
 - [ ] Controllers: hold A aiming along a wall sets the axis; both triggers frame-select; right trigger on a distant rack + twist (or stick flicks) rotates it
 - [ ] Controllers: grip on an object still near-grabs it; grip on a wrist button presses it
 
+## Floor, asset library and refinements
+
+- [ ] At **1:1** the grid sits on your real floor (touch the floor: hand and grid meet); still true after walking, pulling and Recenter
+- [ ] The dev log shows `[RealmForge] floor at …` with `(floor plane)` or `(local-floor)`
+- [ ] Wrist **Assets** opens the Control Palette on its Assets page; **Palette** shows and hides it
+- [ ] With an asset picked, the ghost follows where you aim on the floor; pinch (hands) or trigger (controller) places it
+- [ ] Right-stick flick rotates the ghost 90° before placing
+- [ ] Objects outline when your hand or controller is close enough to grab
+- [ ] Holding an object with snap on: it follows your hand and a cyan ghost shows the snapped spot; release lands there
+- [ ] Controllers buzz on grab, snap steps, placing and button presses
+- [ ] Library: pallets, racks, buildings, decor and main's warehouse catalog all place, save and load
+
 ## Smartsuit mock skeleton
 
 On the PC run `npm run mocap:mock` (alongside the dev server), then press **Mocap** on the wrist menu.

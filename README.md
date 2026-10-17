@@ -89,7 +89,12 @@ The grab logic lives in `src/editor/grab.ts` and uses `@react-three/handle` for 
 **Controllers** do the same: both grips pull the world, both triggers frame, hold A sets the axis, right
 trigger + twist rotates, left stick moves you and right stick snap-turns.
 
-The app asks for WebXR `unbounded` tracking so you can walk past the play-area boundary. Design notes,
+Holding an object shows a snap ghost; controllers buzz on grab, snap, place and presses; objects outline
+when you can grab them. Place library assets by aiming at the floor and pinching (or trigger), no rays needed.
+Everything placeable is in the **asset library**, including your own `.glb` models: see [docs/asset-library.md](docs/asset-library.md).
+
+The app asks for WebXR `unbounded` tracking so you can walk past the play-area boundary, and keeps the
+ground on your real floor (a detected floor plane, or the floor-level reference space). Design notes,
 tuning and limits are in [docs/gestures.md](docs/gestures.md).
 
 ### Wrist menu (XR)

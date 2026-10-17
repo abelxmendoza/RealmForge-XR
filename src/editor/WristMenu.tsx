@@ -11,6 +11,8 @@ import { togglePlaceCity, toggleRays, toggleSurface } from './xrInput'
 import { useWorld } from '../world/store'
 import { usePlacement } from '../xr/placement'
 import { useSelection } from './selection'
+import { openPalettePage, togglePalette, usePaletteUI } from '../xr/paletteUI'
+import { HAPTIC, pulse } from '../xr/haptics'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 
 /** Panel size in metres (real room size, independent of the world scale). */
@@ -29,6 +31,8 @@ const EDGE = 0.003
 const PRESS_COOLDOWN_MS = 350
 /** Width of a third-of-the-row button (for buttons passed in from outside, like Mocap). */
 export const WRIST_THIRD = (W - GAP * 2) / 3
+/** Width of a quarter-of-the-row button. */
+export const WRIST_QUARTER = (W - GAP * 3) / 4
 
 /** Where the menu is this frame, so hand gestures can ignore a hand that is using it. */
 export const wristMenuState = { visible: false, position: new THREE.Vector3() }
@@ -149,6 +153,7 @@ function MenuContent({ extra, envRow }: { extra?: ReactNode; envRow?: ReactNode 
   const group = useSelection((s) => s.ids.length)
   const tool = useWorld((s) => s.tool)
   const placing = usePlacement((s) => s.status === 'choosing')
+  const paletteHidden = usePaletteUI((s) => s.hidden)
   const guideOpen = useGuide((s) => s.open)
   const toggleGuide = useGuide((s) => s.toggleGuide)
   const rowY = (i: number) => 0.05 - i * (BTN_H + GAP)
@@ -183,12 +188,22 @@ function MenuContent({ extra, envRow }: { extra?: ReactNode; envRow?: ReactNode 
       ))}
       {/* Tools: Assets places from the asset library (pick one on the Control Palette's Assets page). */}
       <MenuButton position={[col(0, quarter), rowY(2), 0]} width={quarter} label="Select" active={tool === 'select'} onPress={() => useWorld.getState().setTool('select')} />
-      <MenuButton position={[col(1, quarter), rowY(2), 0]} width={quarter} label="Assets" active={tool === 'asset'} onPress={() => useWorld.getState().setTool('asset')} />
+      <MenuButton
+        position={[col(1, quarter), rowY(2), 0]}
+        width={quarter}
+        label="Assets"
+        active={tool === 'asset'}
+        onPress={() => {
+          useWorld.getState().setTool('asset')
+          openPalettePage('Assets')
+        }}
+      />
       <MenuButton position={[col(2, quarter), rowY(2), 0]} width={quarter} label={placing ? 'Cancel' : 'Place'} active={placing} onPress={togglePlaceCity} />
       <MenuButton position={[col(3, quarter), rowY(2), 0]} width={quarter} label={guideOpen ? 'Close' : 'Guide'} active={guideOpen} onPress={toggleGuide} />
-      <MenuButton position={[col(0, third), rowY(3), 0]} width={third} label="Recenter" onPress={recenterWorld} />
-      <MenuButton position={[col(1, third), rowY(3), 0]} width={third} label={`Gestures ${gestures ? 'on' : 'off'}`} active={gestures} onPress={() => set({ gestures: !gestures })} />
-      {extra && <group position={[col(2, third), rowY(3), 0]}>{extra}</group>}
+      <MenuButton position={[col(0, quarter), rowY(3), 0]} width={quarter} label="Recenter" onPress={recenterWorld} />
+      <MenuButton position={[col(1, quarter), rowY(3), 0]} width={quarter} label={paletteHidden ? 'Palette' : 'Hide pal.'} active={!paletteHidden} onPress={togglePalette} />
+      <MenuButton position={[col(2, quarter), rowY(3), 0]} width={quarter} label={`Gest. ${gestures ? 'on' : 'off'}`} active={gestures} onPress={() => set({ gestures: !gestures })} />
+      {extra && <group position={[col(3, quarter), rowY(3), 0]}>{extra}</group>}
       {envRow && <group position={[0, rowY(4), 0]}>{envRow}</group>}
       {/* Framed group (frame-hands gesture): act on all of it. */}
       {group > 0 && (
@@ -229,6 +244,7 @@ export function MenuButton(props: {
     const now = performance.now()
     if (now - last.current < PRESS_COOLDOWN_MS) return
     last.current = now
+    pulse('active', HAPTIC.press)
     onPress.current()
   }
 

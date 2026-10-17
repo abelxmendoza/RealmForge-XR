@@ -17,6 +17,8 @@ import { blockRoute } from '../editor/demo'
 import { usePlacement } from './placement'
 import { blankPaletteWorld, createPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteEnvironment, loadPaletteSave, savePaletteWorld } from './paletteActions'
 import { FORGE } from '../theme/forge'
+import { setPaletteHidden, usePaletteUI } from './paletteUI'
+import { HAPTIC, pulse } from './haptics'
 import { useGuide } from '../guide/guideStore'
 
 /** Actual Three.js controls: visible to both eyes and interactive with XR pointers. */
@@ -31,7 +33,11 @@ function PaletteContent() {
   const root = useRef<THREE.Group>(null)
   const gl = useThree((s) => s.gl)
   const [page, setPage] = useState('Tools')
-  const [hidden, setHidden] = useState(false)
+  // Shown / hidden and page requests are shared with the wrist menu (xr/paletteUI.ts).
+  const hidden = usePaletteUI((s) => s.hidden)
+  const setHidden = setPaletteHidden
+  const pageRequest = usePaletteUI((s) => s.request)
+  const recenter = usePaletteUI((s) => s.recenter)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('Point and trigger / pinch to choose. Open Guide anytime.')
   const guideOpen = useGuide((s) => s.open)
@@ -56,6 +62,8 @@ function PaletteContent() {
 
   useEffect(() => subscribeHistory(setHistory), [])
   useEffect(() => { if (request) setHidden(false) }, [request])
+  useEffect(() => { const p = usePaletteUI.getState().page; if (pageRequest && p) setPage(p) }, [pageRequest])
+  useEffect(() => { if (recenter) positioned.current = false }, [recenter])
   useEffect(() => { worldActions.listSavedWorlds() }, [])
   // Place once in tracking space, independent of the tabletop and its scale.
   useFrame(() => {
@@ -176,7 +184,7 @@ function Tile({ text, x = 0, y, width, height = 0.06, active = false, disabled =
     return map
   }, [text, height, width, active, disabled, hover, onClick != null])
   useEffect(() => () => texture.dispose(), [texture])
-  return <mesh position={[x, y, 0]} onPointerOver={() => setHover(true)} onPointerOut={() => setHover(false)} onPointerDown={(e) => { e.stopPropagation(); if (!disabled) onClick?.() }} onClick={(e) => e.stopPropagation()}>
+  return <mesh position={[x, y, 0]} onPointerOver={() => setHover(true)} onPointerOut={() => setHover(false)} onPointerDown={(e) => { e.stopPropagation(); if (!disabled) { pulse('active', HAPTIC.press); onClick?.() } }} onClick={(e) => e.stopPropagation()}>
     <planeGeometry args={[width, height]} />
     <meshBasicMaterial map={texture} toneMapped={false} side={THREE.DoubleSide} />
   </mesh>

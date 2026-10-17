@@ -15,7 +15,7 @@ import { Robot } from '../agent/Robot'
 import { Route } from './Route'
 import { Lighting } from './Lighting'
 import { ThumbnailCapture } from './ThumbnailCapture'
-import { MenuButton, WRIST_THIRD, WristMenu } from '../editor/WristMenu'
+import { MenuButton, WRIST_QUARTER, WristMenu } from '../editor/WristMenu'
 import { MocapSkeleton } from '../mocap/MocapSkeleton'
 import { GestureController } from '../xr/gestures/GestureController'
 import { toggleMocap, useMocap } from '../mocap/store'
@@ -148,7 +148,7 @@ function WorldScaler() {
 function MocapMenuButton() {
   const enabled = useMocap((s) => s.enabled)
   const status = useMocap((s) => s.status)
-  return <MenuButton width={WRIST_THIRD} label={enabled ? `Mocap ${status}` : 'Mocap off'} active={enabled && status === 'live'} onPress={toggleMocap} />
+  return <MenuButton width={WRIST_QUARTER} label={enabled ? `Mocap ${status}` : 'Mocap off'} active={enabled && status === 'live'} onPress={toggleMocap} />
 }
 
 /** Big invisible plane under the map so drags keep receiving moves past the map edge. */

@@ -47,6 +47,21 @@ same hold-before-act rule (`src/xr/gestures/controllerInput.ts`):
 
 With rays on (X / wrist menu) the triggers point and click instead, so frame and trigger-select pause.
 
+## Feedback and placing
+
+- **Hover:** an object gets a light outline when your hand or controller is close enough to grab it.
+- **Snap ghost:** while you hold an object with snapping on, it follows your hand smoothly and a cyan
+  ghost shows the snapped pose it will land in on release. The robot already re-routes around the ghost.
+- **Haptics (controllers):** the controller doing the action buzzes on grab (light), each snap step
+  (tick), placing (medium), wrist and palette presses (light), and on committing a frame, axis or pull.
+  Hands have no haptics; they get the visual cues above.
+- **Placing assets without rays:**
+  1. Pick an asset (wrist **Assets** opens the palette's Assets page, or use the desktop library).
+  2. Aim at the floor. With a controller, its ray aims; with hands, the line from your eyes through
+     your pinch aims. The green/red ghost follows.
+  3. Pinch or pull the trigger to place.
+  4. A right-stick flick turns the ghost 90° before placing.
+
 ## Walking past the boundary
 
 The app asks for WebXR's `unbounded` reference space. Quest Browser supports it in mixed reality, and it

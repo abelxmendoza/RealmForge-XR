@@ -1,4 +1,5 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
+import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { ThreeEvent } from '@react-three/fiber'
 import { Handle as GrabHandle, type HandleState } from '@react-three/handle'
@@ -12,6 +13,7 @@ import { beginDrag } from './drag'
 import { applyGroundHover, applyGroundTool } from './Ground'
 import { MIN_SIZE, grabPatch, samePatch, type GrabPatch } from './grab'
 import { useEditor } from './settings'
+import { HAPTIC, pulse } from '../xr/haptics'
 import { groupIds, useSelection } from './selection'
 
 /** What a hand grab remembers between frames: the object as grabbed, and the last patch sent. */
@@ -84,6 +86,19 @@ function Obstacle({ o }: { o: WorldObject }) {
   const inPreview = useSelection((s) => s.preview.includes(o.id))
   const [w, h, d] = o.size
   const groupRef = useRef<THREE.Group>(null)
+  // Near-grab feedback: hover outline when a hand/controller can grab it; while held, the object follows the
+  // hand freely (`free`) and a ghost shows the snapped pose it will commit to.
+  const [hovered, setHovered] = useState(false)
+  const [holding, setHolding] = useState(false)
+  const free = useRef<{ x: number; z: number; yaw: number } | null>(null)
+  useFrame(() => {
+    const g = groupRef.current
+    const f = free.current
+    if (!g || !f) return
+    g.position.x = f.x
+    g.position.z = f.z
+    g.rotation.y = f.yaw
+  })
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
 
   /**
@@ -97,18 +112,28 @@ function Obstacle({ o }: { o: WorldObject }) {
     if (state.first) {
       world.select(o.id)
       world.setDragging(true)
+      setHolding(true)
+      pulse('active', HAPTIC.grab)
     }
     const { position, quaternion, scale } = state.current
-    const patch = grabPatch(
-      memo.base,
-      { x: position.x, z: position.z, rotationY: yawOf.setFromQuaternion(quaternion, 'YXZ').y, scale: scale.x },
-      useEditor.getState().snap,
-    )
+    const t = { x: position.x, z: position.z, rotationY: yawOf.setFromQuaternion(quaternion, 'YXZ').y, scale: scale.x }
+    const snap = useEditor.getState().snap
+    const patch = grabPatch(memo.base, t, snap)
+    // The store (and navigation) get the snapped pose; the object itself follows the hand until release.
+    if (snap) {
+      const loose = grabPatch(memo.base, t, false)
+      free.current = { x: loose.position[0], z: loose.position[2], yaw: loose.rotationY }
+    } else free.current = null
     if (!samePatch(memo.last, patch)) {
       world.updateObject(o.id, patch)
+      if (memo.last && snap) pulse('active', HAPTIC.tick) // feel each snap step
       memo.last = patch
     }
-    if (state.last) world.setDragging(false)
+    if (state.last) {
+      free.current = null
+      setHolding(false)
+      world.setDragging(false)
+    }
     return memo
   }
 
@@ -182,9 +207,17 @@ function Obstacle({ o }: { o: WorldObject }) {
   const bz = Math.max(d / 2, 2 * r)
   const top = h + r
   return (
+    <>
     <group ref={groupRef} position={o.position} rotation={[0, o.rotationY, 0]} userData={{ objectId: o.id }}>
       {/* Walkable surfaces pass hovers through to the ground, so the asset tool's ghost shows over roads and slabs too. */}
-      <group onPointerDown={onDown} onPointerMove={blocksNavigation(o) ? undefined : applyGroundHover}>
+      <group
+        onPointerDown={onDown}
+        onPointerMove={blocksNavigation(o) ? undefined : applyGroundHover}
+        onPointerOver={(e) => {
+          if (e.pointerType === 'grab' || e.pointerType === 'touch') setHovered(true)
+        }}
+        onPointerOut={() => setHovered(false)}
+      >
         <GrabHandle
           targetRef={groupRef}
           filter={(e) => e.pointerType === 'grab' && useWorld.getState().tool === 'select'}
@@ -197,6 +230,7 @@ function Obstacle({ o }: { o: WorldObject }) {
         </GrabHandle>
       </group>
       {!selected && (inGroup || inPreview) && <SelectionOutline size={o.size} color={inGroup ? '#7bdff2' : '#ffffff'} />}
+      {!selected && !inGroup && !inPreview && hovered && <SelectionOutline size={o.size} color="#d8e6f0" />}
       {selected && (
         <>
           <SelectionOutline size={o.size} />
@@ -208,6 +242,16 @@ function Obstacle({ o }: { o: WorldObject }) {
         </>
       )}
     </group>
+      {holding && useEditor.getState().snap && (
+        <group position={o.position} rotation={[0, o.rotationY, 0]}>
+          <mesh position={[0, o.size[1] / 2, 0]} raycast={() => null}>
+            <boxGeometry args={o.size} />
+            <meshBasicMaterial color="#7bdff2" transparent opacity={0.18} depthWrite={false} />
+          </mesh>
+          <SelectionOutline size={o.size} color="#7bdff2" />
+        </group>
+      )}
+    </>
   )
 }
 

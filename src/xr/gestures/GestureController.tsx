@@ -12,6 +12,9 @@ import { REQUIRED_JOINTS, dist, handFeatures, rollAngle, type HandFeatures, type
 import { GestureRecognizer, type GestureEvent } from './recognizer'
 import { applyPull, insideViewFrame, nearestEquivalent, pullStep, rotateAbout, rotateGroup, yawAligning } from './actions'
 import { ControllerRecognizer, type ControllerEvent, type ControllerSample } from './controllerInput'
+import { placeAssetAt, setGroundHover } from '../../editor/Ground'
+import { worldActions } from '../../world/actions'
+import { HAPTIC, pulse } from '../haptics'
 
 /**
  * Minority Report–style hand gestures (see docs/gestures.md). Reads both hands' joints from the XRFrame
@@ -99,6 +102,13 @@ export function GestureController() {
       !!f && wristMenuState.visible && (f.handedness === 'left' || dist(f.pinchPoint, toV3(wristMenuState.position)) < 0.2)
     const blocked = { left: grabbing || nearMenu(hands.left), right: grabbing || nearMenu(hands.right) }
 
+    // Asset tool: the ghost follows where you aim on the floor (right controller ray, else your eyes
+    // through a pinch point), so you can place without rays, even at 1:1.
+    const placingAssets = world.tool === 'asset' && !useEditor.getState().rays
+    if (placingAssets) {
+      const aim = aimRay(head, pads.right ?? pads.left, hands.right ?? hands.left)
+      setGroundHover(aim ? floorPoint(aim) : null)
+    }
     const t = state.clock.elapsedTime
     const dt = Math.min(0.1, Math.max(0, t - lastT.current))
     lastT.current = t
@@ -135,6 +145,11 @@ export function GestureController() {
         moveYou(root, head, e.x, e.z)
         return
       case 'turn':
+        if (useWorld.getState().tool === 'asset') {
+          worldActions.rotateCatalogAsset(e.yaw > 0 ? 1 : -1)
+          pulse('right', HAPTIC.tick)
+          return
+        }
         turnAboutHead(root, head, e.yaw)
         return
       case 'rotate-step':
@@ -148,10 +163,12 @@ export function GestureController() {
         return
       case 'l-hold':
         alignAxis(root, e.f.indexDir, head)
+        pulse('active', HAPTIC.commit)
         return
       case 'pull-start':
         pull.current = { left: e.left.wrist, right: e.right.wrist }
         ui.fists = { left: e.left.wrist, right: e.right.wrist }
+        pulse('both', HAPTIC.grab)
         return
       case 'pull-move': {
         const prev = pull.current
@@ -177,10 +194,17 @@ export function GestureController() {
         const ids = objectsInFrame(root, head, e.a, e.b)
         useSelection.getState().setGroup(ids)
         useWorld.getState().select(null)
+        pulse('active', HAPTIC.commit)
         return
       }
       case 'pinch-start':
         if (useEditor.getState().rays) return // rays already pinch-drag
+        if (useWorld.getState().tool === 'asset') {
+          const aim = ray ?? { origin: head, dir: toV3(new THREE.Vector3(...e.f.pinchPoint).sub(new THREE.Vector3(...head)).normalize()) }
+          const at = floorPoint(aim)
+          if (at) placeAssetAt(at)
+          return
+        }
         startPinchRotate(root, e.hand, e.f, ray ?? { origin: head, dir: toV3(new THREE.Vector3(...e.f.pinchPoint).sub(new THREE.Vector3(...head)).normalize()) })
         return
       case 'pinch-move':
@@ -428,4 +452,26 @@ function controllerSample(frame: XRFrame, refSpace: XRReferenceSpace, source: XR
     primary: !!pad?.buttons[4]?.pressed,
     stick,
   }
+}
+
+// --- Aiming at the floor without rays (asset placement).
+
+/** The aim for placing: the controller's ray, else from your eyes through your pinch point. */
+function aimRay(head: V3, pad: ControllerSample | null, hand: HandFeatures | null): { origin: V3; dir: V3 } | null {
+  if (pad) return { origin: pad.rayOrigin, dir: pad.rayDir }
+  if (hand) return { origin: head, dir: toV3(new THREE.Vector3(...hand.pinchPoint).sub(new THREE.Vector3(...head)).normalize()) }
+  return null
+}
+
+/** Where a ray meets the world's ground (map-local metres), or null if it points away from it. */
+function floorPoint(ray: { origin: V3; dir: V3 }): [number, number] | null {
+  const root = worldRootRef.current
+  if (!root) return null
+  root.updateWorldMatrix(true, false)
+  const normal = new THREE.Vector3(0, 1, 0).transformDirection(root.matrixWorld)
+  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, new THREE.Vector3().setFromMatrixPosition(root.matrixWorld))
+  const hit = new THREE.Ray(new THREE.Vector3(...ray.origin), new THREE.Vector3(...ray.dir).normalize()).intersectPlane(plane, new THREE.Vector3())
+  if (!hit) return null
+  const local = root.worldToLocal(hit)
+  return [local.x, local.z]
 }
