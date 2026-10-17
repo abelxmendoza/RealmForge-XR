@@ -2,7 +2,7 @@ import { worldActions, type EnvironmentId } from '../world/actions'
 import { confirmReplace } from '../world/confirmation'
 import { fail, toErrorMessage } from '../world/errors'
 import { normalizeEnvironmentId } from '../world/environment'
-import type { ReplaceResult } from '../world/persistence'
+import type { ConfirmReplace, ReplaceResult } from '../world/persistence'
 
 export type EnvMenuFeedback =
   | { kind: 'idle' }
@@ -12,9 +12,9 @@ export type EnvMenuFeedback =
   | { kind: 'error'; message: string }
 
 export type EnvMenuLoadOptions = {
-  confirmReplace?: typeof confirmReplace
+  confirmReplace?: ConfirmReplace
   /** Injected for tests — defaults to worldActions.loadEnvironment. */
-  load?: (id: string, opts: { confirmReplace?: typeof confirmReplace }) => Promise<ReplaceResult>
+  load?: (id: string, opts: { confirmReplace?: ConfirmReplace }) => Promise<ReplaceResult>
 }
 
 let busy = false
