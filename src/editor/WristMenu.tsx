@@ -5,6 +5,7 @@ import { Text } from '@react-three/drei'
 import { XRSpace, useXRInputSourceState } from '@react-three/xr'
 import { SCALE_IDS, SCALE_PRESETS, recenterWorld } from '../scene/worldRoot'
 import { FORGE } from '../theme/forge'
+import { BrandLogo3D } from '../xr/BrandLogo3D'
 import { useGuide } from '../guide/guideStore'
 import { useEditor } from './settings'
 import { togglePlaceCity, toggleRays, toggleSurface } from './xrInput'
@@ -172,7 +173,12 @@ function MenuContent({ extra, envRow }: { extra?: ReactNode; envRow?: ReactNode 
         <planeGeometry args={[W + 0.02, top - bottom]} />
         <meshBasicMaterial color={FORGE.panel} transparent opacity={0.9} />
       </mesh>
-      <Text position={[0, 0.068, 0]} fontSize={0.011} color={FORGE.text} anchorX="center" anchorY="middle" raycast={() => null}>
+      <mesh position={[0, 0.068, -0.0035]} raycast={() => null}>
+        <planeGeometry args={[0.028, 0.004]} />
+        <meshBasicMaterial color={FORGE.ember} transparent opacity={0.95} />
+      </mesh>
+      <BrandLogo3D position={[-0.042, 0.068, 0]} size={0.016} />
+      <Text position={[0.008, 0.068, 0]} fontSize={0.011} color={FORGE.text} anchorX="center" anchorY="middle" raycast={() => null}>
         RealmForge
       </Text>
       <MenuButton position={[col(0, quarter), rowY(0), 0]} width={quarter} label={`Rays ${rays ? 'on' : 'off'}`} active={rays} onPress={toggleRays} />

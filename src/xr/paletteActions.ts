@@ -39,7 +39,7 @@ export async function createPaletteWorld(template: TemplateId = 'blank') {
 }
 export async function blankPaletteWorld() {
   return guardPaletteReplace('Blank world', () =>
-    replaceWorld({ name: 'Blank world', objects: [], robotStart: [0, 5], goal: null }, { confirmReplace }),
+    replaceWorld({ name: 'Blank world', objects: [], robotEnabled: false, robotStart: [0, 5], goal: null }, { confirmReplace }),
   )
 }
 export async function deletePaletteSelection() {

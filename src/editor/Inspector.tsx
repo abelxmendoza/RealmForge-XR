@@ -25,9 +25,6 @@ import {
   listEventCatalog,
   type EventCatalogCategory,
 } from '../world/eventCatalog'
-import { WorldsPanel } from './WorldsPanel'
-import { EnvironmentsMenu } from './EnvironmentsMenu'
-import { WorldLibrary, openWorldLibrary } from './WorldLibrary'
 import { useEditor, type DecorKind } from './settings'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 import { SimulationPanel } from '../sim/SimulationPanel'
@@ -45,11 +42,8 @@ export function Inspector() {
       {selected ? <ObjectPanel o={selected} /> : <BrushPanel tool={tool} />}
       <ActorPanel />
       <AssetCatalogPanel />
-      <EnvironmentsMenu />
       <WorldPanel />
       <SimulationPanel />
-      <WorldsPanel />
-      <WorldLibrary />
     </div>
   )
 }
@@ -310,9 +304,7 @@ function WorldPanel() {
   return (
     <section>
       <h3>World</h3>
-      <button type="button" className="primary" onClick={openWorldLibrary} title="New worlds, saved worlds (L)">
-        Worlds library (L)
-      </button>
+
       <label className="check">
         <input type="checkbox" checked={snap} onChange={(e) => useEditor.getState().set({ snap: e.target.checked })} />
         Snap to grid (G)

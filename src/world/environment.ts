@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { BuildingStyle, MaterialId } from './types'
 import type { WorldSnapshot } from './store'
 import { useWorld } from './store'
-import { emptyEventVenue, forgeDistrict, jobFair, marsOutpost, warehouse } from './presets'
+import { emptyEventVenue, jobFair, forgeDistrict, marsOutpost, warehouse } from './presets'
 import { replaceWorld, type ReplaceOptions, type ReplaceResult } from './persistence'
 import { useEditor } from '../editor/settings'
 import { fail, safeConfirm, toErrorMessage } from './errors'
@@ -141,25 +141,21 @@ export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentConfig> = {
   warehouse: {
     id: 'warehouse',
     name: 'Autonomous Warehouse',
-    description: 'Storage racks, loading bays, and navigable aisles for the robot.',
+    description: 'Industrial warehouse interior with pallet shelving, loading doors, overhead fixtures, and navigable aisles.',
     appearance: WAREHOUSE_APPEARANCE,
     defaults: { buildingStyle: 'industrial', wallMaterial: 'metal', platformMaterial: 'concrete' },
     buildWorld: warehouse,
   },
   'empty-event-venue': {
-    id: 'empty-event-venue',
-    name: 'Empty Event Venue',
-    description: 'Open warehouse interior with entrance/exits — start here to design any event.',
-    appearance: WAREHOUSE_APPEARANCE,
+    id: 'empty-event-venue', name: 'Empty', description: 'A completely empty board. Add everything yourself.',
+    appearance: DEFAULT_APPEARANCE,
     defaults: { buildingStyle: 'industrial', wallMaterial: 'concrete', platformMaterial: 'concrete' },
     buildWorld: emptyEventVenue,
   },
   'job-fair': {
-    id: 'job-fair',
-    name: 'Job Fair',
-    description: 'Registration, employer booths, seating, and a stage — fully editable catalog props.',
-    appearance: WAREHOUSE_APPEARANCE,
-    defaults: { buildingStyle: 'industrial', wallMaterial: 'concrete', platformMaterial: 'concrete' },
+    id: 'job-fair', name: 'Job Fair', description: 'Registration, employer booths, seating and a presentation stage.',
+    appearance: DEFAULT_APPEARANCE,
+    defaults: { buildingStyle: 'industrial', wallMaterial: 'metal', platformMaterial: 'concrete' },
     buildWorld: jobFair,
   },
 }
@@ -243,6 +239,7 @@ export async function loadEnvironment(id: EnvironmentId | string, opts: LoadEnvi
 
   const previous = {
     activeId: useEnvironment.getState().activeId,
+    robotEnabled: useWorld.getState().robotEnabled,
     actors: useWorld.getState().actors,
     objects: useWorld.getState().objects,
     robotStart: useWorld.getState().robotStart,
@@ -293,6 +290,7 @@ export async function loadEnvironment(id: EnvironmentId | string, opts: LoadEnvi
       useEnvironment.getState().setActive(previous.activeId)
       useWorld.getState().loadWorld({
         objects: Object.values(previous.objects),
+        robotEnabled: previous.robotEnabled,
         actors: Object.values(previous.actors),
         robotStart: previous.robotStart,
         goal: previous.goal,

@@ -126,7 +126,9 @@ describe('functional destinations and warehouse preset', () => {
     const data = new Map<string, string>()
     Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: (key: string) => data.get(key) ?? null, setItem: (key: string, value: string) => data.set(key, value), removeItem: (key: string) => data.delete(key) } })
     useWorldLibrary.setState({ worlds: [], activeId: null, activeName: 'Facility', dirty: false })
-    useWorld.getState().loadWorld(warehouse())
+    const facility = warehouse()
+    const expectedAssets = facility.objects.filter((o) => o.assetId)
+    useWorld.getState().loadWorld(facility)
     const saved = saveWorld('Facility')
     if (!saved.ok) throw new Error(saved.error)
     const exported = exportWorld().json
@@ -134,6 +136,6 @@ describe('functional destinations and warehouse preset', () => {
     expect((await loadSavedWorld(saved.value.id, { confirmReplace: () => true })).ok).toBe(true)
     expect(worldActions.listDestinations()).toHaveLength(5)
     expect((await importWorld(exported, { confirmReplace: () => true })).ok).toBe(true)
-    expect(Object.values(useWorld.getState().objects).filter((o) => o.assetId)).toHaveLength(10)
+    expect(Object.values(useWorld.getState().objects).filter((o) => o.assetId)).toEqual(expectedAssets)
   })
 })

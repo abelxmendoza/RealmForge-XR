@@ -190,6 +190,7 @@ export async function executeVoiceCommand(
         }
         worldActions.applyWorldSnapshot({
           objects: [],
+          robotEnabled: false,
           robotStart: [0, 5],
           goal: null,
         })

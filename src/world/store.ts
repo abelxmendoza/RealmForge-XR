@@ -8,6 +8,7 @@ export type Tool = 'select' | 'wall' | 'building' | 'platform' | 'decor' | 'even
 export interface WorldSnapshot {
   actors?: Actor[]
   objects: WorldObject[]
+  robotEnabled?: boolean
   robotStart: Vec2
   goal: Vec2 | null
 }
@@ -21,6 +22,7 @@ export interface WorldState {
   removeActor: (id: string) => void
   selectActor: (id: string | null) => void
   objects: Record<string, WorldObject>
+  robotEnabled?: boolean
   robotStart: Vec2
   goal: Vec2 | null
   /** Bumped on every change to obstacle geometry. Navigation replans when it changes. */
@@ -95,6 +97,7 @@ function initialObjects(): Record<string, WorldObject> {
 }
 
 const initial = () => ({
+  robotEnabled: true,
   objects: initialObjects(),
   actors: {} as Record<string, Actor>,
   robotStart: [-32, 28] as Vec2,
@@ -162,6 +165,7 @@ export const useWorld = create<WorldState>((set) => ({
     reserveIds(w.objects.map((o) => o.id))
     set((s) => ({
       objects: Object.fromEntries(w.objects.map((o) => [o.id, { ...o }])),
+      robotEnabled: w.robotEnabled ?? true,
       robotStart: [...w.robotStart] as Vec2,
       goal: w.goal ? ([...w.goal] as Vec2) : null,
       selectedId: null,
@@ -176,11 +180,12 @@ export const useWorld = create<WorldState>((set) => ({
     reserveIds((w.actors ?? []).map((a) => a.id))
     reserveIds(w.objects.map((o) => o.id))
     set((s) => {
-      const robotChanged = !sameVec2(s.robotStart, w.robotStart)
+      const robotChanged = !sameVec2(s.robotStart, w.robotStart) || (s.robotEnabled ?? true) !== (w.robotEnabled ?? true)
       return {
         actors: Object.fromEntries((w.actors ?? []).map((a) => [a.id, cloneActor(a)])),
         selectedActorId: s.selectedActorId && (w.actors ?? []).some((a) => a.id === s.selectedActorId) ? s.selectedActorId : null,
         objects: Object.fromEntries(w.objects.map((o) => [o.id, { ...o }])),
+        robotEnabled: w.robotEnabled ?? true,
         robotStart: [...w.robotStart] as Vec2,
         goal: w.goal ? ([...w.goal] as Vec2) : null,
         selectedId: s.selectedId && w.objects.some((o) => o.id === s.selectedId) ? s.selectedId : null,
@@ -190,7 +195,7 @@ export const useWorld = create<WorldState>((set) => ({
     })
   },
   setGoal: (p) => set({ goal: p }),
-  placeRobot: (p) => set((s) => ({ robotStart: p, robotVersion: s.robotVersion + 1 })),
+  placeRobot: (p) => set((s) => ({ robotEnabled: true, robotStart: p, robotVersion: s.robotVersion + 1 })),
   setTool: (tool) => set({ tool }),
   select: (selectedId) => set({ selectedId, selectedActorId: null }),
   setDragging: (dragging) => set({ dragging }),

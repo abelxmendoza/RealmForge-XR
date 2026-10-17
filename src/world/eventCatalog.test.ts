@@ -59,13 +59,12 @@ describe('event catalog', () => {
 })
 
 describe('empty venue + job fair', () => {
-  it('builds an empty venue with entrance/exit markers and perimeter walls', () => {
+  it('builds Empty without any objects, actors, robot or destination', () => {
     const w = emptyEventVenue()
-    expect(w.objects.some((o) => o.kind === 'wall')).toBe(true)
-    expect(w.objects.some((o) => o.simulationRole === 'entrance')).toBe(true)
-    expect(w.objects.filter((o) => o.simulationRole === 'exit').length).toBeGreaterThanOrEqual(2)
-    // Interior should not be packed with industrial racks
-    expect(w.objects.filter((o) => o.kind === 'building').length).toBe(0)
+    expect(w.objects).toEqual([])
+    expect(w.actors).toEqual([])
+    expect(w.robotEnabled).toBe(false)
+    expect(w.goal).toBeNull()
   })
 
   it('job fair template uses editable catalog props', () => {

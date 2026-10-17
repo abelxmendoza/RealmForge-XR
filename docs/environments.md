@@ -10,8 +10,8 @@ appearance and brush defaults live in `src/world/environment.ts`.
 | `forge-district` | Forge District | Existing demo city (preserved) |
 | `mars-outpost` | Mars Outpost | Red ground, habitats, solar arrays, comm tower |
 | `warehouse` | Autonomous Warehouse | Racks, aisles, loading dock, cargo |
-| `empty-event-venue` | Empty Event Venue | Open interior + entrance/exits for event design |
-| `job-fair` | Job Fair | Editable catalog props (booths, registration, stage) |
+| `empty-event-venue` | Empty | No objects, actors, robot or destination |
+| `job-fair` | Job Fair | Registration, employer stations, seating and stage |
 
 Each config defines: id, display name, description, ground/table/grid colors, lighting,
 default building/wall/platform brush styles, and a `buildWorld()` snapshot
@@ -19,11 +19,11 @@ default building/wall/platform brush styles, and a `buildWorld()` snapshot
 
 ## UI menu
 
-Desktop uses the molten-forge HUD/inspector styling (`EnvironmentsMenu`):
-full list with descriptions in the inspector, plus a compact **Env** chip row in the HUD.
-Both call `loadEnvironmentFromMenu` → `worldActions.loadEnvironment(id, { confirmReplace })`.
+Desktop has one **Worlds library (L)** for templates, saved worlds, saving, import and export. The right-click shortcut opens this same library. The duplicate HUD/inspector environment lists and separate saves panel are no longer mounted.
 
-In XR, the control palette **Worlds** tab and wrist env buttons use the same API.
+In XR, the floating control palette **Worlds** tab is the single world picker. It uses the same template list as desktop, including exactly one Empty choice and one Job Fair choice. The wrist menu retains settings but no environment picker.
+
+Empty has no authored content and remains empty through save/load. Job Fair has its own furnished layout. Existing version-1 saves without a robot-enabled flag retain their original robot.
 
 ### Error handling
 
@@ -93,3 +93,11 @@ Does **not** touch hand tracking, controllers, Place city, or XR session code.
 - No heightmaps, dust, or new robot dynamics.
 - Environment id is not written into exported world JSON yet.
 - Starter sandbox has `activeId: null` and default tabletop colors until a load.
+
+## Warehouse interior
+
+The Warehouse environment renders a fixed industrial shell: concrete floor with expansion joints, yellow aisle markings, corrugated wall panels, roller loading doors and bollards, steel portal frames, high-bay fixture strips and a ceiling with skylight strips. Exterior views cut away the near walls and roof so tabletop editing stays accessible. The ceiling returns when the camera is inside the building footprint below its 12 m roof. The shell is presentation geometry outside the editable map, ignores pointer rays and does not add navigation obstacles. It follows the environment identity restored with saved worlds.
+
+Fresh Warehouse templates replace exterior building placeholders with sixteen pallet shelving bays, remove streetlights and asphalt roads, and preserve the central/cross aisles and five destination markers. Racks remain editable catalog objects with saved footprints and navigation collisions. Existing saves retain their authored object layouts; reload the Warehouse template for the new shelving layout.
+
+Validation: 221 tests passed across 30 files, including all preset destination routes and full catalog save/import equality. TypeScript and production build passed. Browser preview confirmed the warehouse cutaway, shelving, floor markings and doors; dispatching the robot to the inspection marker reported moving with a new replan. Physical headset and inside-camera views still need device validation.

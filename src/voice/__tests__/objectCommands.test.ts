@@ -25,6 +25,14 @@ describe('object voice commands — parsing', () => {
     })
     expect(cmd('place a brick wall in the center')).toMatchObject({ spec: { kind: 'wall', material: 'brick' }, count: 1, placement: { anchor: 'center' } })
     expect(cmd('put four storage racks')).toMatchObject({ count: 4, spec: { assetId: 'storage-rack' } })
+    expect(cmd('add three exhibition booths')).toMatchObject({
+      count: 3,
+      spec: { kind: 'prop', catalogId: 'exhibition-booth' },
+    })
+    expect(cmd('place a registration desk near the robot')).toMatchObject({
+      spec: { kind: 'prop', catalogId: 'registration-desk' },
+      placement: { anchor: 'robot' },
+    })
     expect(cmd('add a dozen pine trees')).toMatchObject({ count: 12, spec: { kind: 'tree', style: 'pine' } })
     expect(cmd('Create a building')).toMatchObject({ type: 'SPAWN_OBJECTS', count: 1, spec: { kind: 'building' } })
     expect(cmd('add to houses')).toMatchObject({ count: 2, spec: { style: 'house' } })

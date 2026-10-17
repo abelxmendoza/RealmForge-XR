@@ -50,8 +50,8 @@ function replan(reason: 'geometry' | 'goal' | 'robot') {
   const nav = useNav.getState()
   const goal = world.goal
 
-  if (!goal) {
-    useNav.setState({ grid, path: [], status: 'idle' })
+  if (!goal || world.robotEnabled === false) {
+    useNav.setState({ grid, path: [], status: 'idle', blockedPath: null, blockedAt: 0 })
     return
   }
 

@@ -18,14 +18,22 @@ Pair each entry with CHANGELOG (user-facing) and STATE (runtime) updates when st
 
 ---
 
+### 2026-10-17 — Tie up loose ends (prop spawn + docs)
+
+- **Who:** Cursor agent
+- **Phase:** wrap-up
+- **Did:** Wired voice/`spawnObjects` for `kind: 'prop'` via event `catalogId`; added venue vocab (booth, desk, stage, …) + tests. Documented remaining workstream `Gesture/Refinement-Implementation`. Prior pass closed stale drafts #7/#9 and refreshed readiness docs (venue MVP already on `main`).
+- **Verified:** `npm test` on cleanup branch.
+- **Follow-ups:** Emiliano Quest hardware checklist; review/merge Gesture branch when ready; optional ElevenLabs.
+
 ### 2026-10-17 — Project loose-end cleanup
 
 - **Who:** Cursor agent
 - **Phase:** wrap-up
-- **Did:** Closed stale draft PRs #7 and #9 (already on `main`). Refreshed `demo-readiness`, `CHANGELOG`, `STATE`, `README`, `unified-integration` historical banner, and `examples/xr-menu-integration.ts` to match production wrist/palette/guide. Left open PR #11 (event venue MVP) as active work.
+- **Did:** Closed stale draft PRs #7 and #9 (already on `main`). Refreshed `demo-readiness`, `CHANGELOG`, `STATE`, `README`, `unified-integration` historical banner, and `examples/xr-menu-integration.ts` to match production wrist/palette/guide.
 - **Why:** Docs and open PRs still described pre-merge Quest/voice state.
 - **Verified:** `npm test` 212 pass on cleanup branch base.
-- **Follow-ups:** Emiliano Quest hardware checklist; optional ElevenLabs; event venue PR review.
+- **Follow-ups:** Emiliano Quest hardware checklist; optional ElevenLabs.
 
 ### 2026-10-17 — Phase 1 P0: AR fallback + place city
 

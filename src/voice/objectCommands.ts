@@ -70,6 +70,17 @@ type Entry = { words: RegExp; spec: SpawnSpec; label: string }
 
 /** Object vocabulary, most specific first. */
 const OBJECTS: Entry[] = [
+  // Event catalog props (job fair / venue)
+  { words: /\b(exhibition |trade )?booths?\b|\bstalls?\b/, spec: { kind: 'prop', catalogId: 'exhibition-booth' }, label: 'exhibition booth' },
+  { words: /\bregistration desks?\b|\bcheck[- ]?in desks?\b/, spec: { kind: 'prop', catalogId: 'registration-desk' }, label: 'registration desk' },
+  { words: /\b(folding )?chairs?\b/, spec: { kind: 'prop', catalogId: 'chair-folding' }, label: 'folding chair' },
+  { words: /\bcocktail tables?\b|\bhigh[- ]?tops?\b/, spec: { kind: 'prop', catalogId: 'cocktail-table' }, label: 'cocktail table' },
+  { words: /\b(round )?tables?\b/, spec: { kind: 'prop', catalogId: 'table-rect-m' }, label: 'table' },
+  { words: /\bstages?\b/, spec: { kind: 'prop', catalogId: 'stage' }, label: 'stage' },
+  { words: /\bqueue barriers?\b|\bstanchions?\b/, spec: { kind: 'prop', catalogId: 'queue-barrier' }, label: 'queue barrier' },
+  { words: /\b(directional )?signs?\b|\bwayfinding signs?\b/, spec: { kind: 'prop', catalogId: 'directional-sign' }, label: 'directional sign' },
+  { words: /\bdj booths?\b/, spec: { kind: 'prop', catalogId: 'dj-booth' }, label: 'DJ booth' },
+  { words: /\b(projection )?screens?\b/, spec: { kind: 'prop', catalogId: 'projection-screen' }, label: 'projection screen' },
   // Catalog equipment and destinations
   { words: /\b(storage )?racks?\b|\bshel(f|ves|ving)\b/, spec: { kind: 'building', assetId: 'storage-rack' }, label: 'storage rack' },
   { words: /\bwork ?stations?\b|\bwork ?benche?s?\b/, spec: { kind: 'building', assetId: 'workstation' }, label: 'workstation' },

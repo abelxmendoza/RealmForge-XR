@@ -186,7 +186,7 @@ src/xr/*                   AR session fallback, "Place city" plane pinning and a
 src/mocap/*                Smartsuit Pro (Rokoko) stream: parser, client, debug skeleton (+ tools/mocap-bridge.ts)
 ```
 
-World save/load and undo/redo: `docs/world-persistence.md`. Quest XR testing: `docs/quest2-testing.md`.  
+World save/load and undo/redo: `docs/world-persistence.md`. Quest XR testing: `docs/quest2-testing.md`.
 **Scale contract:** store / nav / saves use metres; `WORLD_ROOT.scale` is presentation only.
 
 ### Shared object contract

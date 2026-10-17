@@ -44,8 +44,8 @@ On FAIL: headset + browser version, Space Setup notes, step, expected vs actual,
 
 | Owner | Task |
 | --- | --- |
-| Emiliano | Physical Quest checklist PASS/FAIL on `main` |
+| Emiliano | Physical Quest checklist PASS/FAIL on `main`; review branch `Gesture/Refinement-Implementation` (hand/controller refinements — not merged yet) |
 | Abel | Production voice token route if deploying beyond Vite; demo script |
 | Chris | Desktop rehearsal (Guide, env menu, save/load, typed voice) |
 
-Optional: ElevenLabs playback (not implemented). Does not block desktop demo.
+Optional: ElevenLabs playback (not implemented). Does not block desktop demo. Stale feature branches besides Gesture were deleted after merge.

@@ -237,6 +237,10 @@ const prop = (catalogId: string, x: number, z: number, rotationY = 0): WorldObje
  * Interior is clear so users can design job fairs and other events.
  */
 export function emptyEventVenue(): WorldSnapshot {
+  return { objects: [], actors: [], robotEnabled: false, robotStart: [0, 0], goal: null }
+}
+
+function eventVenueShell(): WorldSnapshot {
   const wallH = 2.4
   const thick = 0.35
   // Interior roughly x∈[-9,9], z∈[-7,7]; openings punched as gaps in walls.
@@ -277,7 +281,7 @@ export function emptyEventVenue(): WorldSnapshot {
  * Layout: registration near entrance, four employer booths, seating, small stage, queue.
  */
 export function jobFair(): WorldSnapshot {
-  const base = emptyEventVenue()
+  const base = eventVenueShell()
   const extras: WorldObject[] = [
     prop('registration-desk', 0, 5.2),
     prop('queue-barrier', -1.4, 5.9, Math.PI / 2),
@@ -312,6 +316,7 @@ export function jobFair(): WorldSnapshot {
   ]
   return {
     objects: [...base.objects, ...extras],
+    robotEnabled: false,
     robotStart: [0, 7.4],
     goal: null,
   }
@@ -322,6 +327,6 @@ export const PRESETS = [
   { id: 'forge-district', label: 'Forge District (demo city)', build: forgeDistrict },
   { id: 'mars-outpost', label: 'Mars Outpost', build: marsOutpost },
   { id: 'warehouse', label: 'Autonomous Warehouse', build: warehouse },
-  { id: 'empty-event-venue', label: 'Empty Event Venue', build: emptyEventVenue },
+  { id: 'empty-event-venue', label: 'Empty', build: emptyEventVenue },
   { id: 'job-fair', label: 'Job Fair', build: jobFair },
 ] as const

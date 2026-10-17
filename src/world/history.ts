@@ -31,6 +31,7 @@ const listeners = new Set<Listener>()
 
 function snapshotOf(s: {
   objects: ReturnType<typeof useWorld.getState>['objects']
+  robotEnabled?: boolean
   robotStart: ReturnType<typeof useWorld.getState>['robotStart']
   goal: ReturnType<typeof useWorld.getState>['goal']
   actors: ReturnType<typeof useWorld.getState>['actors']
@@ -42,6 +43,7 @@ function snapshotOf(s: {
       position: [...o.position] as [number, number, number],
       size: [...o.size] as [number, number, number],
     })),
+    robotEnabled: s.robotEnabled,
     robotStart: [...s.robotStart] as [number, number],
     goal: s.goal ? ([...s.goal] as [number, number]) : null,
   }

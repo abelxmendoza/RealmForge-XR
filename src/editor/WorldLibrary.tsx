@@ -9,7 +9,7 @@ import {
   thumbVersion,
   type TemplateId,
 } from '../world/library'
-import { listSavedWorlds, useWorldLibrary } from '../world/persistence'
+import { downloadWorld, listSavedWorlds, useWorldLibrary } from '../world/persistence'
 import { confirmReplace, getConfirmation, requestConfirmation } from '../world/confirmation'
 import {
   isLibraryMenuBusy,
@@ -55,7 +55,8 @@ function useLibraryKey() {
   }, [])
 }
 
-const swatch = (id: TemplateId) => {
+/** Preview gradient for a starting point (shared with the start screen). */
+export const swatch = (id: TemplateId) => {
   const a = id === 'blank' ? DEFAULT_APPEARANCE : (getEnvironment(id)?.appearance ?? DEFAULT_APPEARANCE)
   return `linear-gradient(135deg, ${a.lighting.background} 0%, ${a.groundColor} 55%, ${a.tableEdge} 100%)`
 }
@@ -111,6 +112,7 @@ function Palette() {
 
         <section>
           <h3>Start a new world</h3>
+          <p className="hint">Empty has no content. Job Fair includes registration, employer booths, seating and a stage.</p>
           <div className="library-row">
             <input type="text" placeholder={suggested} value={name} maxLength={80} onChange={(e) => setName(e.target.value)} disabled={busy} />
             <span className="hint">Pick a starting point. It's saved to your library straight away.</span>
@@ -156,6 +158,7 @@ function Palette() {
             >
               Save as new
             </button>
+            <button disabled={busy} onClick={() => downloadWorld()}>Export JSON</button>
             <button disabled={busy} onClick={() => fileInput.current?.click()}>
               Import JSON
             </button>

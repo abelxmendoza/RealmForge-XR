@@ -1,3 +1,4 @@
+import { WarehouseInterior } from './WarehouseInterior'
 import { Actors } from '../actors/Actors'
 import { ControlPalette } from '../xr/ControlPalette'
 import { ControlsGuidePanel } from '../xr/ControlsGuidePanel'
@@ -26,7 +27,6 @@ import { WorldPlacement } from '../xr/WorldPlacement'
 import { bindWebXRManager } from '../xr/session'
 import { useEnvironment } from '../world/environment'
 import { usePlacement } from '../xr/placement'
-import { WristEnvMenu } from '../editor/WristEnvMenu'
 import { FloorTracker } from '../xr/floor'
 import { Occlusion } from '../xr/occlusion'
 
@@ -40,6 +40,7 @@ export function Scene() {
   const mocapInMap = useMocap((s) => s.placement === 'map')
   const robotStart = useWorld((s) => s.robotStart)
   const gl = useThree((s) => s.gl)
+  const robotEnabled = useWorld((s) => s.robotEnabled !== false)
 
   useEffect(() => {
     bindWebXRManager(gl.xr)
@@ -65,7 +66,7 @@ export function Scene() {
       <WorldScaler />
       {inXR && <FloorTracker />}
       {inXR && <Occlusion />}
-      {inXR && <WristMenu extra={<MocapMenuButton />} envRow={<WristEnvMenu />} />}
+      {inXR && <WristMenu extra={<MocapMenuButton />} />}
       {inXR && <GestureController />}
       {/* Smartsuit skeleton at 1:1 in your room (Rokoko's origin = where the XR session started). */}
       {mocapOn && !mocapInMap && <MocapSkeleton />}
@@ -103,9 +104,10 @@ export function Scene() {
         >
           <DragCatcher />
           <Ground />
+          <WarehouseInterior />
           <Obstacles />
           <Route />
-          <Robot />
+          {robotEnabled && <Robot />}
           <AttendeeRoute />
           <Attendee />
           <Actors />

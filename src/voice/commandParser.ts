@@ -13,6 +13,8 @@ export function normalizeTranscript(raw: string): string {
 }
 
 const ENV_ALIASES: { id: EnvironmentId; phrases: string[] }[] = [
+  { id: 'job-fair', phrases: ['job fair', 'career fair'] },
+  { id: 'empty-event-venue', phrases: ['empty event venue', 'empty venue', 'empty environment'] },
   { id: 'mars-outpost', phrases: ['mars outpost', 'mars', 'martian', 'red planet'] },
   { id: 'warehouse', phrases: ['warehouse', 'autonomous warehouse', 'the warehouse'] },
   { id: 'forge-district', phrases: ['forge district', 'forge', 'demo city', 'city'] },
