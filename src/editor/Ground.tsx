@@ -180,6 +180,10 @@ function Board({ size, onPointerDown }: { size: number; onPointerDown: (e: Three
   const ground = useGeometry(() => tiledPlane(size, size, 2), [size])
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
   const real = useEditor((s) => s.surface === 'real')
+  // With the Select tool a hand grab near the board must reach the table edge (the map's grab handle), not
+  // the ground, which sits right next to it and would otherwise win the grab. Placement tools still take
+  // grabs on the ground (pinch the floor to place).
+  const groundTakesGrabs = useWorld((s) => s.tool !== 'select')
   // Virtual ground, grid and table colours follow the active environment (Forge / Mars / Warehouse).
   const appearance = useEnvironment((s) => s.appearance)
   const table = onTable(ratio)
@@ -188,7 +192,14 @@ function Board({ size, onPointerDown }: { size: number; onPointerDown: (e: Three
   const major = real ? { color: '#7bdff2', opacity: 0.55 } : { color: appearance.gridMajor, opacity: 0.18 }
   return (
     <>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} geometry={ground} material={real ? SHADOW_GROUND : groundMaterial(appearance.groundColor, appearance.groundTint)} receiveShadow onPointerDown={onPointerDown} />
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        geometry={ground}
+        material={real ? SHADOW_GROUND : groundMaterial(appearance.groundColor, appearance.groundTint)}
+        receiveShadow
+        onPointerDown={onPointerDown}
+        pointerEventsType={groundTakesGrabs ? 'all' : { deny: 'grab' }}
+      />
       {/* Fine grid at the snapping step (only once it's big enough to read), major lines every 5 m. */}
       {ratio >= SCALE_PRESETS.room.ratio && (
         <gridHelper args={[size, size / SNAP, fine.color, fine.color]} position={[0, 0.006, 0]} material-transparent material-opacity={fine.opacity} material-depthWrite={false} raycast={() => null} />
@@ -230,11 +241,9 @@ function TableEdge({ size, cm, rim, base }: { size: number; cm: (v: number) => n
   const baseMat = flatMaterial(base, { roughness: 0.6 })
   return (
     <>
-      {/* Top sits 1 mm below the ground plane: coplanar faces z-fight. */}
-      <Frame inner={size} outer={size + cm(3)} y={-cm(0.1) - cm(0.6)} height={cm(1.2)} material={rimMat} />
       {/*
-        The dark base is the map's grab handle in XR: grab its rim with one hand to move the whole map
-        (up, down, closer), or with both hands to turn it. Grab pointers only, so desktop is unaffected.
+        The table edge is the map's grab handle in XR: grab the rim or the dark base with one hand to move the
+        whole map (up, down, closer), or with both hands to turn it. Grab pointers only, so desktop is unaffected.
       */}
       <GrabHandle
         targetRef={worldRootRef}
@@ -249,7 +258,11 @@ function TableEdge({ size, cm, rim, base }: { size: number; cm: (v: number) => n
           WORLD_ROOT.yaw = state.current.rotation.y
         }}
       >
-        <Frame inner={size} outer={size + cm(6)} y={-cm(1.4) - cm(2.5)} height={cm(5)} material={baseMat} raycastable />
+        <group>
+          {/* Rim top sits 1 mm below the ground plane: coplanar faces z-fight. */}
+          <Frame inner={size} outer={size + cm(3)} y={-cm(0.1) - cm(0.6)} height={cm(1.2)} material={rimMat} raycastable />
+          <Frame inner={size} outer={size + cm(10)} y={-cm(1.4) - cm(2.5)} height={cm(5)} material={baseMat} raycastable />
+        </group>
       </GrabHandle>
     </>
   )
