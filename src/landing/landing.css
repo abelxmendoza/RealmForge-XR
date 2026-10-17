@@ -1,28 +1,45 @@
 html { scroll-behavior: smooth; }
-body { margin: 0; background: #141714; }
-.rf-landing { --rf-ink: #f0efe5; --rf-muted: #a6aca1; --rf-orange: #ff915a; --rf-line: #363c32; color: var(--rf-ink); background: #141714; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 16px; line-height: 1.5; overflow: clip; }
+body { margin: 0; background: #0c1018; }
+.rf-landing {
+  --rf-ink: #f3ebe0;
+  --rf-muted: rgba(243, 235, 224, 0.62);
+  --rf-orange: #e07845;
+  --rf-ember-hot: #f0a46a;
+  --rf-line: rgba(232, 196, 150, 0.16);
+  --rf-font-display: 'Bricolage Grotesque', Georgia, serif;
+  --rf-font: 'Sora', 'Segoe UI', sans-serif;
+  color: var(--rf-ink);
+  background:
+    radial-gradient(120% 80% at 12% -10%, rgba(224, 120, 69, 0.16), transparent 55%),
+    radial-gradient(90% 70% at 100% 0%, rgba(84, 120, 160, 0.1), transparent 50%),
+    #0c1018;
+  font-family: var(--rf-font);
+  font-size: 16px;
+  line-height: 1.5;
+  overflow: clip;
+}
 .rf-landing * { box-sizing: border-box; }
 .rf-landing a { color: inherit; text-decoration: none; }
 .rf-landing button { font: inherit; }
-.rf-landing :is(a, button):focus-visible { outline: 3px solid #ffd7a6; outline-offset: 6px; }
+.rf-landing :is(a, button):focus-visible { outline: 3px solid var(--rf-ember-hot); outline-offset: 6px; }
 .rf-landing a, .rf-landing button { -webkit-tap-highlight-color: transparent; }
 .rf-shell { width: min(1240px, calc(100% - 96px)); margin-inline: auto; }
 .rf-header { border-bottom: 1px solid var(--rf-line); }
 .rf-nav { min-height: 93px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .rf-brand { display: inline-flex; align-items: center; gap: 12px; }
 .rf-brand svg { color: var(--rf-orange); flex-shrink: 0; }
-.rf-brand > span { font-size: 19px; font-weight: 800; letter-spacing: -0.8px; }
-.rf-brand em { font-style: normal; font-size: 10px; color: var(--rf-orange); letter-spacing: 0.5px; padding: 3px 5px; border: 1px solid #77513a; border-radius: 3px; vertical-align: 3px; margin-left: 7px; }
+.rf-brand > span { font-family: var(--rf-font-display); font-size: 19px; font-weight: 800; letter-spacing: -0.8px; }
+.rf-brand em { font-style: normal; font-size: 10px; color: var(--rf-orange); letter-spacing: 0.5px; padding: 3px 5px; border: 1px solid rgba(224, 120, 69, 0.45); border-radius: 3px; vertical-align: 3px; margin-left: 7px; }
 .rf-nav nav { display: flex; align-items: center; gap: 31px; font-size: 13px; color: #c1c6b9; }
 .rf-nav nav a:hover { color: var(--rf-orange); }
-.rf-button { display: inline-flex; align-items: center; justify-content: center; gap: 30px; min-height: 57px; padding: 15px 23px; background: var(--rf-orange); color: #1d211b !important; font-size: 14px; font-weight: 750; border: 1px solid var(--rf-orange); border-radius: 4px; transition: background 150ms ease, transform 150ms ease; }
-.rf-button:hover { background: #ffad7c; transform: translateY(-2px); }
+.rf-button { display: inline-flex; align-items: center; justify-content: center; gap: 30px; min-height: 57px; padding: 15px 23px; background: linear-gradient(180deg, var(--rf-ember-hot), var(--rf-orange)); color: #1a100c !important; font-size: 14px; font-weight: 750; border: 1px solid transparent; border-radius: 8px; box-shadow: 0 8px 24px rgba(224, 120, 69, 0.28); transition: background 150ms ease, transform 150ms ease, filter 150ms ease; }
+.rf-button:hover { filter: brightness(1.06); transform: translateY(-2px); }
 .rf-button span { font-size: 22px; font-weight: 400; }
 .rf-button-small { min-height: 42px; padding: 9px 16px; gap: 23px; font-size: 12px; }
 .rf-hero { min-height: 660px; display: grid; grid-template-columns: 0.94fr 1.16fr; gap: 25px; align-items: center; padding-top: 66px; padding-bottom: 68px; }
 .rf-eyebrow { display: flex; gap: 9px; align-items: center; font: 10px/1.5 ui-monospace, 'SFMono-Regular', Consolas, monospace; letter-spacing: 1.55px; color: #bcc4b3; margin: 0 0 26px; }
 .rf-dot { display: inline-block; width: 6px; height: 6px; background: var(--rf-orange); border-radius: 50%; flex-shrink: 0; }
-.rf-hero h1 { font-size: clamp(66px, 6.8vw, 98px); line-height: 0.99; letter-spacing: -5.2px; font-weight: 680; margin: 0 0 25px; }
+.rf-hero h1 { font-family: var(--rf-font-display); font-size: clamp(66px, 6.8vw, 98px); line-height: 0.99; letter-spacing: -5.2px; font-weight: 700; margin: 0 0 25px; }
 .rf-hero h1 > span { color: var(--rf-orange); }
 .rf-intro { color: var(--rf-muted); font-size: 15px; max-width: 390px; line-height: 1.8; margin-bottom: 28px; }
 .rf-hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 24px; }
@@ -54,7 +71,7 @@ body { margin: 0; background: #141714; }
 .rf-worlds { padding-block: 100px 90px; scroll-margin-top: 20px; }
 .rf-section-heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; margin-bottom: 39px; }
 .rf-section-heading .rf-eyebrow { margin-bottom: 18px; color: #acb79c; }
-.rf-landing h2 { font-size: clamp(38px, 4vw, 57px); line-height: 1.08; letter-spacing: -2.3px; font-weight: 580; margin: 0; }
+.rf-landing h2 { font-family: var(--rf-font-display); font-size: clamp(38px, 4vw, 57px); line-height: 1.08; letter-spacing: -2.3px; font-weight: 700; margin: 0; }
 .rf-section-heading > p { color: var(--rf-muted); font-size: 13px; line-height: 1.8; margin: 0 0 4px; }
 .rf-world-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; }
 .rf-card-art { display: block; position: relative; aspect-ratio: 1.2; border: 1px solid #434b36; background: #242c20; overflow: hidden; border-radius: 4px; transition: border-color 150ms; }
@@ -95,8 +112,8 @@ body { margin: 0; background: #141714; }
 .rf-footer .rf-hardware-note { grid-column: 1 / -1; border-top: 1px solid #2e3529; padding-top: 18px; margin: 0; max-width: none; font-size: 9px; color: #737d6b; }
 .rf-skip { position: fixed; z-index: 1000; background: var(--rf-orange); color: #111 !important; padding: 12px; top: -100px; left: 15px; }
 .rf-skip:focus { top: 10px; }
-.rf-loading { color: #eee; font-family: system-ui, sans-serif; min-height: 100vh; display: grid; place-content: center; padding: 20px; text-align: center; }
-.rf-loading a { color: #ff915a; }
+.rf-loading { color: #f3ebe0; font-family: 'Sora', 'Segoe UI', sans-serif; min-height: 100vh; display: grid; place-content: center; padding: 20px; text-align: center; background: #0c1018; }
+.rf-loading a { color: #e07845; }
 .rf-route { animation: rf-path 3s linear infinite; }
 @keyframes rf-path { to { stroke-dashoffset: -33; } }
 @media (min-width: 1450px) { .rf-hero { min-height: 740px; } }

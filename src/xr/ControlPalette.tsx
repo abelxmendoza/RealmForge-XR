@@ -15,6 +15,7 @@ import { toggleRays } from '../editor/xrInput'
 import { blockRoute } from '../editor/demo'
 import { usePlacement } from './placement'
 import { blankPaletteWorld, createPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteEnvironment, loadPaletteSave, savePaletteWorld } from './paletteActions'
+import { FORGE } from '../theme/forge'
 
 /** Actual Three.js controls: visible to both eyes and interactive with XR pointers. */
 export function ControlPalette() {
@@ -147,13 +148,19 @@ function Tile({ text, x = 0, y, width, height = 0.06, active = false, disabled =
     const canvas = document.createElement('canvas')
     canvas.width = 1024; canvas.height = Math.round(1024 * height / width)
     const context = canvas.getContext('2d')!
-    context.fillStyle = disabled ? '#27303c' : active ? '#aa4d12' : hover && onClick ? '#344e6b' : '#182435'
+    context.fillStyle = disabled ? FORGE.panelDisabled : active ? FORGE.emberActive : hover && onClick ? FORGE.hover : FORGE.panelMuted
     context.fillRect(0, 0, canvas.width, canvas.height)
-    context.strokeStyle = active ? '#ffad55' : '#62768b'; context.lineWidth = 5
+    // Ember accent bar — matches desktop brand mark in immersive space.
+    context.fillStyle = active ? FORGE.emberHot : FORGE.emberDeep
+    context.fillRect(0, 0, canvas.width, Math.max(6, Math.round(canvas.height * 0.06)))
+    context.strokeStyle = active ? FORGE.emberHot : FORGE.lineSoft
+    context.lineWidth = 5
     context.strokeRect(2, 2, canvas.width - 4, canvas.height - 4)
-    context.fillStyle = disabled ? '#8190a0' : '#ffffff'
+    context.fillStyle = disabled ? FORGE.textMuted : FORGE.text
     const font = Math.round(1024 * 0.018 / width)
-    context.font = `600 ${font}px sans-serif`; context.textAlign = 'center'; context.textBaseline = 'middle'
+    context.font = `600 ${font}px "Sora", "Segoe UI", sans-serif`
+    context.textAlign = 'center'
+    context.textBaseline = 'middle'
     const words = text.split(/\s+/); const lines: string[] = []; let line = ''
     for (const word of words) { const candidate = line ? line + ' ' + word : word; if (line && context.measureText(candidate).width > 940) { lines.push(line); line = word } else line = candidate }
     if (line) lines.push(line)
