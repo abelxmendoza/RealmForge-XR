@@ -1,3 +1,5 @@
+import { ControlPalette } from '../xr/ControlPalette'
+import { ControlsGuidePanel } from '../xr/ControlsGuidePanel'
 import { useEffect } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from '@react-three/drei'
@@ -12,6 +14,7 @@ import { tickDemo } from '../editor/demo'
 import { Robot } from '../agent/Robot'
 import { Route } from './Route'
 import { Lighting } from './Lighting'
+import { ThumbnailCapture } from './ThumbnailCapture'
 import { MenuButton, WRIST_THIRD, WristMenu } from '../editor/WristMenu'
 import { MocapSkeleton } from '../mocap/MocapSkeleton'
 import { GestureController } from '../xr/gestures/GestureController'
@@ -21,6 +24,7 @@ import { WorldPlacement } from '../xr/WorldPlacement'
 import { bindWebXRManager } from '../xr/session'
 import { useEnvironment } from '../world/environment'
 import { usePlacement } from '../xr/placement'
+import { WristEnvMenu } from '../editor/WristEnvMenu'
 
 export function Scene() {
   const background = useEnvironment((s) => s.appearance.lighting.background)
@@ -53,12 +57,17 @@ export function Scene() {
     <>
       {mode !== 'immersive-ar' && <color attach="background" args={[background]} />}
       <Lighting />
+      <ThumbnailCapture />
       <WorldScaler />
-      {inXR && <WristMenu extra={<MocapMenuButton />} />}
+      {inXR && <WristMenu extra={<MocapMenuButton />} envRow={<WristEnvMenu />} />}
       {inXR && <GestureController />}
       {/* Smartsuit skeleton at 1:1 in your room (Rokoko's origin = where the XR session started). */}
       {mocapOn && !mocapInMap && <MocapSkeleton />}
       {!inXR && <OrbitControls makeDefault enabled={!dragging} target={WORLD_ROOT.position} />}
+
+      {/* In-VR Control Palette (assets, routes, saves, worlds) and the controls guide. */}
+      <ControlPalette />
+      <ControlsGuidePanel />
 
       {/*
         WorldPlacement ("Place city"): identity until you pin the world to a detected table/floor plane,
@@ -103,6 +112,7 @@ function WorldScaler() {
   const session = useXR((s) => s.session)
   const pinned = usePlacement((s) => s.status === 'pinned')
   const camera = useThree((s) => s.camera)
+
   useEffect(() => {
     placement.pending = true
   }, [worldScale, session, pinned])
@@ -111,6 +121,8 @@ function WorldScaler() {
   useFrame(() => {
     const root = worldRootRef.current
     if (!placement.pending || !root) return
+    // While choosing a plane, WorldPlacement owns the pose; place once it's pinned (or cancelled).
+    if (usePlacement.getState().status === 'choosing') return
     placement.pending = false
     let at: THREE.Vector3
     if (usePlacement.getState().status === 'pinned') {

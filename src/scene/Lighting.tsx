@@ -2,19 +2,16 @@ import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { WORLD } from '../world/types'
-import { worldRootRef } from './worldRoot'
 import { useEnvironment } from '../world/environment'
+import { worldRootRef } from './worldRoot'
 
 const SUN_DIR = new THREE.Vector3(1.2, 2.2, 0.9)
 const RIM_DIR = new THREE.Vector3(-1.5, 1.2, -2)
 const SHADOW_MAP = 1024
 
 /**
- * Lighting for the world at any scale: sky/ground fill plus one shadow-casting sun whose
- * shadow camera is fitted to the board (its real size, from tabletop to life size), so a
- * 1024 map stays as sharp as it can. Follows the world root every frame, so moving the map
- * (grab or scale preset) keeps shadows on it. Colours and intensities follow the active environment
- * (Forge / Mars / Warehouse).
+ * Environment-tinted lighting that follows the world root at any presentation scale.
+ * Shadow camera fits the board's real size (tabletop → life size).
  */
 export function Lighting() {
   const lighting = useEnvironment((s) => s.appearance.lighting)
@@ -30,7 +27,6 @@ export function Lighting() {
     if (!root || !sun.current || !rim.current) return
     root.getWorldPosition(center)
     root.getWorldScale(scale)
-    // Half the board's real size, with a margin for tall buildings' shadows.
     const extent = WORLD.half * scale.x * 1.3
     target.position.copy(center)
     sun.current.position.copy(center).addScaledVector(SUN_DIR, extent)
@@ -44,7 +40,6 @@ export function Lighting() {
       cam.near = extent * 0.25
       cam.far = extent * 6
       cam.updateProjectionMatrix()
-      // Offset shadow lookups by about 1.5 shadow texels so flat ground doesn't show acne stripes at any scale.
       sun.current.shadow.normalBias = ((2 * extent) / SHADOW_MAP) * 1.5
       fitted.current = extent
     }

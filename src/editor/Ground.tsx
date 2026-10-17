@@ -1,11 +1,13 @@
 import { create } from 'zustand'
+import { worldActions } from '../world/actions'
+import { SelectionOutline } from '../scene/structures'
 import * as THREE from 'three'
 import { Line } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
 import { Handle as GrabHandle } from '@react-three/handle'
 import { WALL_DEFAULTS, clampToWorld, useWorld } from '../world/store'
 import { WORLD, type Vec2, type Vec3, type WorldObject } from '../world/types'
-import { BUILDING_STYLES, DECOR_DEFAULTS, PLATFORM_DEFAULTS, equipmentSize } from '../world/catalog'
+import { BUILDING_STYLES, DECOR_DEFAULTS, PLATFORM_DEFAULTS } from '../world/catalog'
 import { SNAP, snapFootprint, snapPoint } from '../world/snap'
 import { SCALE_PRESETS, WORLD_ROOT, groundPoint, onTable, worldRootRef } from '../scene/worldRoot'
 import { flatMaterial, groundMaterial } from '../scene/materials'
@@ -47,16 +49,9 @@ function placePoint(p: Vec2): Vec2 {
   return [clampToWorld(q[0]), clampToWorld(q[1])]
 }
 
-/** The object a click with the building/decor/equipment tool would create at `at`. */
-function objectForTool(tool: 'building' | 'decor' | 'equipment', at: Vec2): Omit<WorldObject, 'id'> {
+/** The object a click with the building/decor tool would create at `at`. */
+function objectForTool(tool: 'building' | 'decor', at: Vec2): Omit<WorldObject, 'id'> {
   const s = useEditor.getState()
-  if (tool === 'equipment') {
-    // Real-size pallet or rack bay; snapping lines its footprint edges up with the grid.
-    const style = s.equipment === 'pallet' ? s.palletStyle : s.rackStyle
-    const size = equipmentSize(s.equipment, style)
-    const c = s.snap ? snapFootprint(at, size[0], size[2], 0) : at
-    return { kind: s.equipment, position: [clampToWorld(c[0]), 0, clampToWorld(c[1])], size, rotationY: 0, style }
-  }
   if (tool === 'building') {
     const def = BUILDING_STYLES[s.buildingStyle]
     const c = s.snap ? snapFootprint(at, def.size[0], def.size[2], 0) : at
@@ -69,9 +64,20 @@ function objectForTool(tool: 'building' | 'decor' | 'equipment', at: Vec2): Omit
 
 type Draft = { kind: 'wall' | 'platform'; a: Vec2; b: Vec2 }
 
-/** The wall or platform being drawn (shared so presses forwarded from walkable objects can draw too). */
-const useDraft = create<{ draft: Draft | null }>(() => ({ draft: null }))
-const setDraft = (draft: Draft | null) => useDraft.setState({ draft })
+/**
+ * Ground interaction state, shared so presses and hovers forwarded from walkable objects (slabs, roads)
+ * behave like the ground's own: the wall/platform being drawn, and the asset tool's hover point.
+ */
+const useGroundUI = create<{ draft: Draft | null; hover: Vec2 | null; placementError: boolean }>(() => ({ draft: null, hover: null, placementError: false }))
+const setDraft = (draft: Draft | null) => useGroundUI.setState({ draft })
+
+/** Asset tool: track the ground point under the pointer for the placement ghost. */
+export function applyGroundHover(e: ThreeEvent<PointerEvent>) {
+  if (useWorld.getState().tool !== 'asset') return
+  const point = groundPoint(e)
+  if (point) useGroundUI.setState({ hover: point, placementError: false })
+}
+export const clearGroundHover = () => useGroundUI.setState({ hover: null })
 
 /**
  * Apply the current tool at a ground press. Used by the ground itself and by walkable objects
@@ -97,9 +103,14 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
       e.stopPropagation()
       w.placeRobot(raw)
       return
+    case 'asset': {
+      e.stopPropagation()
+      const result = worldActions.placeCatalogAsset(raw)
+      useGroundUI.setState({ placementError: !result.ok })
+      return
+    }
     case 'building':
-    case 'decor':
-    case 'equipment': {
+    case 'decor': {
       e.stopPropagation()
       const id = w.addObject(objectForTool(tool, placePoint(raw)))
       w.select(id)
@@ -137,13 +148,32 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
   }
 }
 
-/** The map's ground. Clicking it applies the current tool. */
+/** The map's ground. Clicking it applies the current tool; with the asset tool a ghost previews placement. */
 export function Ground() {
-  const draft = useDraft((s) => s.draft)
+  const tool = useWorld((s) => s.tool)
+  const draft = useGroundUI((s) => s.draft)
+  const hover = useGroundUI((s) => s.hover)
+  const placementError = useGroundUI((s) => s.placementError)
+  // Read reactive settings and geometry so ghost validity always matches the commit action.
+  useEditor((s) => s.assetId)
+  useEditor((s) => s.assetRotation)
+  useEditor((s) => s.snap)
+  useWorld((s) => s.objects)
   const size = WORLD.half * 2
+  const preview = tool === 'asset' && hover ? worldActions.previewCatalogAsset(hover) : null
+  const ok = !!preview && preview.valid && !placementError
   return (
     <>
-      <Board size={size} onPointerDown={applyGroundTool} />
+      <Board size={size} onPointerDown={applyGroundTool} onPointerMove={applyGroundHover} onPointerOut={clearGroundHover} />
+      {preview && (
+        <group position={preview.object.position} rotation={[0, preview.object.rotationY, 0]}>
+          <mesh position={[0, preview.object.size[1] / 2, 0]} raycast={() => null}>
+            <boxGeometry args={preview.object.size} />
+            <meshBasicMaterial color={ok ? '#45d6a0' : '#ff536b'} transparent opacity={0.15} depthWrite={false} />
+          </mesh>
+          <SelectionOutline size={preview.object.size} color={ok ? '#45d6a0' : '#ff536b'} />
+        </group>
+      )}
       {draft && <DraftPreview draft={draft} />}
     </>
   )
@@ -177,7 +207,7 @@ const SHADOW_GROUND = new THREE.ShadowMaterial({ opacity: 0.35, depthWrite: fals
  * at any tabletop scale (divided by the world ratio), so the rim stays grabbable; on the floor
  * (room scale and up) there is no table.
  */
-function Board({ size, onPointerDown }: { size: number; onPointerDown: (e: ThreeEvent<PointerEvent>) => void }) {
+function Board({ size, onPointerDown, onPointerMove, onPointerOut }: { size: number; onPointerDown: (e: ThreeEvent<PointerEvent>) => void; onPointerMove: (e: ThreeEvent<PointerEvent>) => void; onPointerOut: () => void }) {
   const ground = useGeometry(() => tiledPlane(size, size, 2), [size])
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
   const real = useEditor((s) => s.surface === 'real')
@@ -199,6 +229,8 @@ function Board({ size, onPointerDown }: { size: number; onPointerDown: (e: Three
         material={real ? SHADOW_GROUND : groundMaterial(appearance.groundColor, appearance.groundTint)}
         receiveShadow
         onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerOut={onPointerOut}
         pointerEventsType={groundTakesGrabs ? 'all' : { deny: 'grab' }}
       />
       {/* Fine grid at the snapping step (only once it's big enough to read), major lines every 5 m. */}

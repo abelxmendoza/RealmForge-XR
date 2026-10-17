@@ -1,10 +1,12 @@
 import { ConfirmationDialog } from './editor/ConfirmationDialog'
+import { ControlsGuide } from './editor/ControlsGuide'
 import { VoicePanel } from './editor/VoicePanel'
+import { useGuide } from './guide/guideStore'
 import { worldActions } from './world/actions'
 import { confirmReplace } from './world/confirmation'
 import { enterARWithFallback, useXRSessionMeta } from './xr/session'
 import { usePlacement } from './xr/placement'
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { XR, createXRStore } from '@react-three/xr'
 import { Scene } from './scene/Scene'
@@ -12,6 +14,7 @@ import { useWorld, type Tool } from './world/store'
 import { useNav } from './nav/navigation'
 import { blockRoute } from './editor/demo'
 import { Inspector } from './editor/Inspector'
+import { EnvironmentsMenu } from './editor/EnvironmentsMenu'
 import { cycleSelected, deleteSelected, duplicateSelected } from './editor/Obstacles'
 import { useEditor } from './editor/settings'
 import { importWorld, quickSave, useWorldLibrary } from './world/persistence'
@@ -21,25 +24,16 @@ import { toggleMocap, useMocap } from './mocap/store'
 import { SCALE_IDS, SCALE_PRESETS, type ScaleId } from './scene/worldRoot'
 
 /**
- * By default no rays in XR: objects are grabbed directly. Hands keep the grab pointer (pinch/fist on contact)
- * and the touch pointer (poke buttons and the ground); controllers keep the grab pointer (grip on contact).
- * Rays can be switched on at any time (HUD, X key, wrist menu); see editor/xrInput.ts.
- * Every pointer still emits the same pointer events, so the editor doesn't care which is used.
- * Session features (planes, anchors, hit-test, …) are requested by enterARWithFallback (xr/session.ts).
+ * By default no rays in XR: objects are grabbed directly. Hands keep grab + touch pointers;
+ * controllers keep grab. Rays can be switched on (HUD, X key, wrist menu).
+ * offerSession:false — Enter AR uses enterARWithFallback (depth/plane/anchor chain).
  */
 export const xrStore = createXRStore({
   offerSession: false,
-  depthSensing: false,
-  planeDetection: true,
-  anchors: true,
-  meshDetection: true,
-  hitTest: true,
-  handTracking: true,
   hand: { rayPointer: useEditor.getState().rays },
   controller: { rayPointer: useEditor.getState().rays },
 })
 bindRays(xrStore)
-
 
 const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'select', label: 'Select / move', key: '1' },
@@ -49,7 +43,7 @@ const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'robot', label: 'Place robot', key: '5' },
   { id: 'platform', label: 'Platform / road', key: '6' },
   { id: 'decor', label: 'Decoration', key: '7' },
-  { id: 'equipment', label: 'Pallets & racks', key: '8' },
+  { id: 'asset', label: 'Catalog object', key: '8' },
 ]
 
 const STATUS_TEXT = {
@@ -60,7 +54,6 @@ const STATUS_TEXT = {
 } as const
 
 export default function App() {
-  const immersive = useSyncExternalStore(xrStore.subscribe, () => xrStore.getState().session != null)
   useKeyboard()
   useJsonFileDrop()
   return (
@@ -73,7 +66,9 @@ export default function App() {
       <Hud />
       <Inspector />
       <VoicePanel />
-      {!immersive && <ConfirmationDialog />}
+      <ControlsGuide />
+      {/* DOM confirm works in Quest Browser WebXR; required so wrist-menu env loads can confirm. */}
+      <ConfirmationDialog />
     </>
   )
 }
@@ -112,98 +107,183 @@ function Hud() {
   const status = useNav((s) => s.status)
   const replans = useNav((s) => s.replanCount)
   const snap = useEditor((s) => s.snap)
-  const worldScale = useEditor((s) => s.worldScale)
-  const rays = useEditor((s) => s.rays)
-  const surface = useEditor((s) => s.surface)
-  const mocap = useMocap()
   const placement = usePlacement((s) => s.status)
   const xrError = useXRSessionMeta((s) => s.lastError)
   const entering = useXRSessionMeta((s) => s.entering)
   const dirty = useWorldLibrary((s) => s.dirty)
+  const worldScale = useEditor((s) => s.worldScale)
+  const rays = useEditor((s) => s.rays)
+  const surface = useEditor((s) => s.surface)
+  const mocap = useMocap()
   const [hist, setHist] = useState({ canUndo: false, canRedo: false })
+  const guideOpen = useGuide((s) => s.open)
+  const openGuide = useGuide((s) => s.openGuide)
+  const closeGuide = useGuide((s) => s.closeGuide)
   useEffect(() => subscribeHistory((s) => setHist({ canUndo: s.canUndo, canRedo: s.canRedo })), [])
+  const statusTone = status === 'moving' || mocap.status === 'live' ? 'live' : status === 'no-path' || mocap.status === 'error' ? 'warn' : ''
   return (
     <div className="hud">
-      <div className="row">
-        <strong>
-          RealmForge XR
-          {dirty ? <span className="dirty-dot" title="Unsaved changes" /> : null}
-        </strong>
-        <button disabled={entering} onClick={() => void enterARWithFallback()}>
-          Enter AR
-        </button>
-        <button
-          onClick={() => {
-            const p = usePlacement.getState()
-            if (p.status === 'choosing') p.cancelChoosing()
-            else p.startChoosing()
+      <div className="hud-brand">
+        <a
+          className="editor-home"
+          href="?"
+          title="Back to project page"
+          onClick={async (event) => {
+            if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || !useWorldLibrary.getState().dirty) return
+            event.preventDefault()
+            if (await confirmReplace('Leave the editor? Save your world first to keep your unsaved changes.')) window.location.assign('?')
           }}
         >
-          {placement === 'choosing' ? 'Cancel place' : 'Place city'}
-        </button>
-        {placement === 'pinned' && <button onClick={() => usePlacement.getState().resetToDefault()}>Unpin</button>}
-        <button onClick={() => xrStore.enterVR()}>Enter VR</button>
-      </div>
-      <div className="row">
-        {TOOLS.map((t) => (
-          <button key={t.id} className={tool === t.id ? 'on' : ''} onClick={() => setTool(t.id)} title={`Key ${t.key}`}>
-            {t.key} {t.label}
+          ← Home
+        </a>
+        <div className="hud-logo">
+          <span className="hud-logo-mark" aria-hidden />
+          <span>
+            RealmForge XR
+            {dirty ? <span className="dirty-dot" title="Unsaved changes" /> : null}
+          </span>
+        </div>
+        <div className="hud-session">
+          <button type="button" className="primary" disabled={entering} onClick={() => void enterARWithFallback()}>
+            Enter AR
           </button>
-        ))}
+          <button
+            type="button"
+            onClick={() => {
+              const p = usePlacement.getState()
+              if (p.status === 'choosing') p.cancelChoosing()
+              else p.startChoosing()
+            }}
+          >
+            {placement === 'choosing' ? 'Cancel place' : 'Place city'}
+          </button>
+          {placement === 'pinned' && (
+            <button type="button" className="ghost" onClick={() => usePlacement.getState().resetToDefault()}>
+              Unpin
+            </button>
+          )}
+          <button type="button" className="ghost" onClick={() => xrStore.enterVR()}>
+            Enter VR
+          </button>
+          <button
+            type="button"
+            className={guideOpen ? 'on' : 'primary'}
+            aria-pressed={guideOpen}
+            title="User & controls guide (?)"
+            onClick={() => (guideOpen ? closeGuide() : openGuide('start'))}
+          >
+            Guide
+          </button>
+        </div>
       </div>
-      <div className="row">
-        <button onClick={blockRoute}>B Block route</button>
-        <button disabled={!selectedId} onClick={duplicateSelected}>
-          D Duplicate
-        </button>
-        <button disabled={!selectedId} onClick={deleteSelected}>
-          Del Delete
-        </button>
-        <button className={snap ? 'on' : ''} onClick={() => useEditor.getState().set({ snap: !snap })}>
-          G Snap
-        </button>
-        <button className={rays ? 'on' : ''} onClick={toggleRays} title="XR pointer rays on hands and controllers">
-          X Rays
-        </button>
-        <button className={surface === 'real' ? 'on' : ''} onClick={toggleSurface} title="Real: transparent grid over your floor or table. Virtual: solid placeholder ground">
-          V Surface: {surface === 'real' ? 'Real' : 'Virtual'}
-        </button>
-        <button className={mocap.enabled ? 'on' : ''} onClick={toggleMocap} title="Smartsuit Pro live skeleton (needs npm run mocap:bridge or mocap:mock)">
-          Mocap
-        </button>
-        <button disabled={!hist.canUndo} onClick={() => undo()} title="Ctrl+Z">
-          Undo
-        </button>
-        <button disabled={!hist.canRedo} onClick={() => redo()} title="Ctrl+Shift+Z">
-          Redo
-        </button>
-        <button onClick={async () => { if (await confirmReplace('Reset the current world?')) useWorld.getState().reset() }}>Reset</button>
+
+      <div className="hud-panel">
+        <div className="tools" role="toolbar" aria-label="Worldbuilding tools">
+          {TOOLS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={`tool-btn${tool === t.id ? ' on' : ''}`}
+              onClick={() => setTool(t.id)}
+              title={`Key ${t.key}`}
+              aria-pressed={tool === t.id}
+            >
+              <span className="tool-key">{t.key}</span>
+              <span className="tool-label">{t.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="row">
-        <label className="field">
-          Scale
-          <select value={worldScale} onChange={(e) => useEditor.getState().set({ worldScale: e.target.value as ScaleId })}>
-            {SCALE_IDS.map((id) => (
-              <option key={id} value={id}>
-                {SCALE_PRESETS[id].label}
-              </option>
-            ))}
-          </select>
-        </label>
+
+      <EnvironmentsMenu compact />
+
+      <div className="hud-panel">
+        <div className="row">
+          <button type="button" onClick={blockRoute}>
+            B Block route
+          </button>
+          <button type="button" disabled={!selectedId} onClick={duplicateSelected}>
+            D Duplicate
+          </button>
+          <button type="button" disabled={!selectedId} onClick={deleteSelected}>
+            Del Delete
+          </button>
+          <button type="button" className={snap ? 'on' : ''} onClick={() => useEditor.getState().set({ snap: !snap })}>
+            G Snap
+          </button>
+          <button type="button" disabled={!hist.canUndo} onClick={() => undo()} title="Ctrl+Z">
+            Undo
+          </button>
+          <button type="button" disabled={!hist.canRedo} onClick={() => redo()} title="Ctrl+Shift+Z">
+            Redo
+          </button>
+          <button type="button" className={rays ? 'on' : ''} onClick={toggleRays} title="XR pointer rays on hands and controllers">
+            X Rays
+          </button>
+          <button
+            type="button"
+            className={surface === 'real' ? 'on' : ''}
+            onClick={toggleSurface}
+            title="Real: transparent grid over your floor or table. Virtual: solid placeholder ground"
+          >
+            V Surface: {surface === 'real' ? 'Real' : 'Virtual'}
+          </button>
+          <button type="button" className={mocap.enabled ? 'on' : ''} onClick={toggleMocap} title="Smartsuit Pro live skeleton (optional)">
+            Mocap
+          </button>
+          <button
+            type="button"
+            className="ghost"
+            onClick={async () => {
+              if (await confirmReplace('Reset the current world?')) useWorld.getState().reset()
+            }}
+          >
+            Reset
+          </button>
+          <label className="field">
+            Scale
+            <select value={worldScale} onChange={(e) => useEditor.getState().set({ worldScale: e.target.value as ScaleId })}>
+              {SCALE_IDS.map((id) => (
+                <option key={id} value={id}>
+                  {SCALE_PRESETS[id].label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
-      <div className="status">
-        {STATUS_TEXT[status]} · replans {replans}
-        {mocap.enabled && ` · mocap ${mocap.status}${mocap.status === 'live' ? ` ${mocap.fps} fps` : ''}`}
-        {dirty ? ' · unsaved' : ''}
+
+      <div className="status" role="status">
+        <span className={`status-dot${statusTone ? ` ${statusTone}` : ''}`} aria-hidden />
+        <span>
+          {STATUS_TEXT[status]} · replans {replans}
+          {dirty ? ' · unsaved' : ''}
+          {mocap.enabled && ` · mocap ${mocap.status}${mocap.status === 'live' ? ` ${mocap.fps} fps` : ''}`}
+        </span>
       </div>
-      {xrError && <div role="alert">{xrError}</div>}
-      {placement === 'choosing' && <p>Point at a table or floor to place the world.</p>}
-      {mocap.enabled && mocap.status === 'error' && <div className="status">{mocap.error}</div>}
+      {xrError && (
+        <div className="alert" role="alert">
+          {xrError}
+        </div>
+      )}
+      {placement === 'choosing' && <p className="hint-banner">Point at a table or floor to place the world.</p>}
+      {mocap.enabled && mocap.status === 'error' && (
+        <div className="alert" role="alert">
+          {mocap.error}
+        </div>
+      )}
       <div className="help">
-        Drag empty ground to orbit. Select: drag an object to move it, yellow handle resizes, blue handle rotates,
-        green cube duplicates, purple cube changes style, red cube deletes.
-        Keys: R rotate 15°, [ ] height, D duplicate, M material/style, T roof, G snap, X rays, V real/virtual surface, Del delete.
-        Ctrl+S save, Ctrl+Z / Ctrl+Shift+Z undo/redo. Drop a .json world file to import.
+        <button
+          type="button"
+          className="help-toggle"
+          aria-expanded={guideOpen}
+          onClick={() => (guideOpen ? closeGuide() : openGuide('start'))}
+        >
+          Open user &amp; controls guide
+        </button>
+        <p className="hint-banner" style={{ marginTop: 8 }}>
+          In VR: wrist <strong>Guide</strong> or panel <strong>Guide</strong> — same help in headset.
+        </p>
       </div>
     </div>
   )
@@ -212,7 +292,6 @@ function Hud() {
 function useKeyboard() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // Typing into the inspector's fields must not trigger shortcuts.
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) return
 
       const mod = e.ctrlKey || e.metaKey
@@ -242,6 +321,15 @@ function useKeyboard() {
       if (e.key === 'g' || e.key === 'G') return useEditor.getState().set({ snap: !useEditor.getState().snap })
       if (e.key === 'x' || e.key === 'X') return toggleRays()
       if (e.key === 'v' || e.key === 'V') return toggleSurface()
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault()
+        useGuide.getState().toggleGuide()
+        return
+      }
+      if (w.tool === 'asset' && (e.key === 'r' || e.key === 'R')) {
+        worldActions.rotateCatalogAsset(e.shiftKey ? -1 : 1)
+        return
+      }
       const sel = w.selectedId ? w.objects[w.selectedId] : null
       if (!sel) return
       if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected()

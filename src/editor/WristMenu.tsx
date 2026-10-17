@@ -4,11 +4,12 @@ import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Text } from '@react-three/drei'
 import { XRSpace, useXRInputSourceState } from '@react-three/xr'
 import { SCALE_IDS, SCALE_PRESETS, recenterWorld } from '../scene/worldRoot'
+import { FORGE } from '../theme/forge'
+import { useGuide } from '../guide/guideStore'
 import { useEditor } from './settings'
 import { togglePlaceCity, toggleRays, toggleSurface } from './xrInput'
 import { useWorld } from '../world/store'
 import { usePlacement } from '../xr/placement'
-import type { EquipmentKind } from '../world/catalog'
 import { useSelection } from './selection'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 
@@ -73,7 +74,7 @@ const PokeRegistry = createContext<Set<Pokeable> | null>(null)
  * it while the menu is open), not through XR pointer events, so they don't depend on touch-pointer
  * thresholds. Controllers (and rays) still press through pointer events.
  */
-export function WristMenu({ extra }: { extra?: ReactNode }) {
+export function WristMenu({ extra, envRow }: { extra?: ReactNode; envRow?: ReactNode }) {
   const hand = useXRInputSourceState('hand', 'left')
   const controller = useXRInputSourceState('controller', 'left')
   const rightHand = useXRInputSourceState('hand', 'right')
@@ -131,39 +132,40 @@ export function WristMenu({ extra }: { extra?: ReactNode }) {
         <XRSpace space={tipSpace} ref={tip}>
           <mesh ref={tipDot} visible={false} raycast={() => null}>
             <sphereGeometry args={[0.005, 12, 8]} />
-            <meshBasicMaterial color="#7bdff2" depthTest={false} transparent opacity={0.9} />
+            <meshBasicMaterial color={FORGE.tip} depthTest={false} transparent opacity={0.9} />
           </mesh>
         </XRSpace>
       )}
       <group ref={panel} visible={false}>
-        <MenuContent extra={extra} />
+        <MenuContent extra={extra} envRow={envRow} />
       </group>
     </PokeRegistry.Provider>
   )
 }
 
-function MenuContent({ extra }: { extra?: ReactNode }) {
-  const { rays, snap, worldScale, surface, equipment, gestures } = useEditor()
+function MenuContent({ extra, envRow }: { extra?: ReactNode; envRow?: ReactNode }) {
+  const { rays, snap, worldScale, surface, gestures } = useEditor()
+  const set = useEditor((s) => s.set)
   const group = useSelection((s) => s.ids.length)
   const tool = useWorld((s) => s.tool)
   const placing = usePlacement((s) => s.status === 'choosing')
-  const place = (kind: EquipmentKind) => {
-    set({ equipment: kind })
-    useWorld.getState().setTool('equipment')
-  }
-  const set = useEditor((s) => s.set)
+  const guideOpen = useGuide((s) => s.open)
+  const toggleGuide = useGuide((s) => s.toggleGuide)
   const rowY = (i: number) => 0.05 - i * (BTN_H + GAP)
   const quarter = (W - GAP * 3) / 4
-  const half = (W - GAP) / 2
   const third = (W - GAP * 2) / 3
   const col = (i: number, w: number) => -W / 2 + w / 2 + i * (w + GAP)
+  // Rows: 0 toggles · 1 scale · 2 tools · 3 view · 4 environments · (5 group) · status line.
+  const statusRow = group > 0 ? 6 : 5
+  const top = 0.082
+  const bottom = rowY(statusRow) - 0.012
   return (
     <group>
-      <mesh position={[0, group > 0 ? -0.0235 : -0.0075, -0.004]} raycast={() => null}>
-        <planeGeometry args={[W + 0.02, group > 0 ? 0.212 : 0.18]} />
-        <meshBasicMaterial color="#141a24" transparent opacity={0.85} />
+      <mesh position={[0, (top + bottom) / 2, -0.004]} raycast={() => null}>
+        <planeGeometry args={[W + 0.02, top - bottom]} />
+        <meshBasicMaterial color={FORGE.panel} transparent opacity={0.9} />
       </mesh>
-      <Text position={[0, 0.068, 0]} fontSize={0.011} color="#e8eaed" anchorX="center" anchorY="middle" raycast={() => null}>
+      <Text position={[0, 0.068, 0]} fontSize={0.011} color={FORGE.text} anchorX="center" anchorY="middle" raycast={() => null}>
         RealmForge
       </Text>
       <MenuButton position={[col(0, third), rowY(0), 0]} width={third} label={`Rays ${rays ? 'on' : 'off'}`} active={rays} onPress={toggleRays} />
@@ -179,24 +181,25 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
           onPress={() => set({ worldScale: id })}
         />
       ))}
-      {/* Place warehouse equipment: pick one, then poke the floor (or point with rays). */}
+      {/* Tools: Assets places from the asset library (pick one on the Control Palette's Assets page). */}
       <MenuButton position={[col(0, quarter), rowY(2), 0]} width={quarter} label="Select" active={tool === 'select'} onPress={() => useWorld.getState().setTool('select')} />
-      <MenuButton position={[col(1, quarter), rowY(2), 0]} width={quarter} label="Pallet" active={tool === 'equipment' && equipment === 'pallet'} onPress={() => place('pallet')} />
-      <MenuButton position={[col(2, quarter), rowY(2), 0]} width={quarter} label="Rack" active={tool === 'equipment' && equipment === 'rack'} onPress={() => place('rack')} />
-      <MenuButton position={[col(3, quarter), rowY(2), 0]} width={quarter} label={placing ? 'Cancel' : 'Place'} active={placing} onPress={togglePlaceCity} />
+      <MenuButton position={[col(1, quarter), rowY(2), 0]} width={quarter} label="Assets" active={tool === 'asset'} onPress={() => useWorld.getState().setTool('asset')} />
+      <MenuButton position={[col(2, quarter), rowY(2), 0]} width={quarter} label={placing ? 'Cancel' : 'Place'} active={placing} onPress={togglePlaceCity} />
+      <MenuButton position={[col(3, quarter), rowY(2), 0]} width={quarter} label={guideOpen ? 'Close' : 'Guide'} active={guideOpen} onPress={toggleGuide} />
       <MenuButton position={[col(0, third), rowY(3), 0]} width={third} label="Recenter" onPress={recenterWorld} />
       <MenuButton position={[col(1, third), rowY(3), 0]} width={third} label={`Gestures ${gestures ? 'on' : 'off'}`} active={gestures} onPress={() => set({ gestures: !gestures })} />
       {extra && <group position={[col(2, third), rowY(3), 0]}>{extra}</group>}
+      {envRow && <group position={[0, rowY(4), 0]}>{envRow}</group>}
       {/* Framed group (frame-hands gesture): act on all of it. */}
       {group > 0 && (
         <>
-          <MenuButton position={[col(0, third), rowY(4), 0]} width={third} label="Duplicate" onPress={duplicateSelected} />
-          <MenuButton position={[col(1, third), rowY(4), 0]} width={third} label="Delete" onPress={deleteSelected} />
-          <MenuButton position={[col(2, third), rowY(4), 0]} width={third} label={`Clear (${group})`} onPress={() => useSelection.getState().clear()} />
+          <MenuButton position={[col(0, third), rowY(5), 0]} width={third} label="Duplicate" onPress={duplicateSelected} />
+          <MenuButton position={[col(1, third), rowY(5), 0]} width={third} label="Delete" onPress={deleteSelected} />
+          <MenuButton position={[col(2, third), rowY(5), 0]} width={third} label={`Clear (${group})`} onPress={() => useSelection.getState().clear()} />
         </>
       )}
-      <Text position={[0, rowY(group > 0 ? 5 : 4) + 0.004, 0]} fontSize={0.008} color="#9aa4ad" anchorX="center" anchorY="middle" raycast={() => null}>
-        {`${SCALE_PRESETS[worldScale].label} · touch a button with your right fingertip`}
+      <Text position={[0, rowY(statusRow) + 0.004, 0]} fontSize={0.008} color={FORGE.copper} anchorX="center" anchorY="middle" raycast={() => null}>
+        {`${SCALE_PRESETS[worldScale].label} · fingertip to press · Guide for help`}
       </Text>
     </group>
   )
@@ -252,9 +255,20 @@ export function MenuButton(props: {
     <group ref={frame} position={props.position}>
       <mesh ref={body} onPointerDown={onDown}>
         <boxGeometry args={[width, BTN_H, BTN_D]} />
-        <meshStandardMaterial color={props.active ? '#f4a261' : '#2d3748'} emissive={props.active ? '#f4a261' : '#000'} emissiveIntensity={0.25} />
+        <meshStandardMaterial
+          color={props.active ? FORGE.ember : FORGE.panelMuted}
+          emissive={props.active ? FORGE.emberHot : '#000000'}
+          emissiveIntensity={props.active ? 0.35 : 0}
+        />
       </mesh>
-      <Text position={[0, 0, BTN_D / 2 + 0.0005]} fontSize={0.0095} color={props.active ? '#1d2433' : '#e8eaed'} anchorX="center" anchorY="middle" raycast={() => null}>
+      <Text
+        position={[0, 0, BTN_D / 2 + 0.0005]}
+        fontSize={0.0095}
+        color={props.active ? FORGE.ink : FORGE.text}
+        anchorX="center"
+        anchorY="middle"
+        raycast={() => null}
+      >
         {props.label}
       </Text>
     </group>

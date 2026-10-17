@@ -1,11 +1,13 @@
+import { buildAsset } from './assets'
+import type { AssetId } from './assetTypes'
 import { idFor, type WorldSnapshot } from './store'
 import type { BuildingStyle, MaterialId, ObjectKind, PalletStyle, RackStyle, Vec3, WorldObject } from './types'
 import { BUILDING_STYLES } from './catalog'
 import { PALLET, RACK } from './scale'
 
 /**
- * Preset world layouts (objects + robot + goal). Appearance and brush defaults live in
- * `environment.ts`. Each builder returns fresh ids so loading twice never collides.
+ * Preset worlds. Each call returns fresh objects with new ids, so loading a preset twice
+ * never collides with what is already in the store.
  */
 type Extra = Partial<Omit<WorldObject, 'id' | 'kind' | 'position' | 'size'>>
 const obj = (kind: ObjectKind, x: number, z: number, size: Vec3, extra: Extra = {}): WorldObject => ({
@@ -72,7 +74,7 @@ export function forgeDistrict(): WorldSnapshot {
     // Industrial district.
     building('industrial', 11, -12, 14, 9, 12),
     building('industrial', 11, -30, 14, 9, 14, { color: '#b5a99a' }),
-    slab('metal', 11, -21.2, 10, 1.2, 3.2),
+    slab('metal', 11, -21.2, 10, 0.20, 3.2),
     // Fenced yard with a gate on its west side (z −24…−14); the goal sits inside.
     wall('metal', 33, -38, 14, 2.5),
     wall('metal', 26, -31, 14, 2.5, Math.PI / 2),
@@ -163,6 +165,7 @@ export function marsOutpost(): WorldSnapshot {
  * raised loading dock on the north wall and offices in the south corners. The robot runs from staging
  * to the dock down the central aisle.
  */
+
 export function warehouse(): WorldSnapshot {
   const objects: WorldObject[] = [
     // Hall floor (walkable) and the central aisle (asphalt with a centre line).
@@ -208,6 +211,16 @@ export function warehouse(): WorldSnapshot {
     lamp(-2.6, -4),
     lamp(2.6, 3, Math.PI),
   ]
+  // One of each catalog item (main's warehouse catalog), placed clear of the aisles the robot uses.
+  const catalog: [AssetId, number, number][] = [
+    ['storage-rack', -24, -10], ['workstation', -22, 6], ['conveyor', 14, 6],
+    ['cargo', -14, 6], ['barrier', 8, -11.25], ['loading-bay', 0, -20],
+    ['pickup-zone', 0, 11], ['delivery-zone', -12, -11.25], ['charging-pad', 3, 17], ['inspection-point', 12, -3.75],
+  ]
+  for (const [id, x, z] of catalog) {
+    const asset = buildAsset(id, [x, z], 0, false)!
+    objects.push({ ...asset, id: idFor(asset.kind) })
+  }
   return { objects, robotStart: [0, 16], goal: [0, -20] }
 }
 

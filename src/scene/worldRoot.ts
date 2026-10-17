@@ -5,6 +5,8 @@ import { WORLD, type Vec2 } from '../world/types'
  * The map is drawn inside one group that scales map units (metres) to the chosen view:
  * a tabletop miniature up to life size. Store coordinates are always map-local;
  * use groundPoint() to turn a pointer ray into one.
+ *
+ * In AR, `src/xr/placement.ts` can re-pin this root onto a Space Setup table (+ optional anchor).
  */
 export type ScaleId = 'tabletop' | 'room' | 'large' | 'life'
 

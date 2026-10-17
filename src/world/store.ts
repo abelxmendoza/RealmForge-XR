@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { WORLD, type ObjectKind, type Vec2, type Vec3, type WorldObject } from './types'
 
-export type Tool = 'select' | 'wall' | 'building' | 'platform' | 'decor' | 'equipment' | 'goal' | 'robot'
+export type Tool = 'select' | 'wall' | 'building' | 'platform' | 'decor' | 'goal' | 'robot' | 'asset'
 
 /** A whole world: what presets provide and loadWorld() installs. */
 export interface WorldSnapshot {
@@ -59,6 +59,7 @@ export const idFor = (kind: ObjectKind) => newId(ID_PREFIX[kind] ?? 'obj')
 
 const sameVec2 = (a: Vec2, b: Vec2) => a[0] === b[0] && a[1] === b[1]
 
+/** Defaults in map metres (1 unit = 1 m). Presentation scale never changes these. */
 export const WALL_DEFAULTS = { height: 3, thickness: 0.3, color: '#c9b79c' }
 export const BUILDING_DEFAULTS: { size: Vec3; color: string } = { size: [12, 12, 12], color: '#8fa6c9' }
 

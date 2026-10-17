@@ -8,20 +8,12 @@ MOLTEN Hackathon, Worldbuild track. Runs in the Meta Quest browser (WebXR) and o
 ```bash
 npm install
 npm run dev        # https://localhost:5173 (and your LAN IP, for the Quest)
-npm test           # grid, A*, world, grab, scale and mocap unit tests
+npm test           # grid + A* unit tests
 npm run build
-npm run mocap:mock # optional: synthetic Smartsuit skeleton (see docs/smartsuit.md)
 ```
 
 On the Quest 3S, open `https://<laptop-LAN-IP>:5173` in the Quest Browser, accept the self-signed
-certificate, then press **Enter AR** (passthrough) or **Enter VR**.
-
-### Testing on a Quest 2
-
-The same URL runs on a Quest 2 (grayscale passthrough, no room mesh or depth occlusion). Open
-`/xr-test/` for a standalone passthrough check of true-scale grabbing, snapping to real surfaces and
-anchors. Setup over USB (`adb reverse`), the Quest 2 vs 3S feature table and a test checklist are in
-[docs/quest2-testing.md](docs/quest2-testing.md).
+certificate, choose **Launch editor**, then press **Enter AR** (passthrough) or **Enter VR**.
 
 ## Environment variables
 
@@ -33,10 +25,21 @@ Shared secrets live in `.env`, committed **encrypted** with [dotenvx](https://do
 - Add or change a variable: `npm run env:set -- NAME value`, then commit `.env`. Teammates get it on pull.
 - `.env.keys` and `*.local` are gitignored. Never commit the private key.
 
+## Docs (living)
+
+We document as we build. Update these in the same change when behavior or state moves:
+
+| Doc | Purpose |
+| --- | --- |
+| [docs/plan.md](docs/plan.md) | Best-of-both roadmap (Abel product + Emiliano headset) |
+| [docs/BUILD_LOG.md](docs/BUILD_LOG.md) | Append-only work diary |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md) | User/demo-facing changes |
+| [docs/STATE.md](docs/STATE.md) | Runtime & data state (store, XR, placement) |
+| [docs/quest2-testing.md](docs/quest2-testing.md) | Headset setup + checklist |
+
 ## Controls
 
-Every control is a pointer event, so the mouse and XR hands and controllers behave the same.
-In XR there are no rays: you reach out and touch things (see [Hand grab in XR](#hand-grab-in-xr)).
+Every control is a pointer event, so mouse, controller rays and hand rays behave the same.
 
 | Tool (key) | What it does |
 | --- | --- |
@@ -48,10 +51,10 @@ In XR there are no rays: you reach out and touch things (see [Hand grab in XR](#
 | 6 Platform / road | Drag out a rectangle. Asphalt makes a road with a centre line. |
 | 7 Decoration | Click to place a tree, streetlight or crate (pick in the inspector). |
 | B | Demo helper: slides a wall across the robot's route to force a replan. |
+| Enter AR | Starts passthrough with Quest fallback (`full` → `no depth` → `minimal`). |
+| P Place city | In AR: highlight Space Setup planes; click a table/floor to pin the miniature (optional anchor). |
 | R / Shift+R, `[` `]`, Del | Rotate 15°, lower/raise height, delete the selected object. |
 | D, M, T, G | Duplicate, cycle material/style, toggle flat/pitched roof, toggle grid snapping. |
-| X | Toggle XR pointer rays (off by default: you grab and poke things directly). |
-| V | Toggle the surface: **Real** (transparent grid over your actual floor or table) or **Virtual** (solid placeholder ground). |
 
 A selected object shows drag handles (yellow sphere resizes, blue sphere rotates) and press
 buttons (green cube duplicates, purple cube cycles material/style, red cube deletes). They are
@@ -161,7 +164,8 @@ src/xr/*                   AR session fallback, "Place city" plane pinning and a
 src/mocap/*                Smartsuit Pro (Rokoko) stream: parser, client, debug skeleton (+ tools/mocap-bridge.ts)
 ```
 
-World save/load and undo/redo for XR and desktop: see `docs/world-persistence.md`.
+World save/load and undo/redo: `docs/world-persistence.md`. Quest XR testing: `docs/quest2-testing.md`.  
+**Scale contract:** store / nav / saves use metres; `WORLD_ROOT.scale` is presentation only.
 
 ### Shared object contract
 
@@ -186,9 +190,9 @@ walls and buildings always block; platforms block only when taller than `STEP_HE
 roads and plazas are walkable; trees, streetlights and crates never block unless `solid` is set.
 Navigation builds its grid from `navObstacles(objects)`; the grid and A* code are unchanged.
 
-- **Units:** 1 map unit = 1 m, at true size. The map spans −40…40 on x and z with 0.5 m grid cells.
-- **World scale:** everything is drawn inside one root group (`src/scene/worldRoot.ts`) scaled by the
-  current preset (1:60 to 1:1) and placed on a table or your floor. Store values are always map-local; convert a pointer ray with
+- **Units:** 1 map unit = 1 m at map scale. The map spans −10…10 on x and z with 0.5-unit grid cells.
+- **Miniature:** everything is drawn inside one root group (`src/scene/worldRoot.ts`) that is scaled
+  to 0.07 and placed at table height. Store values are always map-local; convert a pointer ray with
   `groundPoint(event)`.
 - **Edits trigger navigation** through the store: `addObject`, `updateObject` and `removeObject`
   bump `geometryVersion`, and navigation rebuilds the grid and replans. XR input only needs to call
@@ -206,3 +210,17 @@ See [integration audit and merge order](docs/unified-integration.md),
 [XR menu contract](examples/unified-xr-contract.ts).
 Desktop voice supports start/stop, hold-to-talk, and a typed command fallback.
 World replacements use a shared confirmation dialog; an XR menu must provide its own consumer.
+
+## Warehouse object catalog
+
+The inspector's **Object catalog** and the VR palette's **Assets / Routes** tabs add warehouse equipment,
+placement previews and usable robot destinations. Load Autonomous Warehouse to see the seeded objects.
+Choose an item, aim at clear ground and click to place; key **8** selects catalog placement and **R** rotates it.
+See [warehouse catalog workflow and validation](docs/warehouse-catalog.md).
+
+## Project landing page
+
+The root URL introduces RealmForge XR. **Launch editor** opens `?editor=1`; environment cards
+open the editor with the selected template (`?editor=1&world=warehouse`, for example).
+The world editor and XR modules load only when the editor is launched.
+See [landing page verification](docs/landing-page.md).

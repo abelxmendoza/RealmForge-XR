@@ -1,5 +1,7 @@
+import { getAsset } from '../world/assets'
+import { AssetCatalogPanel } from './AssetCatalogPanel'
 import { useWorld, type Tool } from '../world/store'
-import { STEP_HEIGHT, blocksNavigation, type MaterialId, type PalletStyle, type RackStyle, type WorldObject } from '../world/types'
+import { STEP_HEIGHT, blocksNavigation, type MaterialId, type WorldObject } from '../world/types'
 import {
   BUILDING_STYLES,
   BUILDING_STYLE_IDS,
@@ -13,12 +15,10 @@ import {
   buildingStyle,
   defaultMaterial,
   treeStyle,
-  type EquipmentKind,
 } from '../world/catalog'
-import { PRESETS } from '../world/presets'
-import { worldActions } from '../world/actions'
-import { confirmReplace } from '../world/confirmation'
 import { WorldsPanel } from './WorldsPanel'
+import { EnvironmentsMenu } from './EnvironmentsMenu'
+import { WorldLibrary, openWorldLibrary } from './WorldLibrary'
 import { useEditor, type DecorKind } from './settings'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 
@@ -33,8 +33,11 @@ export function Inspector() {
   return (
     <div className="inspector">
       {selected ? <ObjectPanel o={selected} /> : <BrushPanel tool={tool} />}
+      <AssetCatalogPanel />
+      <EnvironmentsMenu />
       <WorldPanel />
       <WorldsPanel />
+      <WorldLibrary />
     </div>
   )
 }
@@ -57,7 +60,7 @@ function ObjectPanel({ o }: { o: WorldObject }) {
   return (
     <section>
       <h3>
-        {KIND_LABELS[o.kind]} <span className={blocks ? 'tag block' : 'tag'}>{blocks ? 'blocks robot' : 'walkable'}</span>
+        {getAsset(o.assetId || '')?.name || KIND_LABELS[o.kind]} <span className={blocks ? 'tag block' : 'tag'}>{blocks ? 'blocks robot' : 'walkable'}</span>
       </h3>
       <div className="grid3">
         {labels.map((label, axis) => (
@@ -71,7 +74,7 @@ function ObjectPanel({ o }: { o: WorldObject }) {
         Rotation°
         <input type="number" step={15} value={deg} onChange={(e) => update({ rotationY: ((Number(e.target.value) || 0) * Math.PI) / 180 })} />
       </label>
-      {materials && (
+      {materials && !o.assetId && (
         <label>
           Material
           <select value={defaultMaterial(o)} onChange={(e) => update({ material: e.target.value as MaterialId })}>
@@ -83,7 +86,7 @@ function ObjectPanel({ o }: { o: WorldObject }) {
           </select>
         </label>
       )}
-      {o.kind === 'building' && (
+      {o.kind === 'building' && !o.assetId && (
         <>
           <label>
             Style
@@ -129,6 +132,7 @@ function ObjectPanel({ o }: { o: WorldObject }) {
           {o.kind === 'platform' && o.solid === undefined && <small> (auto: taller than {STEP_HEIGHT})</small>}
         </label>
       )}
+      {o.assetId && <label>Color<input type="color" value={o.color || '#8fa6c9'} onChange={(e) => update({ color: e.target.value })} /></label>}
       <div className="row">
         <button onClick={duplicateSelected}>D Duplicate</button>
         <button onClick={deleteSelected}>Del Delete</button>
@@ -186,38 +190,6 @@ function BrushPanel({ tool }: { tool: Tool }) {
       </section>
     )
   }
-  if (tool === 'equipment')
-    return (
-      <section>
-        <h3>New warehouse equipment</h3>
-        <div className="row">
-          {(['pallet', 'rack'] as EquipmentKind[]).map((k) => (
-            <button key={k} className={s.equipment === k ? 'on' : ''} onClick={() => s.set({ equipment: k })}>
-              {KIND_LABELS[k]}
-            </button>
-          ))}
-        </div>
-        {s.equipment === 'pallet' ? (
-          <label>
-            Load
-            <select value={s.palletStyle} onChange={(e) => s.set({ palletStyle: e.target.value as PalletStyle })}>
-              <option value="empty">Empty</option>
-              <option value="boxes">Stacked boxes</option>
-              <option value="wrapped">Shrink-wrapped</option>
-            </select>
-          </label>
-        ) : (
-          <label>
-            Levels
-            <select value={s.rackStyle} onChange={(e) => s.set({ rackStyle: e.target.value as RackStyle })}>
-              <option value="loaded">Loaded with pallets</option>
-              <option value="empty">Empty</option>
-            </select>
-          </label>
-        )}
-        <p className="hint">Click (or poke / point in XR) to place at real size: pallet 1.2 × 1.0 m, rack bay 2.7 × 1.1 m. Both block the robot.</p>
-      </section>
-    )
   if (tool === 'decor')
     return (
       <section>
@@ -254,24 +226,13 @@ function WorldPanel() {
   return (
     <section>
       <h3>World</h3>
+      <button type="button" className="primary" onClick={openWorldLibrary} title="New worlds, saved worlds (L)">
+        Worlds library (L)
+      </button>
       <label className="check">
         <input type="checkbox" checked={snap} onChange={(e) => useEditor.getState().set({ snap: e.target.checked })} />
         Snap to grid (G)
       </label>
-      {PRESETS.map((p) => (
-        <button
-          key={p.id}
-          onClick={() =>
-            void worldActions.loadEnvironment(p.id, {
-              // One confirmation channel for desktop, voice, and headset consumers.
-              confirmReplace,
-            })
-          }
-          title="Replaces the current world (asks first)"
-        >
-          Load {p.label}
-        </button>
-      ))}
     </section>
   )
 }

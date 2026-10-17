@@ -9,7 +9,7 @@ import { cycleVariant } from '../world/catalog'
 import { SCALE_PRESETS, groundPoint, uiSize } from '../scene/worldRoot'
 import { SelectionOutline, Structure } from '../scene/structures'
 import { beginDrag } from './drag'
-import { applyGroundTool } from './Ground'
+import { applyGroundHover, applyGroundTool } from './Ground'
 import { MIN_SIZE, grabPatch, samePatch, type GrabPatch } from './grab'
 import { useEditor } from './settings'
 import { groupIds, useSelection } from './selection'
@@ -183,7 +183,8 @@ function Obstacle({ o }: { o: WorldObject }) {
   const top = h + r
   return (
     <group ref={groupRef} position={o.position} rotation={[0, o.rotationY, 0]} userData={{ objectId: o.id }}>
-      <group onPointerDown={onDown}>
+      {/* Walkable surfaces pass hovers through to the ground, so the asset tool's ghost shows over roads and slabs too. */}
+      <group onPointerDown={onDown} onPointerMove={blocksNavigation(o) ? undefined : applyGroundHover}>
         <GrabHandle
           targetRef={groupRef}
           filter={(e) => e.pointerType === 'grab' && useWorld.getState().tool === 'select'}

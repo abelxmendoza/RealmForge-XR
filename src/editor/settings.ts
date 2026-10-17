@@ -1,6 +1,6 @@
+import type { AssetId } from '../world/assetTypes'
 import { create } from 'zustand'
-import type { BuildingStyle, MaterialId, ObjectKind, PalletStyle, RackStyle, RoofType, TreeStyle } from '../world/types'
-import type { EquipmentKind } from '../world/catalog'
+import type { BuildingStyle, MaterialId, ObjectKind, RoofType, TreeStyle } from '../world/types'
 import type { ScaleId } from '../scene/worldRoot'
 
 export type DecorKind = Extract<ObjectKind, 'tree' | 'streetlight' | 'crate'>
@@ -10,6 +10,8 @@ export type DecorKind = Extract<ObjectKind, 'tree' | 'streetlight' | 'crate'>
  * Kept out of the world store so navigation never sees these changes.
  */
 export interface EditorSettings {
+  assetId: AssetId
+  assetRotation: number
   snap: boolean
   /** How big the world is shown relative to your room (see SCALE_PRESETS). */
   worldScale: ScaleId
@@ -28,14 +30,12 @@ export interface EditorSettings {
   platformMaterial: MaterialId
   decor: DecorKind
   treeStyle: TreeStyle
-  /** What the equipment tool (key 8) places next, and its style. */
-  equipment: EquipmentKind
-  palletStyle: PalletStyle
-  rackStyle: RackStyle
   set: (patch: Partial<Omit<EditorSettings, 'set'>>) => void
 }
 
 export const useEditor = create<EditorSettings>((set) => ({
+  assetId: 'storage-rack',
+  assetRotation: 0,
   snap: true,
   worldScale: 'tabletop',
   rays: false,
@@ -47,8 +47,5 @@ export const useEditor = create<EditorSettings>((set) => ({
   platformMaterial: 'concrete',
   decor: 'tree',
   treeStyle: 'round',
-  equipment: 'pallet',
-  palletStyle: 'boxes',
-  rackStyle: 'loaded',
   set: (patch) => set(patch),
 }))
