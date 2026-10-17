@@ -74,7 +74,20 @@ export function Scene() {
         />
       )}
       {mocapOn && !mocapInMap && <MocapSkeleton />}
-      {!inXR && <OrbitControls makeDefault enabled={!dragging} target={orbitTarget} />}
+      {/* Right-click is reserved for the desktop context menu; middle-drag pans. */}
+      {!inXR && (
+        <OrbitControls
+          makeDefault
+          enabled={!dragging}
+          target={orbitTarget}
+          target={WORLD_ROOT.position}
+          mouseButtons={{
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.PAN,
+            RIGHT: -1 as THREE.MOUSE,
+          }}
+        />
+      )}
 
       <ControlPalette />
       <ControlsGuidePanel />

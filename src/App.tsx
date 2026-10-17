@@ -15,6 +15,7 @@ import { useNav } from './nav/navigation'
 import { blockRoute } from './editor/demo'
 import { Inspector } from './editor/Inspector'
 import { EnvironmentsMenu } from './editor/EnvironmentsMenu'
+import { DesktopContextMenu } from './editor/DesktopContextMenu'
 import { cycleSelected, deleteSelected, duplicateSelected } from './editor/Obstacles'
 import { useEditor } from './editor/settings'
 import { importWorld, quickSave, useWorldLibrary } from './world/persistence'
@@ -70,6 +71,7 @@ export default function App() {
       <ControlsGuide />
       {/* DOM confirm works in Quest Browser WebXR; required so wrist-menu env loads can confirm. */}
       <ConfirmationDialog />
+      <DesktopContextMenu />
     </>
   )
 }
@@ -285,6 +287,7 @@ function Hud() {
         <p className="hint-banner" style={{ marginTop: 8 }}>
           In VR: wrist <strong>Guide</strong> or panel <strong>Guide</strong> — same help in headset.
         </p>
+        <p>Right-click for world actions. Middle-drag pans.</p>
       </div>
     </div>
   )
