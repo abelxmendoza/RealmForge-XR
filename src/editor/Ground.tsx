@@ -286,6 +286,8 @@ function TableEdge({ size, cm, rim, base }: { size: number; cm: (v: number) => n
         scale={false}
         apply={(state, target) => {
           target.position.copy(state.current.position)
+          // Room scale and up: slide and turn only; the ground stays on the real floor.
+          if (!onTable(SCALE_PRESETS[useEditor.getState().worldScale].ratio)) target.position.y = WORLD_ROOT.floorY
           target.quaternion.copy(state.current.quaternion)
           // Keep the shared default in sync so a re-render of <Scene> (or Recenter) can't snap the map back.
           WORLD_ROOT.position.copy(state.current.position)

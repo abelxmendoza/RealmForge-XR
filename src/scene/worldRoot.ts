@@ -25,6 +25,8 @@ export const WORLD_ROOT = {
   scale: SCALE_PRESETS.tabletop.ratio,
   /** World yaw (radians): set by the L gesture (primary axis), world pull and the map grab; kept by Recenter. */
   yaw: 0,
+  /** Height of the real floor in the XR reference space (see xr/floor.ts); 0 outside XR. */
+  floorY: 0,
 }
 
 export const worldRootRef: { current: THREE.Group | null } = { current: null }

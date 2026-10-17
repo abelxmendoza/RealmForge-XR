@@ -25,6 +25,7 @@ import { bindWebXRManager } from '../xr/session'
 import { useEnvironment } from '../world/environment'
 import { usePlacement } from '../xr/placement'
 import { WristEnvMenu } from '../editor/WristEnvMenu'
+import { FloorTracker } from '../xr/floor'
 
 export function Scene() {
   const background = useEnvironment((s) => s.appearance.lighting.background)
@@ -59,6 +60,7 @@ export function Scene() {
       <Lighting />
       <ThumbnailCapture />
       <WorldScaler />
+      {inXR && <FloorTracker />}
       {inXR && <WristMenu extra={<MocapMenuButton />} envRow={<WristEnvMenu />} />}
       {inXR && <GestureController />}
       {/* Smartsuit skeleton at 1:1 in your room (Rokoko's origin = where the XR session started). */}
@@ -131,6 +133,8 @@ function WorldScaler() {
       const head = camera.getWorldPosition(new THREE.Vector3())
       const forward = camera.getWorldDirection(new THREE.Vector3())
       at = worldPlacement(worldScale, head, forward, useWorld.getState().robotStart, WORLD_ROOT.yaw)
+      // Stand on the real floor (unbounded tracking's origin isn't necessarily at floor height).
+      at.y = WORLD_ROOT.floorY
     }
     root.position.copy(at)
     // Keep the yaw from the L gesture / world pull / map grab.
