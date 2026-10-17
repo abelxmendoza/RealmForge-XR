@@ -5,7 +5,10 @@ import { Text } from '@react-three/drei'
 import { XRSpace, useXRInputSourceState } from '@react-three/xr'
 import { SCALE_IDS, SCALE_PRESETS, recenterWorld } from '../scene/worldRoot'
 import { useEditor } from './settings'
-import { toggleRays, toggleSurface } from './xrInput'
+import { togglePlaceCity, toggleRays, toggleSurface } from './xrInput'
+import { useWorld } from '../world/store'
+import { usePlacement } from '../xr/placement'
+import type { EquipmentKind } from '../world/catalog'
 
 /** Panel size in metres (real room size, independent of the world scale). */
 const W = 0.16
@@ -131,7 +134,13 @@ export function WristMenu({ extra }: { extra?: ReactNode }) {
 }
 
 function MenuContent({ extra }: { extra?: ReactNode }) {
-  const { rays, snap, worldScale, surface } = useEditor()
+  const { rays, snap, worldScale, surface, equipment } = useEditor()
+  const tool = useWorld((s) => s.tool)
+  const placing = usePlacement((s) => s.status === 'choosing')
+  const place = (kind: EquipmentKind) => {
+    set({ equipment: kind })
+    useWorld.getState().setTool('equipment')
+  }
   const set = useEditor((s) => s.set)
   const rowY = (i: number) => 0.05 - i * (BTN_H + GAP)
   const quarter = (W - GAP * 3) / 4
@@ -140,8 +149,8 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
   const col = (i: number, w: number) => -W / 2 + w / 2 + i * (w + GAP)
   return (
     <group>
-      <mesh position={[0, 0.005, -0.004]} raycast={() => null}>
-        <planeGeometry args={[W + 0.02, 0.15]} />
+      <mesh position={[0, -0.0075, -0.004]} raycast={() => null}>
+        <planeGeometry args={[W + 0.02, 0.18]} />
         <meshBasicMaterial color="#141a24" transparent opacity={0.85} />
       </mesh>
       <Text position={[0, 0.068, 0]} fontSize={0.011} color="#e8eaed" anchorX="center" anchorY="middle" raycast={() => null}>
@@ -160,9 +169,14 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
           onPress={() => set({ worldScale: id })}
         />
       ))}
-      <MenuButton position={[col(0, half), rowY(2), 0]} width={half} label="Recenter" onPress={recenterWorld} />
-      {extra && <group position={[col(1, half), rowY(2), 0]}>{extra}</group>}
-      <Text position={[0, rowY(3) + 0.004, 0]} fontSize={0.008} color="#9aa4ad" anchorX="center" anchorY="middle" raycast={() => null}>
+      {/* Place warehouse equipment: pick one, then poke the floor (or point with rays). */}
+      <MenuButton position={[col(0, quarter), rowY(2), 0]} width={quarter} label="Select" active={tool === 'select'} onPress={() => useWorld.getState().setTool('select')} />
+      <MenuButton position={[col(1, quarter), rowY(2), 0]} width={quarter} label="Pallet" active={tool === 'equipment' && equipment === 'pallet'} onPress={() => place('pallet')} />
+      <MenuButton position={[col(2, quarter), rowY(2), 0]} width={quarter} label="Rack" active={tool === 'equipment' && equipment === 'rack'} onPress={() => place('rack')} />
+      <MenuButton position={[col(3, quarter), rowY(2), 0]} width={quarter} label={placing ? 'Cancel' : 'Place'} active={placing} onPress={togglePlaceCity} />
+      <MenuButton position={[col(0, half), rowY(3), 0]} width={half} label="Recenter" onPress={recenterWorld} />
+      {extra && <group position={[col(1, half), rowY(3), 0]}>{extra}</group>}
+      <Text position={[0, rowY(4) + 0.004, 0]} fontSize={0.008} color="#9aa4ad" anchorX="center" anchorY="middle" raycast={() => null}>
         {`${SCALE_PRESETS[worldScale].label} · touch a button with your right fingertip`}
       </Text>
     </group>

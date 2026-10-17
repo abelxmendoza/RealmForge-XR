@@ -34,6 +34,7 @@ const TOOL_RULES: { phrases: string[]; tool: Tool }[] = [
   { phrases: ['wall tool', 'select wall', 'create a wall', 'create wall', 'draw a wall', 'draw wall'], tool: 'wall' },
   { phrases: ['road tool', 'select road', 'place a platform', 'place platform', 'platform tool', 'select platform'], tool: 'platform' },
   { phrases: ['decor tool', 'decoration', 'select decor'], tool: 'decor' },
+  { phrases: ['pallet tool', 'place a pallet', 'place pallet', 'rack tool', 'place a rack', 'place rack', 'equipment tool'], tool: 'equipment' },
   { phrases: ['select robot', 'place robot', 'robot tool'], tool: 'robot' },
   { phrases: ['set destination', 'set goal', 'place goal', 'goal tool', 'select goal'], tool: 'goal' },
   { phrases: ['select tool', 'select mode', 'move tool'], tool: 'select' },

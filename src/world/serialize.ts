@@ -1,5 +1,5 @@
 import { WORLD, type ObjectKind, type Vec2, type Vec3, type WorldObject } from './types'
-import { BUILDING_STYLES, PLATFORM_MATERIALS, TREE_STYLES, WALL_MATERIALS } from './catalog'
+import { BUILDING_STYLES, PALLET_STYLES, PLATFORM_MATERIALS, RACK_STYLES, TREE_STYLES, WALL_MATERIALS } from './catalog'
 import type { WorldSnapshot } from './store'
 
 /**
@@ -48,9 +48,9 @@ export const LIMITS = {
   maxHeight: 60,
 } as const
 
-const KINDS: ReadonlySet<ObjectKind> = new Set(['wall', 'building', 'platform', 'tree', 'streetlight', 'crate'])
+const KINDS: ReadonlySet<ObjectKind> = new Set(['wall', 'building', 'platform', 'tree', 'streetlight', 'crate', 'pallet', 'rack'])
 const MATERIALS: ReadonlySet<string> = new Set([...WALL_MATERIALS, ...PLATFORM_MATERIALS])
-const STYLES: ReadonlySet<string> = new Set([...Object.keys(BUILDING_STYLES), ...TREE_STYLES])
+const STYLES: ReadonlySet<string> = new Set([...Object.keys(BUILDING_STYLES), ...TREE_STYLES, ...PALLET_STYLES, ...RACK_STYLES])
 const ROOFS: ReadonlySet<string> = new Set(['flat', 'pitched'])
 const ID_RE = /^[A-Za-z0-9_-]+$/
 const COLOR_RE = /^#[0-9a-fA-F]{3,8}$/

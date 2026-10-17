@@ -1,5 +1,5 @@
 import { useWorld, type Tool } from '../world/store'
-import { STEP_HEIGHT, blocksNavigation, type MaterialId, type WorldObject } from '../world/types'
+import { STEP_HEIGHT, blocksNavigation, type MaterialId, type PalletStyle, type RackStyle, type WorldObject } from '../world/types'
 import {
   BUILDING_STYLES,
   BUILDING_STYLE_IDS,
@@ -13,6 +13,7 @@ import {
   buildingStyle,
   defaultMaterial,
   treeStyle,
+  type EquipmentKind,
 } from '../world/catalog'
 import { PRESETS } from '../world/presets'
 import { worldActions } from '../world/actions'
@@ -185,6 +186,38 @@ function BrushPanel({ tool }: { tool: Tool }) {
       </section>
     )
   }
+  if (tool === 'equipment')
+    return (
+      <section>
+        <h3>New warehouse equipment</h3>
+        <div className="row">
+          {(['pallet', 'rack'] as EquipmentKind[]).map((k) => (
+            <button key={k} className={s.equipment === k ? 'on' : ''} onClick={() => s.set({ equipment: k })}>
+              {KIND_LABELS[k]}
+            </button>
+          ))}
+        </div>
+        {s.equipment === 'pallet' ? (
+          <label>
+            Load
+            <select value={s.palletStyle} onChange={(e) => s.set({ palletStyle: e.target.value as PalletStyle })}>
+              <option value="empty">Empty</option>
+              <option value="boxes">Stacked boxes</option>
+              <option value="wrapped">Shrink-wrapped</option>
+            </select>
+          </label>
+        ) : (
+          <label>
+            Levels
+            <select value={s.rackStyle} onChange={(e) => s.set({ rackStyle: e.target.value as RackStyle })}>
+              <option value="loaded">Loaded with pallets</option>
+              <option value="empty">Empty</option>
+            </select>
+          </label>
+        )}
+        <p className="hint">Click (or poke / point in XR) to place at real size: pallet 1.2 × 1.0 m, rack bay 2.7 × 1.1 m. Both block the robot.</p>
+      </section>
+    )
   if (tool === 'decor')
     return (
       <section>

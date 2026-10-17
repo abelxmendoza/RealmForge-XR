@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { create } from 'zustand'
 import * as THREE from 'three'
 import { Line } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
 import { Handle as GrabHandle } from '@react-three/handle'
 import { WALL_DEFAULTS, clampToWorld, useWorld } from '../world/store'
 import { WORLD, type Vec2, type Vec3, type WorldObject } from '../world/types'
-import { BUILDING_STYLES, DECOR_DEFAULTS, PLATFORM_DEFAULTS } from '../world/catalog'
+import { BUILDING_STYLES, DECOR_DEFAULTS, PLATFORM_DEFAULTS, equipmentSize } from '../world/catalog'
 import { SNAP, snapFootprint, snapPoint } from '../world/snap'
 import { SCALE_PRESETS, WORLD_ROOT, groundPoint, onTable, worldRootRef } from '../scene/worldRoot'
 import { flatMaterial, groundMaterial } from '../scene/materials'
@@ -45,9 +45,16 @@ function placePoint(p: Vec2): Vec2 {
   return [clampToWorld(q[0]), clampToWorld(q[1])]
 }
 
-/** The object a click with the building/decor tool would create at `at`. */
-function objectForTool(tool: 'building' | 'decor', at: Vec2): Omit<WorldObject, 'id'> {
+/** The object a click with the building/decor/equipment tool would create at `at`. */
+function objectForTool(tool: 'building' | 'decor' | 'equipment', at: Vec2): Omit<WorldObject, 'id'> {
   const s = useEditor.getState()
+  if (tool === 'equipment') {
+    // Real-size pallet or rack bay; snapping lines its footprint edges up with the grid.
+    const style = s.equipment === 'pallet' ? s.palletStyle : s.rackStyle
+    const size = equipmentSize(s.equipment, style)
+    const c = s.snap ? snapFootprint(at, size[0], size[2], 0) : at
+    return { kind: s.equipment, position: [clampToWorld(c[0]), 0, clampToWorld(c[1])], size, rotationY: 0, style }
+  }
   if (tool === 'building') {
     const def = BUILDING_STYLES[s.buildingStyle]
     const c = s.snap ? snapFootprint(at, def.size[0], def.size[2], 0) : at
@@ -60,71 +67,80 @@ function objectForTool(tool: 'building' | 'decor', at: Vec2): Omit<WorldObject, 
 
 type Draft = { kind: 'wall' | 'platform'; a: Vec2; b: Vec2 }
 
-/** The map's ground. Clicking it applies the current tool. */
-export function Ground() {
-  const tool = useWorld((s) => s.tool)
-  const [draft, setDraft] = useState<Draft | null>(null)
-  const size = WORLD.half * 2
+/** The wall or platform being drawn (shared so presses forwarded from walkable objects can draw too). */
+const useDraft = create<{ draft: Draft | null }>(() => ({ draft: null }))
+const setDraft = (draft: Draft | null) => useDraft.setState({ draft })
 
-  const onDown = (e: ThreeEvent<PointerEvent>) => {
-    const p = groundPoint(e)
-    if (!p) return
-    const raw: Vec2 = [clampToWorld(p[0]), clampToWorld(p[1])]
-    const w = useWorld.getState()
-    switch (tool) {
-      case 'select':
-        w.select(null)
-        return
-      case 'goal':
-        e.stopPropagation()
-        w.setGoal(raw)
-        return
-      case 'robot':
-        e.stopPropagation()
-        w.placeRobot(raw)
-        return
-      case 'building':
-      case 'decor': {
-        e.stopPropagation()
-        const id = w.addObject(objectForTool(tool, placePoint(raw)))
-        w.select(id)
-        return
-      }
-      case 'wall':
-      case 'platform': {
-        const kind = tool
-        const at = placePoint(raw)
-        let cur: Draft = { kind, a: at, b: at }
-        setDraft(cur)
-        beginDrag(e, {
-          move: (q) => {
-            cur = { kind, a: at, b: placePoint(q) }
-            setDraft(cur)
-          },
-          end: () => {
-            setDraft(null)
-            const s = useEditor.getState()
-            const store = useWorld.getState()
-            let id: string
-            if (kind === 'wall') {
-              const wall = wallFromSegment(cur.a, cur.b)
-              if (wall.size[0] < MIN_WALL) return
-              id = store.addObject({ kind: 'wall', ...wall, color: WALL_DEFAULTS.color, material: s.wallMaterial })
-            } else {
-              const plat = platformFromCorners(cur.a, cur.b)
-              if (plat.size[0] < MIN_PLATFORM || plat.size[2] < MIN_PLATFORM) return
-              id = store.addObject({ kind: 'platform', ...plat, material: s.platformMaterial })
-            }
-            store.select(id)
-          },
-        })
-      }
+/**
+ * Apply the current tool at a ground press. Used by the ground itself and by walkable objects
+ * (slabs, roads, plazas): those cover the ground, so a placement tool pressed on them lands here,
+ * at the ground point under the pointer. Reads the tool at press time (never a stale render value).
+ */
+export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
+  const p = groundPoint(e)
+  if (!p) return
+  const raw: Vec2 = [clampToWorld(p[0]), clampToWorld(p[1])]
+  const w = useWorld.getState()
+  const tool = w.tool
+  switch (tool) {
+    case 'select':
+      w.select(null)
+      return
+    case 'goal':
+      e.stopPropagation()
+      w.setGoal(raw)
+      return
+    case 'robot':
+      e.stopPropagation()
+      w.placeRobot(raw)
+      return
+    case 'building':
+    case 'decor':
+    case 'equipment': {
+      e.stopPropagation()
+      const id = w.addObject(objectForTool(tool, placePoint(raw)))
+      w.select(id)
+      return
+    }
+    case 'wall':
+    case 'platform': {
+      const kind = tool
+      const at = placePoint(raw)
+      let cur: Draft = { kind, a: at, b: at }
+      setDraft(cur)
+      beginDrag(e, {
+        move: (q) => {
+          cur = { kind, a: at, b: placePoint(q) }
+          setDraft(cur)
+        },
+        end: () => {
+          setDraft(null)
+          const s = useEditor.getState()
+          const store = useWorld.getState()
+          let id: string
+          if (kind === 'wall') {
+            const wall = wallFromSegment(cur.a, cur.b)
+            if (wall.size[0] < MIN_WALL) return
+            id = store.addObject({ kind: 'wall', ...wall, color: WALL_DEFAULTS.color, material: s.wallMaterial })
+          } else {
+            const plat = platformFromCorners(cur.a, cur.b)
+            if (plat.size[0] < MIN_PLATFORM || plat.size[2] < MIN_PLATFORM) return
+            id = store.addObject({ kind: 'platform', ...plat, material: s.platformMaterial })
+          }
+          store.select(id)
+        },
+      })
     }
   }
+}
 
+/** The map's ground. Clicking it applies the current tool. */
+export function Ground() {
+  const draft = useDraft((s) => s.draft)
+  const size = WORLD.half * 2
   return (
     <>
-      <Board size={size} onPointerDown={onDown} />
+      <Board size={size} onPointerDown={applyGroundTool} />
       {draft && <DraftPreview draft={draft} />}
     </>
   )

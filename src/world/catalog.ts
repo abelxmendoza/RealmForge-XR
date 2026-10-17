@@ -1,4 +1,5 @@
-import type { BuildingStyle, MaterialId, ObjectKind, RoofType, TreeStyle, Vec3, WorldObject } from './types'
+import type { BuildingStyle, MaterialId, ObjectKind, PalletStyle, RackStyle, RoofType, TreeStyle, Vec3, WorldObject } from './types'
+import { PALLET, RACK } from './scale'
 
 /**
  * Defaults for every placeable thing. Pure data: the editor uses it to create objects,
@@ -34,6 +35,20 @@ export const DECOR_DEFAULTS: Record<'tree' | 'streetlight' | 'crate', { size: Ve
   crate: { size: [1.2, 1.2, 1.2] },
 }
 
+/** Warehouse equipment placed with the equipment tool (key 8). Real sizes from world/scale.ts. */
+export type EquipmentKind = Extract<ObjectKind, 'pallet' | 'rack'>
+export const PALLET_STYLES: PalletStyle[] = ['empty', 'boxes', 'wrapped']
+export const RACK_STYLES: RackStyle[] = ['empty', 'loaded']
+export const EQUIPMENT_DEFAULTS: Record<EquipmentKind, { size: Vec3; style: PalletStyle | RackStyle }> = {
+  pallet: { size: [PALLET.width, PALLET.heightFor.boxes, PALLET.depth], style: 'boxes' },
+  rack: { size: [RACK.bay, 4.5, RACK.depth], style: 'loaded' },
+}
+/** Size for an equipment object of `kind` and `style` (pallet height follows its load). */
+export function equipmentSize(kind: EquipmentKind, style: PalletStyle | RackStyle): Vec3 {
+  if (kind === 'pallet') return [PALLET.width, PALLET.heightFor[style as PalletStyle] ?? PALLET.height, PALLET.depth]
+  return [...EQUIPMENT_DEFAULTS.rack.size]
+}
+
 export const KIND_LABELS: Record<ObjectKind, string> = {
   wall: 'Wall',
   building: 'Building',
@@ -41,6 +56,8 @@ export const KIND_LABELS: Record<ObjectKind, string> = {
   tree: 'Tree',
   streetlight: 'Streetlight',
   crate: 'Crate',
+  pallet: 'Pallet',
+  rack: 'Pallet rack',
 }
 
 export const defaultMaterial = (o: Pick<WorldObject, 'kind' | 'material'>): MaterialId =>
@@ -49,6 +66,9 @@ export const buildingStyle = (o: WorldObject): BuildingStyle =>
   o.style && o.style in BUILDING_STYLES ? (o.style as BuildingStyle) : 'office'
 export const buildingRoof = (o: WorldObject): RoofType => o.roof ?? BUILDING_STYLES[buildingStyle(o)].roof
 export const treeStyle = (o: WorldObject): TreeStyle => (o.style === 'pine' ? 'pine' : 'round')
+export const palletStyle = (o: WorldObject): PalletStyle =>
+  o.style && (PALLET_STYLES as string[]).includes(o.style) ? (o.style as PalletStyle) : 'empty'
+export const rackStyle = (o: WorldObject): RackStyle => (o.style === 'loaded' ? 'loaded' : 'empty')
 
 const next = <T>(list: readonly T[], cur: T) => list[(list.indexOf(cur) + 1) % list.length]
 
@@ -66,6 +86,13 @@ export function cycleVariant(o: WorldObject): Partial<WorldObject> | null {
       return { material: next(CRATE_MATERIALS, defaultMaterial(o)) }
     case 'tree':
       return { style: next(TREE_STYLES, treeStyle(o)) }
+    case 'pallet': {
+      // The load changes the height; the footprint stays a real pallet.
+      const style = next(PALLET_STYLES, palletStyle(o))
+      return { style, size: [o.size[0], PALLET.heightFor[style], o.size[2]] }
+    }
+    case 'rack':
+      return { style: next(RACK_STYLES, rackStyle(o)) }
     case 'building': {
       const style = next(BUILDING_STYLE_IDS, buildingStyle(o))
       return { style, roof: BUILDING_STYLES[style].roof, color: BUILDING_STYLES[style].color }

@@ -3,12 +3,13 @@ import * as THREE from 'three'
 import type { ThreeEvent } from '@react-three/fiber'
 import { Handle as GrabHandle, type HandleState } from '@react-three/handle'
 import { clampToWorld, useWorld } from '../world/store'
-import type { Vec2, WorldObject } from '../world/types'
+import { blocksNavigation, type Vec2, type WorldObject } from '../world/types'
 import { snapAngle, snapFootprint, snapSize } from '../world/snap'
 import { cycleVariant } from '../world/catalog'
 import { SCALE_PRESETS, groundPoint, uiSize } from '../scene/worldRoot'
 import { SelectionOutline, Structure } from '../scene/structures'
 import { beginDrag } from './drag'
+import { applyGroundTool } from './Ground'
 import { MIN_SIZE, grabPatch, samePatch, type GrabPatch } from './grab'
 import { useEditor } from './settings'
 
@@ -63,7 +64,6 @@ export function Obstacles() {
 
 function Obstacle({ o }: { o: WorldObject }) {
   const selected = useWorld((s) => s.selectedId === o.id)
-  const tool = useWorld((s) => s.tool)
   const [w, h, d] = o.size
   const groupRef = useRef<THREE.Group>(null)
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
@@ -95,7 +95,12 @@ function Obstacle({ o }: { o: WorldObject }) {
   }
 
   const onDown = (e: ThreeEvent<PointerEvent>) => {
-    if (tool !== 'select') return
+    // Read the tool at press time; a value captured at render can be stale right after switching.
+    if (useWorld.getState().tool !== 'select') {
+      // Walkable surfaces (slabs, roads, plazas) cover the ground: placement tools land on the ground below.
+      if (!blocksNavigation(o)) applyGroundTool(e)
+      return
+    }
     const { select, updateObject } = useWorld.getState()
     select(o.id)
     const start = groundPoint(e)
