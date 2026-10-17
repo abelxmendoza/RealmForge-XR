@@ -10,7 +10,7 @@ Shared help for desktop and immersive XR. Content lives in `src/guide/controlsGu
 | VR / AR wrist menu | Left palm toward face → **Guide** |
 | VR / AR control palette | Footer **Guide** tile |
 
-Desktop renders `ControlsGuide` (HTML dialog). Headset renders `ControlsGuidePanel` (Three.js tiles in tracking space). Same sections: Start, Hands, Wrist, Panel, Tools, Keys, Tips.
+Desktop renders `ControlsGuide` (HTML dialog). Headset renders `ControlsGuidePanel` (Three.js tiles in tracking space). Same sections: Start, Hands, Wrist, Panel, Tools, Voice, Keys, Tips.
 
 ## VR UX notes
 
