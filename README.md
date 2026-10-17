@@ -15,6 +15,13 @@ npm run build
 On the Quest 3S, open `https://<laptop-LAN-IP>:5173` in the Quest Browser, accept the self-signed
 certificate, then press **Enter AR** (passthrough) or **Enter VR**.
 
+### Testing on a Quest 2
+
+The same URL runs on a Quest 2 (grayscale passthrough, no room mesh or depth occlusion). Open
+`/xr-test/` for a standalone passthrough check of true-scale grabbing, snapping to real surfaces and
+anchors. Setup over USB (`adb reverse`), the Quest 2 vs 3S feature table and a test checklist are in
+[docs/quest2-testing.md](docs/quest2-testing.md).
+
 ## Environment variables
 
 Shared secrets live in `.env`, committed **encrypted** with [dotenvx](https://dotenvx.com).
@@ -24,6 +31,18 @@ Shared secrets live in `.env`, committed **encrypted** with [dotenvx](https://do
   file named `.env.keys` in the repo root (`DOTENV_PRIVATE_KEY="..."`), or export it in your shell.
 - Add or change a variable: `npm run env:set -- NAME value`, then commit `.env`. Teammates get it on pull.
 - `.env.keys` and `*.local` are gitignored. Never commit the private key.
+
+## Docs (living)
+
+We document as we build. Update these in the same change when behavior or state moves:
+
+| Doc | Purpose |
+| --- | --- |
+| [docs/plan.md](docs/plan.md) | Best-of-both roadmap (Abel product + Emiliano headset) |
+| [docs/BUILD_LOG.md](docs/BUILD_LOG.md) | Append-only work diary |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md) | User/demo-facing changes |
+| [docs/STATE.md](docs/STATE.md) | Runtime & data state (store, XR, placement) |
+| [docs/quest2-testing.md](docs/quest2-testing.md) | Headset setup + checklist |
 
 ## Controls
 
@@ -39,6 +58,8 @@ Every control is a pointer event, so mouse, controller rays and hand rays behave
 | 6 Platform / road | Drag out a rectangle. Asphalt makes a road with a centre line. |
 | 7 Decoration | Click to place a tree, streetlight or crate (pick in the inspector). |
 | B | Demo helper: slides a wall across the robot's route to force a replan. |
+| Enter AR | Starts passthrough with Quest fallback (`full` → `no depth` → `minimal`). |
+| P Place city | In AR: highlight Space Setup planes; click a table/floor to pin the miniature (optional anchor). |
 | R / Shift+R, `[` `]`, Del | Rotate 15°, lower/raise height, delete the selected object. |
 | D, M, T, G | Duplicate, cycle material/style, toggle flat/pitched roof, toggle grid snapping. |
 
