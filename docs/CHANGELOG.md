@@ -8,6 +8,11 @@ Dates are UTC.
 
 ### Fixed
 
+- Quest table-edge grab: Select tool no longer steals grabs from the map rim; rim is part of the grab handle; wider base.
+- Room / life-size floor snap via `FloorTracker` + `unbounded` tracking (tabletop keeps table height).
+- XR control palette can place Event objects; Brush cycles the event catalog.
+- Click-placed crates set `solid: true` (same as voice spawn) so nav stays consistent.
+- Virtual ground / table edge follow the active environment appearance.
 - Docs/examples cleanup: demo readiness reflects `main`; stale “do not merge Quest” / missing XR confirm notes removed; XR menu example points at production palette + confirmation.
 - Voice spawn for event `prop` objects: requires `catalogId`, wired through `propFromCatalog`; venue phrases (booth, registration desk, stage, …).
 

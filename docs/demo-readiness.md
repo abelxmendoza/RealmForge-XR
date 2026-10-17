@@ -20,10 +20,11 @@ Assessment: **desktop + integrated Quest XR code is on `main`**. Physical headse
 
 | Check | Result |
 | --- | --- |
-| `npm test` | PASS (212+ on current main) |
+| `npm test` | PASS (285+) |
 | `npm run build` | PASS |
-| Desktop tools, save/load, env confirm, undo | PASS (prior sessions + regression suite) |
-| Live AssemblyAI / Quest hardware | NOT TESTED until Emiliano / Agent 4 run them |
+| Desktop: landing → editor, tools, Guide, Mars confirm, Save, place building | PASS (stabilize smoke) |
+| Quest: table-edge grab, floor snap, Event on palette, `unbounded` | Code on `main` — hardware PASS/FAIL still Emiliano |
+| Live AssemblyAI mic | Needs `.env.keys`; typed voice works without it |
 
 ## Emiliano — Quest hardware checklist
 
@@ -44,8 +45,8 @@ On FAIL: headset + browser version, Space Setup notes, step, expected vs actual,
 
 | Owner | Task |
 | --- | --- |
-| Emiliano | Physical Quest checklist PASS/FAIL on `main`; review branch `Gesture/Refinement-Implementation` (hand/controller refinements — not merged yet) |
+| Emiliano | Physical Quest checklist PASS/FAIL on `main` (grab rim, Place city, scale 1:60→1:1, Guide, env confirm). Optional: remaining Gesture extras (hand gestures, stick locomotion, movable palette) still on `Gesture/Refinement-Implementation` |
 | Abel | Production voice token route if deploying beyond Vite; demo script |
 | Chris | Desktop rehearsal (Guide, env menu, save/load, typed voice) |
 
-Optional: ElevenLabs playback (not implemented). Does not block desktop demo. Stale feature branches besides Gesture were deleted after merge.
+Optional: ElevenLabs playback (not implemented). Does not block desktop demo. Core Quest stability fixes from Gesture are on `main`; full gesture stack is still separate.

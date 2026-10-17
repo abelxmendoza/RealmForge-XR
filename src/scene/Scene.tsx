@@ -23,6 +23,7 @@ import { toggleMocap, useMocap } from '../mocap/store'
 import { SCALE_PRESETS, WORLD_ROOT, placement, worldPlacement, worldRootRef } from './worldRoot'
 import { WorldPlacement } from '../xr/WorldPlacement'
 import { bindWebXRManager } from '../xr/session'
+import { FloorTracker } from '../xr/floor'
 import { useEnvironment } from '../world/environment'
 import { usePlacement } from '../xr/placement'
 import { WristEnvMenu } from '../editor/WristEnvMenu'
@@ -62,6 +63,7 @@ export function Scene() {
       <Lighting />
       <ThumbnailCapture />
       <WorldScaler />
+      {inXR && <FloorTracker />}
       {inXR && (
         <WristMenu
           extra={
