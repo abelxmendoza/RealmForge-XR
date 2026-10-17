@@ -9,6 +9,7 @@ import { Inspector } from './editor/Inspector'
 import { cycleSelected, deleteSelected, duplicateSelected } from './editor/Obstacles'
 import { useEditor } from './editor/settings'
 import { bindRays, toggleRays } from './editor/xrInput'
+import { toggleMocap, useMocap } from './mocap/store'
 import { SCALE_IDS, SCALE_PRESETS, type ScaleId } from './scene/worldRoot'
 
 /**
@@ -64,6 +65,7 @@ function Hud() {
   const snap = useEditor((s) => s.snap)
   const worldScale = useEditor((s) => s.worldScale)
   const rays = useEditor((s) => s.rays)
+  const mocap = useMocap()
   return (
     <div className="hud">
       <div className="row">
@@ -92,6 +94,9 @@ function Hud() {
         <button className={rays ? 'on' : ''} onClick={toggleRays} title="XR pointer rays on hands and controllers">
           X Rays
         </button>
+        <button className={mocap.enabled ? 'on' : ''} onClick={toggleMocap} title="Smartsuit Pro live skeleton (needs npm run mocap:bridge or mocap:mock)">
+          Mocap
+        </button>
         <button onClick={() => useWorld.getState().reset()}>Reset</button>
       </div>
       <div className="row">
@@ -108,7 +113,9 @@ function Hud() {
       </div>
       <div className="status">
         {STATUS_TEXT[status]} · replans {replans}
+        {mocap.enabled && ` · mocap ${mocap.status}${mocap.status === 'live' ? ` ${mocap.fps} fps` : ''}`}
       </div>
+      {mocap.enabled && mocap.status === 'error' && <div className="status">{mocap.error}</div>}
       <div className="help">
         Drag empty ground to orbit. Select: drag an object to move it, yellow handle resizes, blue handle rotates,
         green cube duplicates, purple cube changes style, red cube deletes.

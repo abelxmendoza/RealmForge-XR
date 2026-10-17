@@ -12,7 +12,9 @@ import { tickDemo } from '../editor/demo'
 import { Robot } from '../agent/Robot'
 import { Route } from './Route'
 import { Lighting } from './Lighting'
-import { WristMenu } from '../editor/WristMenu'
+import { MenuButton, WristMenu } from '../editor/WristMenu'
+import { MocapSkeleton } from '../mocap/MocapSkeleton'
+import { toggleMocap, useMocap } from '../mocap/store'
 import { SCALE_PRESETS, WORLD_ROOT, placement, worldPlacement, worldRootRef } from './worldRoot'
 
 export function Scene() {
@@ -20,6 +22,9 @@ export function Scene() {
   const inXR = useXR((s) => s.session != null)
   const mode = useXR((s) => s.mode)
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
+  const mocapOn = useMocap((s) => s.enabled)
+  const mocapInMap = useMocap((s) => s.placement === 'map')
+  const robotStart = useWorld((s) => s.robotStart)
 
   // Mouse releases outside the canvas still end a drag.
   useEffect(() => {
@@ -37,7 +42,9 @@ export function Scene() {
       {mode !== 'immersive-ar' && <color attach="background" args={['#1d2433']} />}
       <Lighting />
       <WorldScaler />
-      {inXR && <WristMenu />}
+      {inXR && <WristMenu extra={<MocapMenuButton />} />}
+      {/* Smartsuit skeleton at 1:1 in your room (Rokoko's origin = where the XR session started). */}
+      {mocapOn && !mocapInMap && <MocapSkeleton />}
       {!inXR && <OrbitControls makeDefault enabled={!dragging} target={WORLD_ROOT.position} />}
 
       <group
@@ -54,6 +61,12 @@ export function Scene() {
         <Obstacles />
         <Route />
         <Robot />
+        {/* Or inside the world, standing at the robot start and scaled with the world. */}
+        {mocapOn && mocapInMap && (
+          <group position={[robotStart[0], 0, robotStart[1]]}>
+            <MocapSkeleton />
+          </group>
+        )}
       </group>
     </>
   )
@@ -85,6 +98,13 @@ function WorldScaler() {
     WORLD_ROOT.position.copy(at)
   })
   return null
+}
+
+/** Wrist-menu toggle for the Smartsuit stream, showing its status. */
+function MocapMenuButton() {
+  const enabled = useMocap((s) => s.enabled)
+  const status = useMocap((s) => s.status)
+  return <MenuButton label={enabled ? `Mocap ${status}` : 'Mocap off'} active={enabled && status === 'live'} onPress={toggleMocap} />
 }
 
 /** Big invisible plane under the map so drags keep receiving moves past the map edge. */

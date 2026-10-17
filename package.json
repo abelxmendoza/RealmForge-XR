@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "env:set": "dotenvx set"
+    "env:set": "dotenvx set",
+    "mocap:bridge": "node tools/mocap-bridge.ts",
+    "mocap:mock": "node tools/mocap-bridge.ts --mock"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
@@ -25,10 +27,12 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.186.0",
+    "@types/ws": "^8.18.2",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "ws": "^8.22.0"
   }
 }

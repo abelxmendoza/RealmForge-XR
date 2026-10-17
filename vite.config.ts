@@ -7,7 +7,12 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 export default defineConfig({
   plugins: [react(), basicSsl()],
   // allowedHosts: lets a `cloudflared tunnel` URL reach the dev server when the headset can't see the laptop on LAN.
-  server: { host: true, allowedHosts: ['.trycloudflare.com'] },
+  // proxy /mocap: the Smartsuit bridge (tools/mocap-bridge.ts), so the headset reaches it on the same origin.
+  server: {
+    host: true,
+    allowedHosts: ['.trycloudflare.com'],
+    proxy: { '/mocap': { target: 'ws://localhost:14044', ws: true } },
+  },
   build: {
     rollupOptions: {
       input: {
