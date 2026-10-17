@@ -58,4 +58,30 @@ describe('undo / redo', () => {
     expect(getHistoryState().canUndo).toBe(false)
     expect(Object.keys(useWorld.getState().objects)).toHaveLength(0)
   })
+
+  it('undo of geometry does not bump robotVersion (keeps live robot pose)', () => {
+    const beforeRobot = useWorld.getState().robotVersion
+    useWorld.getState().updateObject('wall-1', { position: [2, 0, 0] })
+    expect(useWorld.getState().robotVersion).toBe(beforeRobot)
+    expect(undo()).toBe(true)
+    expect(useWorld.getState().objects['wall-1'].position).toEqual([0, 0, 0])
+    expect(useWorld.getState().robotVersion).toBe(beforeRobot)
+  })
+
+  it('undo of placeRobot does bump robotVersion', () => {
+    const beforeRobot = useWorld.getState().robotVersion
+    useWorld.getState().placeRobot([1, 1])
+    expect(useWorld.getState().robotVersion).toBe(beforeRobot + 1)
+    expect(undo()).toBe(true)
+    expect(useWorld.getState().robotStart).toEqual([-5, 5])
+    expect(useWorld.getState().robotVersion).toBe(beforeRobot + 2)
+  })
+
+  it('records material and style changes', () => {
+    useWorld.getState().updateObject('wall-1', { material: 'brick' })
+    expect(undo()).toBe(true)
+    expect(useWorld.getState().objects['wall-1'].material).toBeUndefined()
+    expect(redo()).toBe(true)
+    expect(useWorld.getState().objects['wall-1'].material).toBe('brick')
+  })
 })

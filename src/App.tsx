@@ -99,9 +99,22 @@ function Hud() {
   return (
     <div className="hud">
       <div className="row">
-        <strong>RealmForge XR{dirty ? <span className="dirty-dot" title="Unsaved changes" /> : null}</strong>
-        <button disabled={entering} onClick={() => void enterARWithFallback()}>Enter AR</button>
-        <button onClick={() => { const p = usePlacement.getState(); if (p.status === 'choosing') p.cancelChoosing(); else p.startChoosing() }}>{placement === 'choosing' ? 'Cancel place' : 'Place city'}</button>
+        <strong>
+          RealmForge XR
+          {dirty ? <span className="dirty-dot" title="Unsaved changes" /> : null}
+        </strong>
+        <button disabled={entering} onClick={() => void enterARWithFallback()}>
+          Enter AR
+        </button>
+        <button
+          onClick={() => {
+            const p = usePlacement.getState()
+            if (p.status === 'choosing') p.cancelChoosing()
+            else p.startChoosing()
+          }}
+        >
+          {placement === 'choosing' ? 'Cancel place' : 'Place city'}
+        </button>
         {placement === 'pinned' && <button onClick={() => usePlacement.getState().resetToDefault()}>Unpin</button>}
         <button onClick={() => xrStore.enterVR()}>Enter VR</button>
       </div>
@@ -156,8 +169,9 @@ function useKeyboard() {
       const mod = e.ctrlKey || e.metaKey
       if (mod && (e.key === 's' || e.key === 'S')) {
         e.preventDefault()
-        const r = quickSave()
-        if (!r.ok) console.warn('[RealmForge] save failed:', r.error)
+        void quickSave().then((r) => {
+          if (!r.ok && !r.cancelled) console.warn('[RealmForge] save failed:', r.error)
+        })
         return
       }
       if (mod && (e.key === 'z' || e.key === 'Z')) {

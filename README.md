@@ -56,23 +56,28 @@ On desktop, drag empty ground to orbit the camera.
 ## How it fits together
 
 ```
-src/world/types.ts     shared schema + map constants (the contract)
-src/world/store.ts     Zustand world store: objects, goal, robot start, editor tool/selection
-src/nav/grid.ts        obstacle footprints -> occupancy grid (rotated rects, inflated by robot radius)
-src/nav/astar.ts       8-connected grid A* + line-of-sight smoothing
-src/nav/navigation.ts  replans on every geometry/goal/robot change; flags routes an edit blocked
-src/agent/Robot.tsx    primitive robot that follows waypoints
-src/world/catalog.ts   object defaults, building styles, material lists, style cycling
-src/world/snap.ts      grid / angle snapping helpers
+src/world/types.ts         shared schema + map constants (the contract)
+src/world/store.ts         Zustand world store: objects, goal, robot start, editor tool/selection
+src/world/serialize.ts     versioned realmforge-world JSON + validation
+src/world/persistence.ts   localStorage save/load, export/import (UI-agnostic)
+src/world/history.ts       undo/redo with drag coalescing (UI-agnostic)
+src/nav/grid.ts            obstacle footprints -> occupancy grid (rotated rects, inflated by robot radius)
+src/nav/astar.ts           8-connected grid A* + line-of-sight smoothing
+src/nav/navigation.ts      replans on every geometry/goal/robot change; flags routes an edit blocked
+src/agent/Robot.tsx        primitive robot that follows waypoints
+src/world/catalog.ts       object defaults, building styles, material lists, style cycling
+src/world/snap.ts          grid / angle snapping helpers
 src/world/presets.ts       preset layouts (Forge / Mars / Warehouse)
 src/world/environment.ts   environment config + loadEnvironment() API
 src/world/actions.ts       XR-safe World Action API (see docs/xr-world-actions.md)
 src/voice/*                AssemblyAI voice commands (see docs/voice-commands.md)
-src/editor/*           pointer-driven editing (create, move, resize, rotate, duplicate) + inspector panel
-src/scene/structures/  how each object kind is drawn (buildings, walls, platforms, decorations)
-src/scene/materials.ts procedural canvas textures + shared, cached materials
-src/scene/*            scene graph, lighting, tabletop root transform, route + goal visuals
+src/editor/*               pointer-driven editing (create, move, resize, rotate, duplicate) + inspector panel
+src/scene/structures/      how each object kind is drawn (buildings, walls, platforms, decorations)
+src/scene/materials.ts     procedural canvas textures + shared, cached materials
+src/scene/*                scene graph, lighting, tabletop root transform, route + goal visuals
 ```
+
+World save/load and undo/redo for XR and desktop: see `docs/world-persistence.md`.
 
 ### Shared object contract
 

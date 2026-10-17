@@ -22,13 +22,24 @@ export interface SavedWorldMeta {
 }
 
 export type Result = { ok: true } | { ok: false; error: string }
-export type SaveResult = { ok: true; value: SavedWorldMeta } | { ok: false; error: string }
+export type SaveResult = { ok: true; value: SavedWorldMeta } | { ok: false; error: string; cancelled?: boolean }
 export type ReplaceResult = { ok: true; warnings: string[] } | { ok: false; error: string; cancelled?: boolean }
 
-export type ConfirmReplace = (message: string) => boolean | Promise<boolean>
+export type ConfirmFn = (message: string) => boolean | Promise<boolean>
+/** @deprecated Prefer ConfirmFn — same signature. */
+export type ConfirmReplace = ConfirmFn
 export interface ReplaceOptions {
   /** Called before replacing a non-empty world. Return false to cancel. */
-  confirmReplace?: ConfirmReplace
+  confirmReplace?: ConfirmFn
+}
+export interface SaveOptions {
+  /** Update this saved world instead of creating a new entry. Requires `confirmed: true`. */
+  overwriteId?: string
+  /**
+   * Must be true when `overwriteId` is set. Enforces "never overwrite without confirmation":
+   * callers ask the user first, then pass `{ overwriteId, confirmed: true }`.
+   */
+  confirmed?: boolean
 }
 
 const INDEX_KEY = 'realmforge.worlds.v1'
@@ -166,12 +177,15 @@ export function listSavedWorlds(): SavedWorldMeta[] {
 }
 
 /**
- * Save the active world as a NEW entry. Never overwrites: to update an existing save,
- * pass `{ overwriteId }` explicitly (e.g. after asking the user).
+ * Save the active world as a NEW entry. Never overwrites unless both `overwriteId` and
+ * `confirmed: true` are passed (callers must ask the user first).
  */
-export function saveWorld(name: string, opts: { overwriteId?: string } = {}): SaveResult {
+export function saveWorld(name: string, opts: SaveOptions = {}): SaveResult {
   const s = storage()
   if (!s) return { ok: false, error: 'Browser storage is not available here. Use Export instead.' }
+  if (opts.overwriteId && !opts.confirmed) {
+    return { ok: false, error: 'Overwrite requires confirmation. Ask the user, then pass { overwriteId, confirmed: true }.' }
+  }
   const index = readIndex()
   if (opts.overwriteId && !index.some((m) => m.id === opts.overwriteId)) return { ok: false, error: 'That saved world no longer exists.' }
   const id = opts.overwriteId ?? newSaveId()
@@ -196,14 +210,20 @@ export function saveWorld(name: string, opts: { overwriteId?: string } = {}): Sa
 }
 
 /**
- * Ctrl+S / quick-save: overwrite the active save when one exists, otherwise save as new
- * under the current name. Never prompts (explicit Update save still confirms in the UI).
+ * Ctrl+S helper: save as new when there is no active save; otherwise ask before overwriting.
+ * Pass `confirmOverwrite` from XR (defaults to `window.confirm` on desktop).
  */
-export function quickSave(name?: string): SaveResult {
+export async function quickSave(name?: string, opts: { confirmOverwrite?: ConfirmFn } = {}): Promise<SaveResult> {
   const { activeId, activeName } = useWorldLibrary.getState()
   const label = name ?? activeName
-  if (activeId) return saveWorld(label, { overwriteId: activeId })
-  return saveWorld(label)
+  if (!activeId) return saveWorld(label)
+  const ask =
+    opts.confirmOverwrite ??
+    ((m: string) => (typeof window !== 'undefined' && typeof window.confirm === 'function' ? window.confirm(m) : false))
+  if (!(await ask(`Overwrite the saved world "${activeName}" with the current world?`))) {
+    return { ok: false, error: 'Cancelled.', cancelled: true }
+  }
+  return saveWorld(label, { overwriteId: activeId, confirmed: true })
 }
 
 /** Replace the active world with a saved one (asks first if the current world is not empty). */

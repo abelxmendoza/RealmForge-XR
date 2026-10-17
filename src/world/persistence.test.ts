@@ -196,14 +196,18 @@ describe('browser storage', () => {
     expect(mem.length).toBe(1) // only the (empty) index remains
   })
 
-  it('never overwrites a save unless asked to', () => {
+  it('never overwrites a save unless confirmed', () => {
     const a = saveWorld('Same name')
     const b = saveWorld('Same name')
     expect(a.ok && b.ok && a.value.id !== b.value.id).toBe(true)
     expect(listSavedWorlds()).toHaveLength(2)
     if (!a.ok) return
     useWorld.getState().removeObject('tree-a')
-    const c = saveWorld('Updated', { overwriteId: a.value.id })
+    // overwriteId without confirmed is refused
+    const refused = saveWorld('Updated', { overwriteId: a.value.id })
+    expect(refused.ok).toBe(false)
+    expect(listSavedWorlds().find((m) => m.id === a.value.id)?.objectCount).toBe(6)
+    const c = saveWorld('Updated', { overwriteId: a.value.id, confirmed: true })
     expect(c.ok && c.value.id).toBe(a.value.id)
     expect(listSavedWorlds()).toHaveLength(2)
     expect(listSavedWorlds().find((m) => m.id === a.value.id)?.objectCount).toBe(5)
@@ -265,7 +269,7 @@ describe('export / import', () => {
 })
 
 describe('dirty tracking and quickSave', () => {
-  it('turns dirty after an edit and clean after save', () => {
+  it('turns dirty after an edit and clean after save', async () => {
     expect(useWorldLibrary.getState().dirty).toBe(false)
     useWorld.getState().addObject({
       kind: 'crate',
@@ -275,14 +279,14 @@ describe('dirty tracking and quickSave', () => {
     })
     refreshDirty()
     expect(useWorldLibrary.getState().dirty).toBe(true)
-    const r = quickSave('Quick')
+    const r = await quickSave('Quick')
     expect(r.ok).toBe(true)
     expect(useWorldLibrary.getState().dirty).toBe(false)
     expect(useWorldLibrary.getState().activeId).toBeTruthy()
   })
 
-  it('quickSave overwrites the active save without creating a second entry', () => {
-    expect(quickSave('One').ok).toBe(true)
+  it('quickSave overwrites the active save only after confirmation', async () => {
+    expect((await quickSave('One')).ok).toBe(true)
     const id = useWorldLibrary.getState().activeId!
     useWorld.getState().addObject({
       kind: 'tree',
@@ -290,7 +294,12 @@ describe('dirty tracking and quickSave', () => {
       size: [1, 2, 1],
       rotationY: 0,
     })
-    expect(quickSave('One').ok).toBe(true)
+    const cancelled = await quickSave('One', { confirmOverwrite: no })
+    expect(cancelled.ok).toBe(false)
+    expect(!cancelled.ok && cancelled.cancelled).toBe(true)
+    expect(listSavedWorlds()[0].objectCount).toBe(6)
+
+    expect((await quickSave('One', { confirmOverwrite: yes })).ok).toBe(true)
     expect(useWorldLibrary.getState().activeId).toBe(id)
     expect(listSavedWorlds()).toHaveLength(1)
     expect(listSavedWorlds()[0].objectCount).toBe(7)

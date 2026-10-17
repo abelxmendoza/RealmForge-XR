@@ -134,10 +134,24 @@ export async function executeVoiceCommand(
 
       case 'SAVE_WORLD': {
         const name = command.name?.trim() || undefined
-        const result = name ? worldActions.saveWorld(name) : worldActions.quickSave()
+        const result = name
+          ? worldActions.saveWorld(name)
+          : await worldActions.quickSave(undefined, {
+              confirmOverwrite: opts.confirm
+                ? async (message) => {
+                    const gate = await resolveConfirm(command, message, opts.confirm)
+                    return gate.status === 'confirmed'
+                  }
+                : undefined,
+            })
         if (!result.ok) {
-          emitVoiceEvent({ type: 'VOICE_COMMAND_FAILED', command, message: result.error })
-          return { status: 'failed', command, message: result.error }
+          const message = result.cancelled ? 'Save cancelled' : result.error
+          emitVoiceEvent({
+            type: result.cancelled ? 'VOICE_COMMAND_REJECTED' : 'VOICE_COMMAND_FAILED',
+            command,
+            message,
+          })
+          return { status: result.cancelled ? 'rejected' : 'failed', command, message }
         }
         const message = `Saved world "${result.value.name}"`
         emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })

@@ -44,13 +44,21 @@ export function WorldsPanel() {
     setMsg(r.ok ? `Saved "${r.value.name}".` : r.error)
   }
   const update = async () => {
-    if (!activeId || !(await requestConfirmation({ type: 'OVERWRITE_SAVE', message: `Overwrite the saved world "${activeName}" with the current world?` }))) return
-    const r = saveWorld(name, { overwriteId: activeId })
+    if (
+      !activeId ||
+      !(await requestConfirmation({
+        type: 'OVERWRITE_SAVE',
+        message: `Overwrite the saved world "${activeName}" with the current world?`,
+      }))
+    )
+      return
+    const r = saveWorld(name, { overwriteId: activeId, confirmed: true })
     setMsg(r.ok ? `Updated "${r.value.name}".` : r.error)
   }
-  const saveQuick = () => {
-    const r = quickSave(name)
-    setMsg(r.ok ? `Saved "${r.value.name}".` : r.error)
+  const saveQuick = async () => {
+    const r = await quickSave(name)
+    if (r.ok) setMsg(`Saved "${r.value.name}".`)
+    else if (!r.cancelled) setMsg(r.error)
   }
   const rename = (id: string, current: string) => {
     const next = window.prompt('Rename saved world', current)

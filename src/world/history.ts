@@ -94,6 +94,7 @@ export function undo(): boolean {
   const prev = undoStack.pop()
   if (!prev) return false
   redoStack.push(snapshotOf(useWorld.getState()))
+  // restoreWorld (not loadWorld): keeps the live robot pose unless robotStart changed.
   withHistorySuppressed(() => useWorld.getState().restoreWorld(prev))
   publish()
   return true
