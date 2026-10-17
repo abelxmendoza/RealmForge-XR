@@ -23,6 +23,7 @@ import { importWorld, quickSave, useWorldLibrary } from './world/persistence'
 import { redo, undo, subscribeHistory } from './world/history'
 import { bindRays, toggleRays, toggleSurface } from './editor/xrInput'
 import { toggleOcclusion } from './xr/occlusion'
+import { toggleRealSurfaces } from './xr/realSurfaces'
 import { toggleMocap, useMocap } from './mocap/store'
 import { SCALE_IDS, SCALE_PRESETS, type ScaleId } from './scene/worldRoot'
 
@@ -122,6 +123,7 @@ function Hud() {
   const rays = useEditor((s) => s.rays)
   const surface = useEditor((s) => s.surface)
   const occlusion = useEditor((s) => s.occlusion)
+  const realSurfaces = useEditor((s) => s.realSurfaces)
   const mocap = useMocap()
   const [hist, setHist] = useState({ canUndo: false, canRedo: false })
   const guideOpen = useGuide((s) => s.open)
@@ -244,6 +246,14 @@ function Hud() {
           >
             O Occlusion
           </button>
+          <button
+            type="button"
+            className={realSurfaces ? 'on' : ''}
+            onClick={toggleRealSurfaces}
+            title="Objects rest on real tables and stop at real walls and furniture (needs Space Setup; not at tabletop scale)"
+          >
+            P Real surfaces
+          </button>
           <button type="button" className={mocap.enabled ? 'on' : ''} onClick={toggleMocap} title="Smartsuit Pro live skeleton (optional)">
             Mocap
           </button>
@@ -339,6 +349,7 @@ function useKeyboard() {
       if (e.key === 'x' || e.key === 'X') return toggleRays()
       if (e.key === 'v' || e.key === 'V') return toggleSurface()
       if (e.key === 'o' || e.key === 'O') return toggleOcclusion()
+      if (e.key === 'p' || e.key === 'P') return toggleRealSurfaces()
       if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         e.preventDefault()
         useGuide.getState().toggleGuide()

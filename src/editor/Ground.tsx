@@ -20,6 +20,7 @@ import { HAPTIC, pulse } from '../xr/haptics'
 import { usePlacement } from '../xr/placement'
 import { useEnvironment } from '../world/environment'
 import { propFromCatalog } from '../world/eventCatalog'
+import { restLocalY, settleObject } from '../xr/realSurfaces'
 
 const MIN_WALL = 0.6
 const MIN_PLATFORM = 0.5
@@ -91,7 +92,10 @@ export function setGroundHover(point: Vec2 | null) {
 export function placeAssetAt(point: Vec2): boolean {
   const result = worldActions.placeCatalogAsset(point)
   useGroundUI.setState({ placementError: !result.ok })
-  if (result.ok) pulse('active', HAPTIC.place)
+  if (result.ok) {
+    settleObject(result.id)
+    pulse('active', HAPTIC.place)
+  }
   return result.ok
 }
 
@@ -138,13 +142,16 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
       const at = placePoint(raw)
       const prop = propFromCatalog(useEditor.getState().eventCatalogId, [at[0], 0, at[1]])
       if (!prop) return
-      w.select(w.addObject(prop))
+      const id = w.addObject(prop)
+      settleObject(id)
+      w.select(id)
       return
     }
     case 'building':
     case 'decor': {
       e.stopPropagation()
       const id = w.addObject(objectForTool(tool, placePoint(raw)))
+      settleObject(id)
       w.select(id)
       return
     }
@@ -199,7 +206,7 @@ export function Ground() {
     <>
       <Board size={size} onPointerDown={applyGroundTool} onPointerMove={applyGroundHover} onPointerOut={clearGroundHover} />
       {preview && (
-        <group position={preview.object.position} rotation={[0, preview.object.rotationY, 0]}>
+        <group position={[preview.object.position[0], restLocalY(preview.object.position[0], preview.object.position[2]), preview.object.position[2]]} rotation={[0, preview.object.rotationY, 0]}>
           <mesh position={[0, preview.object.size[1] / 2, 0]} raycast={() => null}>
             <boxGeometry args={preview.object.size} />
             <meshBasicMaterial color={ok ? '#45d6a0' : '#ff536b'} transparent opacity={0.15} depthWrite={false} />

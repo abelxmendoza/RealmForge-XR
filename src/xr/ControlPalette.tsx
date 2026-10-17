@@ -18,7 +18,12 @@ import { useWorldLibrary } from '../world/persistence'
 import { BUILDING_STYLE_IDS, WALL_MATERIALS, PLATFORM_MATERIALS, TREE_STYLES } from '../world/catalog'
 import { useEditor } from '../editor/settings'
 import { useNav } from '../nav/navigation'
-import { toggleRays } from '../editor/xrInput'
+import { togglePlaceCity, toggleRays, toggleSurface } from '../editor/xrInput'
+import { SCALE_IDS, SCALE_PRESETS } from '../scene/worldRoot'
+import { toggleMocap, useMocap } from '../mocap/store'
+import { scanRoom } from './roomTracker'
+import { toggleRealSurfaces } from './realSurfaces'
+import { readSpatial, useSpatial } from './spatialSave'
 import { blockRoute } from '../editor/demo'
 import { usePlacement } from './placement'
 import { createPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteSave, savePaletteWorld } from './paletteActions'
@@ -80,6 +85,9 @@ function PaletteContent() {
     if (actor && await requestConfirmation({ type: 'DELETE', message: 'Delete ' + actor.name + '?' })) worldActions.removeActor(actor.id)
   }
   const editor = useEditor()
+  const mocap = useMocap()
+  const placing = usePlacement((s) => s.status === 'choosing')
+  const spatial = useSpatial((s) => s.status)
   const snap = editor.snap
   const inAR = useXR((s) => s.mode === 'immersive-ar')
   const status = useNav((s) => s.status)
@@ -124,6 +132,16 @@ function PaletteContent() {
     buttons.push({ label: snap ? 'Snap: on' : 'Snap: off', active: snap, run: () => useEditor.getState().set({ snap: !snap }) },
       { label: 'Block robot route', run: blockRoute },
       { label: 'Place world (AR)', disabled: !inAR, run: () => usePlacement.getState().startChoosing() })
+  } else if (page === 'View') {
+    // Moved here from the wrist menu (which keeps only quick toggles).
+    buttons = SCALE_IDS.map((id) => ({ label: SCALE_PRESETS[id].label, active: editor.worldScale === id, run: () => useEditor.getState().set({ worldScale: id }) }))
+    buttons.push(
+      { label: editor.surface === 'real' ? 'Ground: real (grid)' : 'Ground: virtual', active: editor.surface === 'real', run: toggleSurface },
+      { label: editor.realSurfaces ? 'Real surfaces: on' : 'Real surfaces: off', active: editor.realSurfaces, run: toggleRealSurfaces },
+      { label: editor.gestures ? 'Gestures: on' : 'Gestures: off', active: editor.gestures, run: () => useEditor.getState().set({ gestures: !editor.gestures }) },
+      { label: mocap.enabled ? `Mocap: ${mocap.status}` : 'Mocap: off', active: mocap.enabled && mocap.status === 'live', run: toggleMocap },
+      { label: placing ? 'Cancel placing' : 'Place world on surface', active: placing, disabled: !inAR, run: togglePlaceCity },
+      { label: 'Scan room (Space Setup)', disabled: !inAR, run: () => (scanRoom() ? undefined : { ok: false, error: 'Scan room is not available here. Use Settings > Physical Space > Space Setup.' }) })
   } else if (page === 'Worlds') {
     buttons = listTemplates().map((template) => ({ label: template.name, run: () => createPaletteWorld(template.id) }))
     buttons.push({ label: 'Save world', run: savePaletteWorld },
@@ -170,7 +188,7 @@ function PaletteContent() {
     ]
   } else if (page === 'Saved') {
     const offset = Math.min(savePage, Math.max(0, Math.ceil(saves.length / 6) - 1))
-    buttons = saves.slice(offset * 6, offset * 6 + 6).map((save) => ({ label: save.name, run: () => loadPaletteSave(save.id) }))
+    buttons = saves.slice(offset * 6, offset * 6 + 6).map((save) => ({ label: readSpatial(save.id) ? `${save.name} (anchored)` : save.name, run: () => loadPaletteSave(save.id) }))
     buttons.push({ label: 'Previous saves', disabled: offset === 0, run: () => setSavePage(offset - 1) },
       { label: 'Next saves', disabled: (offset + 1) * 6 >= saves.length, run: () => setSavePage(offset + 1) })
   } else {
@@ -199,13 +217,13 @@ function PaletteContent() {
         <Tile text="Cancel" x={-0.165} y={-0.12} width={0.31} onClick={() => resolveConfirmation(request.id, false)} />
         <Tile text="Confirm" x={0.165} y={-0.12} width={0.31} active onClick={() => resolveConfirmation(request.id, true)} />
       </> : <>
-        {['Tools', 'Worlds', 'Edit', 'Brush', 'Assets', 'Routes', 'Actors'].map((tab, i) => <Tile key={tab} text={tab} x={(i - 3) * 0.094} y={0.21} width={0.089} active={page === tab || tab === 'Actors' && page === 'Actor settings' || tab === 'Worlds' && page === 'Saved'} onClick={() => setPage(tab)} />)}
+        {['Tools', 'View', 'Worlds', 'Edit', 'Brush', 'Assets', 'Routes', 'Actors'].map((tab, i) => <Tile key={tab} text={tab} x={(i - 3.5) * 0.0815} y={0.21} width={0.0775} active={page === tab || tab === 'Actors' && page === 'Actor settings' || tab === 'Worlds' && page === 'Saved'} onClick={() => setPage(tab)} />)}
         {buttons.map((button, i) => <Tile key={page + button.label} text={button.label} x={i % 2 ? 0.165 : -0.165} y={0.135 - Math.floor(i / 2) * 0.07} width={0.31} disabled={busy || button.disabled} active={button.active} onClick={() => void run(button)} />)}
         <Tile text="Undo" x={-0.24} y={-0.235} width={0.15} disabled={busy || !history.canUndo} onClick={() => worldActions.undo()} />
         <Tile text="Redo" x={-0.08} y={-0.235} width={0.15} disabled={busy || !history.canRedo} onClick={() => worldActions.redo()} />
         <Tile text={guideOpen ? 'Close guide' : 'Guide'} x={0.08} y={-0.235} width={0.15} active={guideOpen} onClick={() => (guideOpen ? closeGuide() : openGuide('start'))} />
         <Tile text="Recenter" x={0.24} y={-0.235} width={0.15} onClick={() => { positioned.current = false }} />
-        <Tile text={busy ? 'Working…' : page === 'Assets' ? `${getAsset(editor.assetId)?.name} · ${Math.round(editor.assetRotation * 180 / Math.PI)}° · Aim at clear ground.` : message} y={-0.31} width={0.65} height={0.065} />
+        <Tile text={busy ? 'Working…' : page === 'Assets' ? `${getAsset(editor.assetId)?.name} · ${Math.round(editor.assetRotation * 180 / Math.PI)}° · Aim at clear ground.` : page === 'Worlds' && spatial !== 'idle' ? `Saved spot in this room: ${spatial}. ${message}` : message} y={-0.31} width={0.65} height={0.065} />
       </>}
     </>}
   </group>

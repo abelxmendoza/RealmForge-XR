@@ -1,19 +1,20 @@
-import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Text } from '@react-three/drei'
 import { XRSpace, useXRInputSourceState } from '@react-three/xr'
-import { SCALE_IDS, SCALE_PRESETS, recenterWorld } from '../scene/worldRoot'
+import { SCALE_PRESETS, recenterWorld } from '../scene/worldRoot'
 import { FORGE } from '../theme/forge'
 import { BrandLogo3D } from '../xr/BrandLogo3D'
 import { useGuide } from '../guide/guideStore'
 import { useEditor } from './settings'
-import { togglePlaceCity, toggleRays, toggleSurface } from './xrInput'
+import { toggleRays } from './xrInput'
 import { toggleOcclusion, useOcclusion } from '../xr/occlusion'
+import { toggleRealSurfaces } from '../xr/realSurfaces'
+import { useRoom } from '../xr/room'
 import { useWorld } from '../world/store'
-import { usePlacement } from '../xr/placement'
 import { useSelection } from './selection'
-import { openPalettePage, togglePalette, usePaletteUI } from '../xr/paletteUI'
+import { togglePalette, usePaletteUI } from '../xr/paletteUI'
 import { HAPTIC, pulse } from '../xr/haptics'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 
@@ -80,7 +81,7 @@ const PokeRegistry = createContext<Set<Pokeable> | null>(null)
  * it while the menu is open), not through XR pointer events, so they don't depend on touch-pointer
  * thresholds. Controllers (and rays) still press through pointer events.
  */
-export function WristMenu({ extra, envRow }: { extra?: ReactNode; envRow?: ReactNode }) {
+export function WristMenu() {
   const hand = useXRInputSourceState('hand', 'left')
   const controller = useXRInputSourceState('controller', 'left')
   const rightHand = useXRInputSourceState('hand', 'right')
@@ -143,19 +144,19 @@ export function WristMenu({ extra, envRow }: { extra?: ReactNode; envRow?: React
         </XRSpace>
       )}
       <group ref={panel} visible={false}>
-        <MenuContent extra={extra} envRow={envRow} />
+        <MenuContent />
       </group>
     </PokeRegistry.Provider>
   )
 }
 
-function MenuContent({ extra, envRow }: { extra?: ReactNode; envRow?: ReactNode }) {
-  const { rays, snap, worldScale, surface, gestures, occlusion } = useEditor()
+function MenuContent() {
+  const { rays, snap, worldScale, occlusion, realSurfaces } = useEditor()
   const occlusionSrc = useOcclusion((s) => s.source)
+  const roomPlanes = useRoom((s) => s.planes + s.meshes)
   const set = useEditor((s) => s.set)
   const group = useSelection((s) => s.ids.length)
   const tool = useWorld((s) => s.tool)
-  const placing = usePlacement((s) => s.status === 'choosing')
   const paletteHidden = usePaletteUI((s) => s.hidden)
   const guideOpen = useGuide((s) => s.open)
   const toggleGuide = useGuide((s) => s.toggleGuide)
@@ -163,10 +164,14 @@ function MenuContent({ extra, envRow }: { extra?: ReactNode; envRow?: ReactNode 
   const quarter = (W - GAP * 3) / 4
   const third = (W - GAP * 2) / 3
   const col = (i: number, w: number) => -W / 2 + w / 2 + i * (w + GAP)
-  // Rows: 0 toggles · 1 scale · 2 tools · 3 view · 4 environments · (5 group) · status line.
-  const statusRow = group > 0 ? 6 : 5
+  // Slim on purpose: quick toggles and navigation only. Scale, ground, gestures, mocap, place world and
+  // scan room live on the Control Palette's View page. Lit buttons are on.
+  // Rows: 0 toggles · 1 navigation · (2 framed group) · status line.
+  const statusRow = group > 0 ? 3 : 2
   const top = 0.082
   const bottom = rowY(statusRow) - 0.012
+  const scale = SCALE_PRESETS[worldScale].label.split(' ').pop()
+  const status = [scale, `occl ${occlusionSrc === 'none' ? 'no room' : occlusionSrc}`, roomPlanes ? `room ${roomPlanes}` : 'room: not set up'].join(' · ')
   return (
     <group>
       <mesh position={[0, (top + bottom) / 2, -0.004]} raycast={() => null}>
@@ -181,49 +186,24 @@ function MenuContent({ extra, envRow }: { extra?: ReactNode; envRow?: ReactNode 
       <Text position={[0.008, 0.068, 0]} fontSize={0.011} color={FORGE.text} anchorX="center" anchorY="middle" raycast={() => null}>
         RealmForge
       </Text>
-      <MenuButton position={[col(0, quarter), rowY(0), 0]} width={quarter} label={`Rays ${rays ? 'on' : 'off'}`} active={rays} onPress={toggleRays} />
-      <MenuButton position={[col(1, quarter), rowY(0), 0]} width={quarter} label={`Snap ${snap ? 'on' : 'off'}`} active={snap} onPress={() => set({ snap: !snap })} />
-      <MenuButton position={[col(2, quarter), rowY(0), 0]} width={quarter} label={surface === 'real' ? 'Real' : 'Virtual'} active={surface === 'real'} onPress={toggleSurface} />
-      <MenuButton position={[col(3, quarter), rowY(0), 0]} width={quarter} label={`Occl. ${occlusion ? 'on' : 'off'}`} active={occlusion} onPress={toggleOcclusion} />
-      {SCALE_IDS.map((id, i) => (
-        <MenuButton
-          key={id}
-          position={[col(i, quarter), rowY(1), 0]}
-          width={quarter}
-          label={SCALE_PRESETS[id].label.split(' ').pop()!}
-          active={worldScale === id}
-          onPress={() => set({ worldScale: id })}
-        />
-      ))}
-      {/* Tools: Assets places from the asset library (pick one on the Control Palette's Assets page). */}
-      <MenuButton position={[col(0, quarter), rowY(2), 0]} width={quarter} label="Select" active={tool === 'select'} onPress={() => useWorld.getState().setTool('select')} />
-      <MenuButton
-        position={[col(1, quarter), rowY(2), 0]}
-        width={quarter}
-        label="Assets"
-        active={tool === 'asset'}
-        onPress={() => {
-          useWorld.getState().setTool('asset')
-          openPalettePage('Assets')
-        }}
-      />
-      <MenuButton position={[col(2, quarter), rowY(2), 0]} width={quarter} label={placing ? 'Cancel' : 'Place'} active={placing} onPress={togglePlaceCity} />
-      <MenuButton position={[col(3, quarter), rowY(2), 0]} width={quarter} label={guideOpen ? 'Close' : 'Guide'} active={guideOpen} onPress={toggleGuide} />
-      <MenuButton position={[col(0, quarter), rowY(3), 0]} width={quarter} label="Recenter" onPress={recenterWorld} />
-      <MenuButton position={[col(1, quarter), rowY(3), 0]} width={quarter} label={paletteHidden ? 'Palette' : 'Hide pal.'} active={!paletteHidden} onPress={togglePalette} />
-      <MenuButton position={[col(2, quarter), rowY(3), 0]} width={quarter} label={`Gest. ${gestures ? 'on' : 'off'}`} active={gestures} onPress={() => set({ gestures: !gestures })} />
-      {extra && <group position={[col(3, quarter), rowY(3), 0]}>{extra}</group>}
-      {envRow && <group position={[0, rowY(4), 0]}>{envRow}</group>}
+      <MenuButton position={[col(0, quarter), rowY(0), 0]} width={quarter} label="Rays" active={rays} onPress={toggleRays} />
+      <MenuButton position={[col(1, quarter), rowY(0), 0]} width={quarter} label="Snap" active={snap} onPress={() => set({ snap: !snap })} />
+      <MenuButton position={[col(2, quarter), rowY(0), 0]} width={quarter} label="Occl." active={occlusion} onPress={toggleOcclusion} />
+      <MenuButton position={[col(3, quarter), rowY(0), 0]} width={quarter} label="Surf." active={realSurfaces} onPress={toggleRealSurfaces} />
+      <MenuButton position={[col(0, quarter), rowY(1), 0]} width={quarter} label="Center" onPress={recenterWorld} />
+      <MenuButton position={[col(1, quarter), rowY(1), 0]} width={quarter} label="Panel" active={!paletteHidden} onPress={togglePalette} />
+      <MenuButton position={[col(2, quarter), rowY(1), 0]} width={quarter} label="Guide" active={guideOpen} onPress={toggleGuide} />
+      <MenuButton position={[col(3, quarter), rowY(1), 0]} width={quarter} label="Select" active={tool === 'select'} onPress={() => useWorld.getState().setTool('select')} />
       {/* Framed group (frame-hands gesture): act on all of it. */}
       {group > 0 && (
         <>
-          <MenuButton position={[col(0, third), rowY(5), 0]} width={third} label="Duplicate" onPress={duplicateSelected} />
-          <MenuButton position={[col(1, third), rowY(5), 0]} width={third} label="Delete" onPress={deleteSelected} />
-          <MenuButton position={[col(2, third), rowY(5), 0]} width={third} label={`Clear (${group})`} onPress={() => useSelection.getState().clear()} />
+          <MenuButton position={[col(0, third), rowY(2), 0]} width={third} label="Copy" onPress={duplicateSelected} />
+          <MenuButton position={[col(1, third), rowY(2), 0]} width={third} label="Delete" onPress={deleteSelected} />
+          <MenuButton position={[col(2, third), rowY(2), 0]} width={third} label={`Clear ${group}`} onPress={() => useSelection.getState().clear()} />
         </>
       )}
-      <Text position={[0, rowY(statusRow) + 0.004, 0]} fontSize={0.008} color={FORGE.copper} anchorX="center" anchorY="middle" raycast={() => null}>
-        {`${SCALE_PRESETS[worldScale].label} · occlusion: ${occlusionSrc === 'none' ? 'no depth or room' : occlusionSrc} · Guide for help`}
+      <Text position={[0, rowY(statusRow) + 0.004, 0]} fontSize={0.0072} maxWidth={W} color={FORGE.copper} anchorX="center" anchorY="middle" raycast={() => null}>
+        {status}
       </Text>
     </group>
   )
@@ -288,7 +268,8 @@ export function MenuButton(props: {
       </mesh>
       <Text
         position={[0, 0, BTN_D / 2 + 0.0005]}
-        fontSize={0.0095}
+        fontSize={Math.min(0.0095, (width - 0.004) / (props.label.length * 0.58))}
+        maxWidth={width - 0.002}
         color={props.active ? FORGE.ink : FORGE.text}
         anchorX="center"
         anchorY="middle"

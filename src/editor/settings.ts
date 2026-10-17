@@ -30,6 +30,8 @@ export interface EditorSettings {
    * default; see xr/occlusion.tsx and docs/occlusion.md.
    */
   occlusion: boolean
+  /** Virtual objects rest on real tables and stop at real walls / furniture (Space Setup; xr/realSurfaces.ts). */
+  realSurfaces: boolean
   /** Hand gestures in XR (L axis, frame select, pinch-roll rotate, two-fist pull; see docs/gestures.md). */
   gestures: boolean
   buildingStyle: BuildingStyle
@@ -53,6 +55,7 @@ export const useEditor = create<EditorSettings>((set) => ({
   rays: false,
   surface: 'real',
   occlusion: false,
+  realSurfaces: false,
   gestures: true,
   buildingStyle: 'office',
   roof: 'flat',

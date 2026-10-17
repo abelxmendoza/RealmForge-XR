@@ -14,6 +14,7 @@ import { applyGroundHover, applyGroundTool } from './Ground'
 import { MIN_SIZE, grabPatch, samePatch, type GrabPatch } from './grab'
 import { useEditor } from './settings'
 import { HAPTIC, pulse } from '../xr/haptics'
+import { clampToRoom, settleObject } from '../xr/realSurfaces'
 import { groupIds, useSelection } from './selection'
 
 /** What a hand grab remembers between frames: the object as grabbed, and the last patch sent. */
@@ -119,10 +120,14 @@ function Obstacle({ o }: { o: WorldObject }) {
     const t = { x: position.x, z: position.z, rotationY: yawOf.setFromQuaternion(quaternion, 'YXZ').y, scale: scale.x }
     const snap = useEditor.getState().snap
     const patch = grabPatch(memo.base, t, snap)
+    // Respect real surfaces: stop at real walls and furniture (no-op when off).
+    const prev = memo.last?.position ?? memo.base.position
+    patch.position = clampToRoom(memo.base, prev, patch.position, patch.size)
     // The store (and navigation) get the snapped pose; the object itself follows the hand until release.
     if (snap) {
       const loose = grabPatch(memo.base, t, false)
-      free.current = { x: loose.position[0], z: loose.position[2], yaw: loose.rotationY }
+      const [lx, , lz] = clampToRoom(memo.base, prev, loose.position, loose.size)
+      free.current = { x: lx, z: lz, yaw: loose.rotationY }
     } else free.current = null
     if (!samePatch(memo.last, patch)) {
       world.updateObject(o.id, patch)
@@ -132,6 +137,7 @@ function Obstacle({ o }: { o: WorldObject }) {
     if (state.last) {
       free.current = null
       setHolding(false)
+      settleObject(o.id)
       world.setDragging(false)
     }
     return memo

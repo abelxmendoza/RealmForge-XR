@@ -18,7 +18,7 @@ import { Attendee, AttendeeRoute } from '../sim/AttendeeView'
 import { Route } from './Route'
 import { Lighting } from './Lighting'
 import { ThumbnailCapture } from './ThumbnailCapture'
-import { MenuButton, WRIST_QUARTER, WristMenu } from '../editor/WristMenu'
+import { WristMenu } from '../editor/WristMenu'
 import { MocapSkeleton } from '../mocap/MocapSkeleton'
 import { GestureController } from '../xr/gestures/GestureController'
 import { toggleMocap, useMocap } from '../mocap/store'
@@ -29,6 +29,8 @@ import { useEnvironment } from '../world/environment'
 import { usePlacement } from '../xr/placement'
 import { FloorTracker } from '../xr/floor'
 import { Occlusion } from '../xr/occlusion'
+import { RoomTracker } from '../xr/roomTracker'
+import { SpatialSync } from '../xr/spatialSave'
 
 export function Scene() {
   const background = useEnvironment((s) => s.appearance.lighting.background)
@@ -66,7 +68,9 @@ export function Scene() {
       <WorldScaler />
       {inXR && <FloorTracker />}
       {inXR && <Occlusion />}
-      {inXR && <WristMenu extra={<MocapMenuButton />} />}
+      {inXR && <RoomTracker />}
+      {inXR && <SpatialSync />}
+      {inXR && <WristMenu />}
       {inXR && <GestureController />}
       {/* Smartsuit skeleton at 1:1 in your room (Rokoko's origin = where the XR session started). */}
       {mocapOn && !mocapInMap && <MocapSkeleton />}
@@ -164,12 +168,6 @@ function WorldScaler() {
   return null
 }
 
-/** Wrist-menu toggle for the Smartsuit stream, showing its status. */
-function MocapMenuButton() {
-  const enabled = useMocap((s) => s.enabled)
-  const status = useMocap((s) => s.status)
-  return <MenuButton width={WRIST_QUARTER} label={enabled ? `Mocap ${status}` : 'Mocap off'} active={enabled && status === 'live'} onPress={toggleMocap} />
-}
 
 /** Big invisible plane under the map so drags keep receiving moves past the map edge. */
 function DragCatcher() {

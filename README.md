@@ -135,6 +135,9 @@ follow the world.
 **Occlusion (O, the HUD, or wrist Occl.; off by default).** Hides virtual objects behind real ones: live depth on
 Quest 3/3S, or your Space Setup walls and furniture on Quest 2 (see [docs/occlusion.md](docs/occlusion.md)).
 
+**Real room (P / wrist Surf.; spatial save).** With Space Setup, objects rest on real tables and stop at
+real walls, and saved worlds remember their real spot on this headset (see [docs/real-room.md](docs/real-room.md)).
+
 **Moving the floating panels.** Grab the **Move** bar above the Control Palette or guide panel, or point a ray at
 it and pull the trigger. The panel faces you when released and stays there until Recenter.
 

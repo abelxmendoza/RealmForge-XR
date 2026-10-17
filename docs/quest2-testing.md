@@ -191,6 +191,14 @@ See docs/gestures.md for the poses.
 - [ ] Wrist **Occl.** off: nothing is hidden. On (3S): your hand in front of an object hides it, and the status line reads `occlusion: depth`
 - [ ] On (Quest 2): objects behind a Space Setup wall or table disappear, and the status line reads `occlusion: room`; the floor grid stays visible
 
+## Real room (needs Space Setup)
+
+- [ ] Wrist status shows `room N` (not `room: not set up`); if not, palette View, then Scan room
+- [ ] Occl. on with room data: objects behind a real wall disappear (`occl room`)
+- [ ] Surf. on at 1:1: an object dropped over your real table lands on it; moving it stops at a wall or couch
+- [ ] Save a world in AR, exit, re-enter (or reload) and load it: it returns to the same real spot; the saved list shows `(anchored)`
+- [ ] Wrist menu: two rows, no overlapping text; View page holds scale, ground, gestures, mocap, place, scan
+
 ## Smartsuit mock skeleton
 
 On the PC run `npm run mocap:mock` (alongside the dev server), then press **Mocap** on the wrist menu.
