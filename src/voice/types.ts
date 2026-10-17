@@ -1,5 +1,6 @@
 import type { EnvironmentId } from '../world/environment'
 import type { Tool } from '../world/store'
+import type { AnchorName, Direction, Placement, SpawnSpec } from '../world/spawn'
 
 /** Deterministic voice intents — executed only after validation. */
 export type VoiceCommand =
@@ -12,6 +13,13 @@ export type VoiceCommand =
   | { type: 'CLEAR_SELECTION' }
   | { type: 'RESET_WORLD' }
   | { type: 'START_NAVIGATION' }
+  /** "add three trees near the robot" */
+  | { type: 'SPAWN_OBJECTS'; spec: SpawnSpec; label: string; count: number; placement: Placement }
+  /** "move it 10 meters north", "move them to the goal" ("it" = selection, "them" = last batch) */
+  | { type: 'MOVE_OBJECTS'; which: 'selected' | 'last'; direction?: Direction; distance?: number; to?: Exclude<AnchorName, 'auto' | 'selected'> }
+  | { type: 'ROTATE_OBJECTS'; which: 'selected' | 'last'; degrees: number }
+  | { type: 'RESIZE_OBJECTS'; which: 'selected' | 'last'; factor: number; axis: 'all' | 'height' | 'footprint' }
+  | { type: 'DUPLICATE_OBJECTS'; which: 'selected' | 'last'; count: number }
 
 export type ParseResult =
   | { ok: true; command: VoiceCommand }

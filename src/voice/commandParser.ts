@@ -1,6 +1,7 @@
 import type { EnvironmentId } from '../world/environment'
 import type { Tool } from '../world/store'
 import type { ParseResult, VoiceCommand } from './types'
+import { parseObjectCommand } from './objectCommands'
 
 /** Normalize spoken text for keyword matching. */
 export function normalizeTranscript(raw: string): string {
@@ -41,7 +42,8 @@ const TOOL_RULES: { phrases: string[]; tool: Tool }[] = [
 
 /**
  * Deterministic parser — no LLM. Returns unsupported for unrecognized speech.
- * "Create a building" activates the building tool (does not spawn at arbitrary coords).
+ * "Create a building" / "add three trees" now creates objects on free ground (see objectCommands.ts);
+ * "building tool" / "select building" still just picks the tool.
  */
 export function parseVoiceCommand(transcript: string): ParseResult {
   const t = normalizeTranscript(transcript)
@@ -98,6 +100,10 @@ export function parseVoiceCommand(transcript: string): ParseResult {
   for (const r of rules) {
     if (r.test(t)) return { ok: true, command: r.command }
   }
+
+  // Make, place, move, rotate, resize and copy objects ("add three trees near the robot").
+  const objectCommand = parseObjectCommand(t)
+  if (objectCommand) return { ok: true, command: objectCommand }
 
   for (const { phrases, tool } of TOOL_RULES) {
     if (phrases.some((p) => t.includes(p))) {
