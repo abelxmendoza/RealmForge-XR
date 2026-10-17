@@ -7,6 +7,9 @@ import {
   importWorld,
   listSavedWorlds,
   loadSavedWorld,
+  markClean,
+  quickSave,
+  refreshDirty,
   renameSavedWorld,
   saveWorld,
   useWorldLibrary,
@@ -58,7 +61,8 @@ beforeEach(() => {
   mem = new MemoryStorage()
   ;(globalThis as { localStorage?: unknown }).localStorage = mem
   useWorld.getState().loadWorld({ objects: sample(), robotStart: [-8, 8], goal: [8, -8] })
-  useWorldLibrary.setState({ worlds: [], activeId: null, activeName: 'Untitled world' })
+  useWorldLibrary.setState({ worlds: [], activeId: null, activeName: 'Untitled world', dirty: false })
+  markClean()
 })
 
 describe('serialization', () => {
@@ -257,6 +261,39 @@ describe('export / import', () => {
     const r = await importWorld(JSON.stringify({ format: WORLD_FORMAT, version: 1, name: 'x', objects, robotStart: [0, 5], goal: null }), { confirmReplace: yes })
     expect(r.ok).toBe(true)
     expect(Number(newId('bld').split('-')[1])).toBeGreaterThan(9000)
+  })
+})
+
+describe('dirty tracking and quickSave', () => {
+  it('turns dirty after an edit and clean after save', () => {
+    expect(useWorldLibrary.getState().dirty).toBe(false)
+    useWorld.getState().addObject({
+      kind: 'crate',
+      position: [1, 0, 1],
+      size: [1, 1, 1],
+      rotationY: 0,
+    })
+    refreshDirty()
+    expect(useWorldLibrary.getState().dirty).toBe(true)
+    const r = quickSave('Quick')
+    expect(r.ok).toBe(true)
+    expect(useWorldLibrary.getState().dirty).toBe(false)
+    expect(useWorldLibrary.getState().activeId).toBeTruthy()
+  })
+
+  it('quickSave overwrites the active save without creating a second entry', () => {
+    expect(quickSave('One').ok).toBe(true)
+    const id = useWorldLibrary.getState().activeId!
+    useWorld.getState().addObject({
+      kind: 'tree',
+      position: [2, 0, 2],
+      size: [1, 2, 1],
+      rotationY: 0,
+    })
+    expect(quickSave('One').ok).toBe(true)
+    expect(useWorldLibrary.getState().activeId).toBe(id)
+    expect(listSavedWorlds()).toHaveLength(1)
+    expect(listSavedWorlds()[0].objectCount).toBe(7)
   })
 })
 

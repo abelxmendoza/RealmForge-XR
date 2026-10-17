@@ -31,3 +31,14 @@ html, body, #root { margin: 0; height: 100%; background: #1d2433; font-family: s
 .inspector ul.worlds li.active span { color: #f4a261; }
 .inspector ul.worlds button { padding: 2px 6px; font-size: 11px; }
 .inspector { max-height: calc(100vh - 24px); overflow-y: auto; }
+.inspector section.drop-target { outline: 1px dashed #f4a261; outline-offset: 2px; }
+.dirty-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: #f4a261;
+  vertical-align: middle;
+}
+.hud strong { display: inline-flex; align-items: center; }

@@ -1,6 +1,7 @@
 # World persistence: save, load, export, import
 
-Branch: `feat/world-persistence`. No backend: worlds live in `localStorage` or in exported JSON files.
+Branch lineage: `feat/world-persistence` → polish on `cursor/world-persistence-polish-96f4`.
+No backend: worlds live in `localStorage` or in exported JSON files.
 
 ## File format (version 1)
 
@@ -57,7 +58,10 @@ These are plain functions with no React. Each one returns a result object and ne
 | `importWorld(fileOrJsonString, { confirmReplace? })` | Validates, asks, then loads. |
 | `replaceWorld(parsedWorld, { confirmReplace? })` | Same as above for a world already in memory, such as a preset. |
 | `currentWorldFile(name?)` | The active world as a `WorldFile`. |
-| `useWorldLibrary` | Zustand store `{ worlds, activeId, activeName }` that UI can subscribe to. |
+| `quickSave(name?)` | Ctrl+S helper: overwrite `activeId` when set, otherwise save as new. No prompt. |
+| `useWorldLibrary` | Zustand store `{ worlds, activeId, activeName, dirty }` that UI can subscribe to. |
+| `markClean` / `refreshDirty` / `installDirtyTracking` | Unsaved-changes fingerprint (dot in Worlds panel + HUD). |
+| `undo` / `redo` / `installHistory` (`src/world/history.ts`) | Edit history; drags coalesce to one step; loads clear the stacks. |
 
 - **Result shapes:**
   - `{ ok: true }` or `{ ok: false, error }`
@@ -94,9 +98,21 @@ There's no file picker in the headset. Use saved worlds there, and do export and
 - ID collisions after import
 - navigation rebuild and replanning after a load, and replanning after an edit to the imported world
 
+## Desktop shortcuts & drop
+
+| Input | Action |
+| --- | --- |
+| Ctrl/Cmd+S | `quickSave()` — update active save, or save as new |
+| Ctrl/Cmd+Z | Undo last world edit |
+| Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y | Redo |
+| Drop `.json` on the page or Worlds panel | `importWorld(file)` (confirms if current world is non-empty) |
+
+Unsaved changes show an orange dot next to **Worlds** / the title and an `unsaved` note in the HUD status.
+
 ## Known limitations
 
 - `localStorage` gives about 5 MB per site. Forge District takes about 15 KB, so that's room for hundreds of worlds. A full storage shows an error suggesting export.
 - Saved worlds belong to one browser on one device. Use export and import to move them.
 - The app doesn't remember which world was open after a reload. On purpose, it starts with the default world and never loads a save by itself.
-- There's no unsaved-changes indicator yet. "Update save" overwrites only after a confirmation.
+- "Update save" in the panel still confirms; Ctrl+S / **Save** does not (same as a normal editor quick-save).
+- Undo covers world data only (not tool selection or camera).

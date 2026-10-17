@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { idFor, useWorld } from './store'
 import { cleanName, parseWorld, serializeWorld, worldToJSON, type ParsedWorld, type WorldFile } from './serialize'
+import { clearHistory, withHistorySuppressed } from './history'
 
 /**
  * World management API: save / load / rename / delete worlds in browser storage, and
@@ -36,10 +37,55 @@ interface LibraryState {
   /** The saved world the active world came from or was last saved as (null = unsaved). */
   activeId: string | null
   activeName: string
+  /** True when the active world differs from the last save / load / markClean point. */
+  dirty: boolean
 }
 
 /** Reactive view of the library for UI. Mutate only through the functions below. */
-export const useWorldLibrary = create<LibraryState>(() => ({ worlds: [], activeId: null, activeName: 'Untitled world' }))
+export const useWorldLibrary = create<LibraryState>(() => ({
+  worlds: [],
+  activeId: null,
+  activeName: 'Untitled world',
+  dirty: false,
+}))
+
+/** Stable fingerprint of world data (no name / savedAt) for dirty detection. */
+export function worldFingerprint(): string {
+  const { objects, robotStart, goal } = useWorld.getState()
+  const ids = Object.keys(objects).sort()
+  return JSON.stringify({
+    objects: ids.map((id) => objects[id]),
+    robotStart,
+    goal,
+  })
+}
+
+let cleanFingerprint = worldFingerprint()
+
+export function markClean() {
+  cleanFingerprint = worldFingerprint()
+  if (useWorldLibrary.getState().dirty) useWorldLibrary.setState({ dirty: false })
+}
+
+export function refreshDirty() {
+  const dirty = worldFingerprint() !== cleanFingerprint
+  if (useWorldLibrary.getState().dirty !== dirty) useWorldLibrary.setState({ dirty })
+}
+
+let dirtyListening = false
+
+/** Keep `dirty` in sync with store edits. Call once from app boot. */
+export function installDirtyTracking(): () => void {
+  if (dirtyListening) return () => undefined
+  dirtyListening = true
+  // Baseline = whatever is in the store at boot (default starter world).
+  markClean()
+  const unsub = useWorld.subscribe(() => refreshDirty())
+  return () => {
+    unsub()
+    dirtyListening = false
+  }
+}
 
 // ---------- storage access (graceful when localStorage is missing, blocked or full) ----------
 
@@ -97,8 +143,12 @@ async function confirmIfNeeded(message: string, opts: ReplaceOptions): Promise<b
  * versions, so navigation rebuilds its grid, moves the robot to robotStart and replans.
  */
 function applyWorld(world: ParsedWorld, activeId: string | null) {
-  useWorld.getState().loadWorld(world)
+  withHistorySuppressed(() => {
+    useWorld.getState().loadWorld(world)
+  })
+  clearHistory()
   useWorldLibrary.setState({ activeId, activeName: world.name })
+  markClean()
 }
 
 // ---------- public API ----------
@@ -136,7 +186,19 @@ export function saveWorld(name: string, opts: { overwriteId?: string } = {}): Sa
     return { ok: false, error: describe(e) }
   }
   useWorldLibrary.setState({ activeId: id, activeName: meta.name })
+  markClean()
   return { ok: true, value: meta }
+}
+
+/**
+ * Ctrl+S / quick-save: overwrite the active save when one exists, otherwise save as new
+ * under the current name. Never prompts (explicit Update save still confirms in the UI).
+ */
+export function quickSave(name?: string): SaveResult {
+  const { activeId, activeName } = useWorldLibrary.getState()
+  const label = name ?? activeName
+  if (activeId) return saveWorld(label, { overwriteId: activeId })
+  return saveWorld(label)
 }
 
 /** Replace the active world with a saved one (asks first if the current world is not empty). */
