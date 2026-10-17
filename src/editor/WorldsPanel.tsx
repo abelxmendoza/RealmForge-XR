@@ -107,21 +107,27 @@ export function WorldsPanel() {
         <input type="text" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
       </label>
       <div className="row">
-        <button onClick={save}>Save as new</button>
-        <button disabled={!activeId} onClick={update} title="Overwrite the save this world came from">
-          Update save
-        </button>
-        <button onClick={saveQuick} title="Ctrl+S — update active save, or save as new">
+        <button type="button" className="primary" onClick={saveQuick} title="Ctrl+S — update active save, or save as new">
           Save
+        </button>
+        <button type="button" onClick={save}>
+          Save as new
+        </button>
+        <button type="button" disabled={!activeId} onClick={update} title="Overwrite the save this world came from">
+          Update save
         </button>
       </div>
       <div className="row">
-        <button onClick={() => downloadWorld(name)}>Export JSON</button>
-        <button onClick={() => fileInput.current?.click()}>Import JSON</button>
-        <button disabled={!hist.canUndo} onClick={() => undo()} title="Ctrl+Z">
+        <button type="button" className="ghost" onClick={() => downloadWorld(name)}>
+          Export JSON
+        </button>
+        <button type="button" className="ghost" onClick={() => fileInput.current?.click()}>
+          Import JSON
+        </button>
+        <button type="button" disabled={!hist.canUndo} onClick={() => undo()} title="Ctrl+Z">
           Undo
         </button>
-        <button disabled={!hist.canRedo} onClick={() => redo()} title="Ctrl+Shift+Z">
+        <button type="button" disabled={!hist.canRedo} onClick={() => redo()} title="Ctrl+Shift+Z">
           Redo
         </button>
         <input
@@ -144,14 +150,20 @@ export function WorldsPanel() {
               <span title={new Date(w.savedAt).toLocaleString()}>
                 {w.name} <small>({w.objectCount})</small>
               </span>
-              <button onClick={async () => report(await loadSavedWorld(w.id), `Loaded "${w.name}".`)}>Load</button>
-              <button onClick={() => rename(w.id, w.name)}>Rename</button>
-              <button onClick={() => remove(w.id, w.name)}>✕</button>
+              <button type="button" onClick={async () => report(await loadSavedWorld(w.id), `Loaded "${w.name}".`)}>
+                Load
+              </button>
+              <button type="button" className="ghost" onClick={() => rename(w.id, w.name)}>
+                Rename
+              </button>
+              <button type="button" className="danger" onClick={() => remove(w.id, w.name)} aria-label={`Delete ${w.name}`}>
+                ✕
+              </button>
             </li>
           ))}
         </ul>
       )}
-      {msg && <p className="hint">{msg}</p>}
+      {msg && <p className="hint toast">{msg}</p>}
     </section>
   )
 }

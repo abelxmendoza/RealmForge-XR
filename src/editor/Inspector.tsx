@@ -129,8 +129,12 @@ function ObjectPanel({ o }: { o: WorldObject }) {
         </label>
       )}
       <div className="row">
-        <button onClick={duplicateSelected}>D Duplicate</button>
-        <button onClick={deleteSelected}>Del Delete</button>
+        <button type="button" onClick={duplicateSelected}>
+          D Duplicate
+        </button>
+        <button type="button" className="danger" onClick={deleteSelected}>
+          Del Delete
+        </button>
       </div>
     </section>
   )
@@ -228,6 +232,7 @@ function WorldPanel() {
       {PRESETS.map((p) => (
         <button
           key={p.id}
+          type="button"
           onClick={() =>
             void worldActions.loadEnvironment(p.id, {
               // One confirmation channel for desktop, voice, and headset consumers.
