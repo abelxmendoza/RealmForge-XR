@@ -5,7 +5,7 @@ import { WALL_DEFAULTS, clampToWorld, useWorld } from '../world/store'
 import { WORLD, type Vec2, type Vec3, type WorldObject } from '../world/types'
 import { BUILDING_STYLES, DECOR_DEFAULTS, PLATFORM_DEFAULTS } from '../world/catalog'
 import { SNAP, snapFootprint, snapPoint } from '../world/snap'
-import { WORLD_ROOT, groundPoint, worldRootRef } from '../scene/worldRoot'
+import { SCALE_PRESETS, WORLD_ROOT, groundPoint, onTable, worldRootRef } from '../scene/worldRoot'
 import { groundMaterial } from '../scene/materials'
 import { tiledPlane, useGeometry } from '../scene/geometry'
 import { Structure } from '../scene/structures'
@@ -142,18 +142,35 @@ function DraftPreview({ draft }: { draft: Draft }) {
   )
 }
 
-/** Tabletop board: textured ground, a faint construction grid and a bevelled table edge. */
+/**
+ * The board: textured ground, a faint construction grid and, when the world sits on a table,
+ * a bevelled table edge. Edge sizes are real centimetres at any tabletop scale (divided by the
+ * world ratio), so the rim stays grabbable; on the floor (room scale and up) there is no table.
+ */
 function Board({ size, onPointerDown }: { size: number; onPointerDown: (e: ThreeEvent<PointerEvent>) => void }) {
   const ground = useGeometry(() => tiledPlane(size, size, 2), [size])
+  const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
+  const table = onTable(ratio)
+  const cm = (v: number) => v / 100 / ratio
   return (
     <>
       <mesh rotation={[-Math.PI / 2, 0, 0]} geometry={ground} material={groundMaterial()} receiveShadow onPointerDown={onPointerDown} />
-      {/* Fine grid at the snapping step, major lines every 5 units. */}
-      <gridHelper args={[size, size / SNAP, '#ffffff', '#ffffff']} position={[0, 0.006, 0]} material-transparent material-opacity={0.07} material-depthWrite={false} raycast={() => null} />
+      {/* Fine grid at the snapping step (only once it's big enough to read), major lines every 5 m. */}
+      {ratio >= SCALE_PRESETS.room.ratio && (
+        <gridHelper args={[size, size / SNAP, '#ffffff', '#ffffff']} position={[0, 0.006, 0]} material-transparent material-opacity={0.07} material-depthWrite={false} raycast={() => null} />
+      )}
       <gridHelper args={[size, size / 5, '#e8f4ff', '#e8f4ff']} position={[0, 0.008, 0]} material-transparent material-opacity={0.18} material-depthWrite={false} raycast={() => null} />
-      {/* Table edge so the miniature reads as an object in passthrough. */}
-      <mesh position={[0, -0.07, 0]} raycast={() => null} receiveShadow>
-        <boxGeometry args={[size + 0.4, 0.12, size + 0.4]} />
+      {table && <TableEdge size={size} cm={cm} />}
+    </>
+  )
+}
+
+/** Table edge so the miniature reads as an object in passthrough; its dark base is the map's grab handle. */
+function TableEdge({ size, cm }: { size: number; cm: (v: number) => number }) {
+  return (
+    <>
+      <mesh position={[0, -cm(0.6), 0]} raycast={() => null} receiveShadow>
+        <boxGeometry args={[size + cm(3), cm(1.2), size + cm(3)]} />
         <meshStandardMaterial color="#d9d4c8" roughness={0.7} />
       </mesh>
       {/*
@@ -172,8 +189,8 @@ function Board({ size, onPointerDown }: { size: number; onPointerDown: (e: Three
           WORLD_ROOT.position.copy(state.current.position)
         }}
       >
-        <mesh position={[0, -0.5, 0]}>
-          <boxGeometry args={[size + 0.8, 0.76, size + 0.8]} />
+        <mesh position={[0, -cm(1.2) - cm(2.5), 0]}>
+          <boxGeometry args={[size + cm(6), cm(5), size + cm(6)]} />
           <meshStandardMaterial color="#2c2f36" roughness={0.6} />
         </mesh>
       </GrabHandle>

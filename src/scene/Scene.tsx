@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from '@react-three/drei'
 import { useXR } from '@react-three/xr'
-import { useFrame, type ThreeEvent } from '@react-three/fiber'
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
+import { useEditor } from '../editor/settings'
 import { useWorld } from '../world/store'
 import { Ground } from '../editor/Ground'
 import { Obstacles } from '../editor/Obstacles'
@@ -11,12 +12,13 @@ import { tickDemo } from '../editor/demo'
 import { Robot } from '../agent/Robot'
 import { Route } from './Route'
 import { Lighting } from './Lighting'
-import { WORLD_ROOT, worldRootRef } from './worldRoot'
+import { SCALE_PRESETS, WORLD_ROOT, worldPlacement, worldRootRef } from './worldRoot'
 
 export function Scene() {
   const dragging = useWorld((s) => s.dragging)
   const inXR = useXR((s) => s.session != null)
   const mode = useXR((s) => s.mode)
+  const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
 
   // Mouse releases outside the canvas still end a drag.
   useEffect(() => {
@@ -33,6 +35,7 @@ export function Scene() {
     <>
       {mode !== 'immersive-ar' && <color attach="background" args={['#1d2433']} />}
       <Lighting />
+      <WorldScaler />
       {!inXR && <OrbitControls makeDefault enabled={!dragging} target={WORLD_ROOT.position} />}
 
       <group
@@ -40,7 +43,7 @@ export function Scene() {
           worldRootRef.current = g
         }}
         position={WORLD_ROOT.position}
-        scale={WORLD_ROOT.scale}
+        scale={ratio}
         onPointerMove={dragMove}
         onPointerUp={onUp}
       >
@@ -52,6 +55,35 @@ export function Scene() {
       </group>
     </>
   )
+}
+
+/**
+ * Places the world for the chosen scale preset relative to where you are: when the preset changes
+ * and when an XR session starts (your head is somewhere else once the headset is on).
+ * Writes WORLD_ROOT.position too, so re-renders and the map grab start from the same spot.
+ */
+function WorldScaler() {
+  const worldScale = useEditor((s) => s.worldScale)
+  const session = useXR((s) => s.session)
+  const camera = useThree((s) => s.camera)
+  const pending = useRef(true)
+  useEffect(() => {
+    pending.current = true
+  }, [worldScale, session])
+
+  // Wait a frame so the XR camera has its first head pose before placing.
+  useFrame(() => {
+    const root = worldRootRef.current
+    if (!pending.current || !root) return
+    pending.current = false
+    const head = camera.getWorldPosition(new THREE.Vector3())
+    const forward = camera.getWorldDirection(new THREE.Vector3())
+    const at = worldPlacement(worldScale, head, forward, useWorld.getState().robotStart)
+    root.position.copy(at)
+    root.quaternion.identity()
+    WORLD_ROOT.position.copy(at)
+  })
+  return null
 }
 
 /** Big invisible plane under the map so drags keep receiving moves past the map edge. */

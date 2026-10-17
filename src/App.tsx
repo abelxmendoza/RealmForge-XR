@@ -8,16 +8,20 @@ import { blockRoute } from './editor/demo'
 import { Inspector } from './editor/Inspector'
 import { cycleSelected, deleteSelected, duplicateSelected } from './editor/Obstacles'
 import { useEditor } from './editor/settings'
+import { bindRays, toggleRays } from './editor/xrInput'
+import { SCALE_IDS, SCALE_PRESETS, type ScaleId } from './scene/worldRoot'
 
 /**
- * No rays in XR: objects are grabbed directly. Hands keep the grab pointer (pinch/fist on contact) and the
- * touch pointer (poke buttons and the ground); controllers keep the grab pointer (grip on contact).
+ * By default no rays in XR: objects are grabbed directly. Hands keep the grab pointer (pinch/fist on contact)
+ * and the touch pointer (poke buttons and the ground); controllers keep the grab pointer (grip on contact).
+ * Rays can be switched on at any time (HUD, X key, wrist menu); see editor/xrInput.ts.
  * Every pointer still emits the same pointer events, so the editor doesn't care which is used.
  */
 export const xrStore = createXRStore({
-  hand: { rayPointer: false },
-  controller: { rayPointer: false },
+  hand: { rayPointer: useEditor.getState().rays },
+  controller: { rayPointer: useEditor.getState().rays },
 })
+bindRays(xrStore)
 
 const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'select', label: 'Select / move', key: '1' },
@@ -58,6 +62,8 @@ function Hud() {
   const status = useNav((s) => s.status)
   const replans = useNav((s) => s.replanCount)
   const snap = useEditor((s) => s.snap)
+  const worldScale = useEditor((s) => s.worldScale)
+  const rays = useEditor((s) => s.rays)
   return (
     <div className="hud">
       <div className="row">
@@ -83,7 +89,22 @@ function Hud() {
         <button className={snap ? 'on' : ''} onClick={() => useEditor.getState().set({ snap: !snap })}>
           G Snap
         </button>
+        <button className={rays ? 'on' : ''} onClick={toggleRays} title="XR pointer rays on hands and controllers">
+          X Rays
+        </button>
         <button onClick={() => useWorld.getState().reset()}>Reset</button>
+      </div>
+      <div className="row">
+        <label className="field">
+          Scale
+          <select value={worldScale} onChange={(e) => useEditor.getState().set({ worldScale: e.target.value as ScaleId })}>
+            {SCALE_IDS.map((id) => (
+              <option key={id} value={id}>
+                {SCALE_PRESETS[id].label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       <div className="status">
         {STATUS_TEXT[status]} · replans {replans}
@@ -91,7 +112,7 @@ function Hud() {
       <div className="help">
         Drag empty ground to orbit. Select: drag an object to move it, yellow handle resizes, blue handle rotates,
         green cube duplicates, purple cube changes style, red cube deletes.
-        Keys: R rotate 15°, [ ] height, D duplicate, M material/style, T roof, G snap, Del delete.
+        Keys: R rotate 15°, [ ] height, D duplicate, M material/style, T roof, G snap, X rays, Del delete.
       </div>
     </div>
   )
@@ -107,6 +128,7 @@ function useKeyboard() {
       if (tool) return w.setTool(tool.id)
       if (e.key === 'b' || e.key === 'B') return blockRoute()
       if (e.key === 'g' || e.key === 'G') return useEditor.getState().set({ snap: !useEditor.getState().snap })
+      if (e.key === 'x' || e.key === 'X') return toggleRays()
       const sel = w.selectedId ? w.objects[w.selectedId] : null
       if (!sel) return
       if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected()

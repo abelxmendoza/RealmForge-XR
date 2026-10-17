@@ -1,17 +1,56 @@
 import * as THREE from 'three'
-import type { Vec2 } from '../world/types'
+import { WORLD, type Vec2 } from '../world/types'
 
 /**
- * The map is drawn inside one group that turns map units into a tabletop miniature.
- * Store coordinates are always map-local; use groundPoint() to turn a pointer ray into one.
+ * The map is drawn inside one group that scales map units (metres) to the chosen view:
+ * a tabletop miniature up to life size. Store coordinates are always map-local;
+ * use groundPoint() to turn a pointer ray into one.
  */
+export type ScaleId = 'tabletop' | 'room' | 'large' | 'life'
+
+/** World scale relative to your room. ratio = real metres per map metre. */
+export const SCALE_PRESETS: Record<ScaleId, { label: string; ratio: number }> = {
+  tabletop: { label: 'Tabletop 1:60', ratio: 1 / 60 }, // ~1.3 m board on a table
+  room: { label: 'Room 1:20', ratio: 1 / 20 }, // ~4 m, on the floor
+  large: { label: 'Large 1:4', ratio: 1 / 4 }, // ~20 m, walk among knee-high buildings
+  life: { label: 'Life size 1:1', ratio: 1 }, // stand next to real doorways
+}
+export const SCALE_IDS = Object.keys(SCALE_PRESETS) as ScaleId[]
+
+/** Board height when it sits on a table. */
+export const TABLE_HEIGHT = 0.8
+
 export const WORLD_ROOT = {
-  position: new THREE.Vector3(0, 0.8, -1.1),
-  // 1:60 tabletop: the 80 m life-size map becomes a ~1.3 m board.
-  scale: 1 / 60,
+  position: new THREE.Vector3(0, TABLE_HEIGHT, -1.1),
+  scale: SCALE_PRESETS.tabletop.ratio,
 }
 
 export const worldRootRef: { current: THREE.Group | null } = { current: null }
+
+/** Whether the world sits on a table (true) or on your floor (false) at this scale. */
+export const onTable = (ratio: number) => ratio < SCALE_PRESETS.room.ratio
+
+/**
+ * Size in map units for something that should look about `tabletopReal` metres big at tabletop
+ * and grow gently toward life size (handles, markers). Keeps controls reachable at every scale.
+ */
+export const uiSize = (ratio: number, tabletopReal = 0.03) => (tabletopReal + 0.2 * ratio) / ratio
+
+/**
+ * Where to put the world for a scale preset, given the viewer's head position and facing.
+ * On a table: centred ahead at table height. On the floor: small scales sit just ahead of you;
+ * large and life size put `anchor` (the robot start) 1.5 m in front of you, so you begin next to it.
+ */
+export function worldPlacement(id: ScaleId, head: THREE.Vector3, forward: THREE.Vector3, anchor: Vec2): THREE.Vector3 {
+  const ratio = SCALE_PRESETS[id].ratio
+  const f = forward.clone().setY(0)
+  if (f.lengthSq() < 1e-6) f.set(0, 0, -1)
+  f.normalize()
+  const halfReal = WORLD.half * ratio
+  if (onTable(ratio)) return new THREE.Vector3(head.x, TABLE_HEIGHT, head.z).addScaledVector(f, halfReal + 0.45)
+  if (id === 'room') return new THREE.Vector3(head.x, 0, head.z).addScaledVector(f, halfReal + 0.5)
+  return new THREE.Vector3(head.x - anchor[0] * ratio, 0, head.z - anchor[1] * ratio).addScaledVector(f, 1.5)
+}
 
 const plane = new THREE.Plane()
 const hit = new THREE.Vector3()

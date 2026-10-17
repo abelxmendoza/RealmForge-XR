@@ -5,6 +5,8 @@ import type * as THREE from 'three'
 import { useWorld } from '../world/store'
 import { useNav } from '../nav/navigation'
 import type { Vec2 } from '../world/types'
+import { useEditor } from '../editor/settings'
+import { SCALE_PRESETS } from './worldRoot'
 
 const Y = 0.08
 const lift = (pts: Vec2[]) => pts.map(([x, z]) => [x, Y, z] as [number, number, number])
@@ -18,6 +20,9 @@ export function Route() {
   const goal = useWorld((s) => s.goal)
   const blockedRef = useRef<THREE.Group>(null)
   const flag = useRef<THREE.Group>(null)
+  // The goal flag is 1.4 m tall; at small world scales it grows so it stays at least ~3 cm in the room.
+  const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
+  const marker = Math.max(1, 0.03 / (1.4 * ratio))
 
   useFrame((state) => {
     if (blockedRef.current) blockedRef.current.visible = performance.now() - blockedAt < 1500
@@ -33,7 +38,7 @@ export function Route() {
         </group>
       )}
       {goal && (
-        <group position={[goal[0], 0, goal[1]]}>
+        <group position={[goal[0], 0, goal[1]]} scale={marker}>
           <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[0.35, 0.55, 32]} />
             <meshBasicMaterial color={status === 'no-path' ? '#ef476f' : '#06d6a0'} />
