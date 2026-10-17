@@ -35,7 +35,19 @@ export function Scene() {
     <>
       {mode !== 'immersive-ar' && <color attach="background" args={[background]} />}
       <Lighting />
-      {!inXR && <OrbitControls makeDefault enabled={!dragging} target={WORLD_ROOT.position} />}
+      {/* Right-click is reserved for the desktop context menu; middle-drag pans. */}
+      {!inXR && (
+        <OrbitControls
+          makeDefault
+          enabled={!dragging}
+          target={WORLD_ROOT.position}
+          mouseButtons={{
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.PAN,
+            RIGHT: -1 as THREE.MOUSE,
+          }}
+        />
+      )}
 
       <group
         ref={(g) => {

@@ -6,6 +6,7 @@ import { useWorld, type Tool } from './world/store'
 import { useNav } from './nav/navigation'
 import { blockRoute } from './editor/demo'
 import { Inspector } from './editor/Inspector'
+import { DesktopContextMenu } from './editor/DesktopContextMenu'
 import { cycleSelected, deleteSelected, duplicateSelected } from './editor/Obstacles'
 import { useEditor } from './editor/settings'
 import { importWorld, quickSave, useWorldLibrary } from './world/persistence'
@@ -43,6 +44,7 @@ export default function App() {
       </Canvas>
       <Hud />
       <Inspector />
+      <DesktopContextMenu />
     </>
   )
 }
@@ -122,7 +124,8 @@ function Hud() {
         {dirty ? ' · unsaved' : ''}
       </div>
       <div className="help">
-        Drag empty ground to orbit. Select: drag an object to move it, yellow handle resizes, blue handle rotates,
+        Drag empty ground to orbit (middle-drag pans). Right-click for the actions menu.
+        Select: drag an object to move it, yellow handle resizes, blue handle rotates,
         green cube duplicates, purple cube changes style, red cube deletes.
         Keys: R rotate 15°, [ ] height, D duplicate, M material/style, T roof, G snap, Del delete.
         Ctrl+S save, Ctrl+Z / Ctrl+Shift+Z undo/redo. Drop a .json world file to import.

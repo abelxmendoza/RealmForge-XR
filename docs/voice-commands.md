@@ -197,7 +197,7 @@ Demo remains usable when AssemblyAI is missing, mic is denied, or the network dr
 - “Stop navigation” is intentionally unsupported until a safe stop API exists.
 - Token proxy is Vite-dev middleware; production hosting needs an equivalent serverless/proxy route.
 - Quest mic + WebXR session behavior not yet validated on hardware.
-- Desktop UI chrome for PTT is not wired into `App.tsx` (avoids teammate merge conflicts) — use the hook or mock submitter.
+- Desktop: right-click the canvas for **World actions** (tools, save/undo, environments, voice). Orbit pans with middle-drag; right-click is reserved for the menu.
 
 ## Tests
 
