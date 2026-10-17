@@ -24,3 +24,21 @@ html, body, #root { margin: 0; height: 100%; background: #1d2433; font-family: s
 .inspector .hint { margin: 0; font-size: 11px; opacity: 0.7; }
 .inspector .tag { font-size: 10px; font-weight: normal; padding: 1px 6px; border-radius: 10px; background: #06d6a033; color: #7ef0c8; }
 .inspector .tag.block { background: #ef476f33; color: #ff9bb3; }
+.inspector input[type='text'] { background: #2d3748; color: #eee; border: 1px solid #4a5568; border-radius: 4px; padding: 3px 4px; font-size: 12px; width: 150px; }
+.inspector ul.worlds { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; }
+.inspector ul.worlds li { display: flex; align-items: center; gap: 4px; }
+.inspector ul.worlds li span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inspector ul.worlds li.active span { color: #f4a261; }
+.inspector ul.worlds button { padding: 2px 6px; font-size: 11px; }
+.inspector { max-height: calc(100vh - 24px); overflow-y: auto; }
+.inspector section.drop-target { outline: 1px dashed #f4a261; outline-offset: 2px; }
+.dirty-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: #f4a261;
+  vertical-align: middle;
+}
+.hud strong { display: inline-flex; align-items: center; }

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { XR, createXRStore } from '@react-three/xr'
 import { Scene } from './scene/Scene'
@@ -8,6 +8,8 @@ import { blockRoute } from './editor/demo'
 import { Inspector } from './editor/Inspector'
 import { cycleSelected, deleteSelected, duplicateSelected } from './editor/Obstacles'
 import { useEditor } from './editor/settings'
+import { importWorld, quickSave, useWorldLibrary } from './world/persistence'
+import { redo, undo, subscribeHistory } from './world/history'
 
 /** Hands and controllers both emit the same pointer events, so the editor doesn't care which is used. */
 export const xrStore = createXRStore()
@@ -31,6 +33,7 @@ const STATUS_TEXT = {
 
 export default function App() {
   useKeyboard()
+  useJsonFileDrop()
   return (
     <>
       <Canvas shadows="percentage" camera={{ position: [0, 2.0, 0.2], fov: 50 }}>
@@ -44,6 +47,33 @@ export default function App() {
   )
 }
 
+/** Drop a `.realmforge.json` / `.json` world file anywhere on the page to import it. */
+function useJsonFileDrop() {
+  useEffect(() => {
+    const onDragOver = (e: DragEvent) => {
+      if (!e.dataTransfer?.types.includes('Files')) return
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+    }
+    const onDrop = async (e: DragEvent) => {
+      const files = e.dataTransfer?.files
+      if (!files?.length) return
+      const file = [...files].find((f) => /\.json$/i.test(f.name) || f.type === 'application/json')
+      if (!file) return
+      e.preventDefault()
+      const r = await importWorld(file)
+      if (!r.ok && !r.cancelled) console.warn('[RealmForge] import drop failed:', r.error)
+      else if (r.ok) console.log('[RealmForge] imported', file.name, r.warnings)
+    }
+    window.addEventListener('dragover', onDragOver)
+    window.addEventListener('drop', onDrop)
+    return () => {
+      window.removeEventListener('dragover', onDragOver)
+      window.removeEventListener('drop', onDrop)
+    }
+  }, [])
+}
+
 function Hud() {
   const tool = useWorld((s) => s.tool)
   const setTool = useWorld((s) => s.setTool)
@@ -51,10 +81,16 @@ function Hud() {
   const status = useNav((s) => s.status)
   const replans = useNav((s) => s.replanCount)
   const snap = useEditor((s) => s.snap)
+  const dirty = useWorldLibrary((s) => s.dirty)
+  const [hist, setHist] = useState({ canUndo: false, canRedo: false })
+  useEffect(() => subscribeHistory((s) => setHist({ canUndo: s.canUndo, canRedo: s.canRedo })), [])
   return (
     <div className="hud">
       <div className="row">
-        <strong>RealmForge XR</strong>
+        <strong>
+          RealmForge XR
+          {dirty ? <span className="dirty-dot" title="Unsaved changes" /> : null}
+        </strong>
         <button onClick={() => xrStore.enterAR()}>Enter AR</button>
         <button onClick={() => xrStore.enterVR()}>Enter VR</button>
       </div>
@@ -76,15 +112,23 @@ function Hud() {
         <button className={snap ? 'on' : ''} onClick={() => useEditor.getState().set({ snap: !snap })}>
           G Snap
         </button>
+        <button disabled={!hist.canUndo} onClick={() => undo()} title="Ctrl+Z">
+          Undo
+        </button>
+        <button disabled={!hist.canRedo} onClick={() => redo()} title="Ctrl+Shift+Z">
+          Redo
+        </button>
         <button onClick={() => useWorld.getState().reset()}>Reset</button>
       </div>
       <div className="status">
         {STATUS_TEXT[status]} · replans {replans}
+        {dirty ? ' · unsaved' : ''}
       </div>
       <div className="help">
         Drag empty ground to orbit. Select: drag an object to move it, yellow handle resizes, blue handle rotates,
         green cube duplicates, purple cube changes style, red cube deletes.
         Keys: R rotate 15°, [ ] height, D duplicate, M material/style, T roof, G snap, Del delete.
+        Ctrl+S save, Ctrl+Z / Ctrl+Shift+Z undo/redo. Drop a .json world file to import.
       </div>
     </div>
   )
@@ -95,6 +139,27 @@ function useKeyboard() {
     const onKey = (e: KeyboardEvent) => {
       // Typing into the inspector's fields must not trigger shortcuts.
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) return
+
+      const mod = e.ctrlKey || e.metaKey
+      if (mod && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault()
+        void quickSave().then((r) => {
+          if (!r.ok && !r.cancelled) console.warn('[RealmForge] save failed:', r.error)
+        })
+        return
+      }
+      if (mod && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault()
+        if (e.shiftKey) redo()
+        else undo()
+        return
+      }
+      if (mod && (e.key === 'y' || e.key === 'Y')) {
+        e.preventDefault()
+        redo()
+        return
+      }
+
       const w = useWorld.getState()
       const tool = TOOLS.find((t) => t.key === e.key)
       if (tool) return w.setTool(tool.id)
