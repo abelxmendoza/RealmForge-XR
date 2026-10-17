@@ -15,6 +15,16 @@ npm run build
 On the Quest 3S, open `https://<laptop-LAN-IP>:5173` in the Quest Browser, accept the self-signed
 certificate, then press **Enter AR** (passthrough) or **Enter VR**.
 
+## Environment variables
+
+Shared secrets live in `.env`, committed **encrypted** with [dotenvx](https://dotenvx.com).
+`npm run dev` decrypts it automatically, as long as you have the private key.
+
+- One-time setup: get `DOTENV_PRIVATE_KEY` from Abel (sent privately, never in git) and put it in a
+  file named `.env.keys` in the repo root (`DOTENV_PRIVATE_KEY="..."`), or export it in your shell.
+- Add or change a variable: `npm run env:set -- NAME value`, then commit `.env`. Teammates get it on pull.
+- `.env.keys` and `*.local` are gitignored. Never commit the private key.
+
 ## Controls
 
 Every control is a pointer event, so mouse, controller rays and hand rays behave the same.
