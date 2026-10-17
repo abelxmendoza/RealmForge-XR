@@ -9,8 +9,15 @@ import { Inspector } from './editor/Inspector'
 import { cycleSelected, deleteSelected, duplicateSelected } from './editor/Obstacles'
 import { useEditor } from './editor/settings'
 
-/** Hands and controllers both emit the same pointer events, so the editor doesn't care which is used. */
-export const xrStore = createXRStore()
+/**
+ * No rays in XR: objects are grabbed directly. Hands keep the grab pointer (pinch/fist on contact) and the
+ * touch pointer (poke buttons and the ground); controllers keep the grab pointer (grip on contact).
+ * Every pointer still emits the same pointer events, so the editor doesn't care which is used.
+ */
+export const xrStore = createXRStore({
+  hand: { rayPointer: false },
+  controller: { rayPointer: false },
+})
 
 const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'select', label: 'Select / move', key: '1' },

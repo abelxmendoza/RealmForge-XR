@@ -40,6 +40,10 @@ npm install
 npm run dev
 ```
 
+`npm run dev` goes through dotenvx. Without Abel's `.env.keys` it prints
+`[DECRYPTION_FAILED] could not decrypt …` and still starts; only the encrypted secrets are missing,
+and nothing in the editor needs them yet. On Windows PowerShell, use `npm.cmd` if script execution is disabled.
+
 The dev server is HTTPS (self-signed, via `@vitejs/plugin-basic-ssl`) on port 5173. Choose one:
 
 - **USB with adb (recommended).** Install Meta Quest Developer Hub, or Android platform-tools plus
@@ -109,6 +113,23 @@ Then on the Quest 3S, also check:
 - [ ] Panel shows **✔ mesh-detection** and **✔ depth-sensing** (session `full (with depth)`)
 - [ ] Objects snap onto the scanned room mesh (snap label `mesh:…`)
 - [ ] Real hands and furniture hide virtual objects behind them (depth occlusion)
+
+## Hand grab in the RealmForge app (`/`)
+
+Open `/` (not `/xr-test/`), press **Enter AR**, and keep the **Select** tool on. No rays should appear
+from your hands or controllers. Gestures are listed in the README under *Hand grab in XR*.
+
+- [ ] No pointer rays from hands or controllers
+- [ ] Pinch or fist on a building picks it up (it gets the selection outline) and it follows your hand
+- [ ] Object stays on the ground and inside the map while held
+- [ ] Twisting your wrist turns it; with snap on (G) it steps in 15°
+- [ ] With snap on, position steps along the grid; with snap off it moves freely
+- [ ] Second hand on the same object: pulling apart and together scales it uniformly; sizes step with snap on
+- [ ] One-hand grab never changes the object's size
+- [ ] Robot replans while you move a wall across its route
+- [ ] Fingertip poke still hits the green, purple and red buttons and places objects with the other tools
+- [ ] Controller: squeeze the grip while touching an object grabs it the same way
+- [ ] Small objects (trees, crates) are still grabbable
 
 ## Debugging
 

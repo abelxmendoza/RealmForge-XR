@@ -34,7 +34,8 @@ Shared secrets live in `.env`, committed **encrypted** with [dotenvx](https://do
 
 ## Controls
 
-Every control is a pointer event, so mouse, controller rays and hand rays behave the same.
+Every control is a pointer event, so the mouse and XR hands and controllers behave the same.
+In XR there are no rays: you reach out and touch things (see [Hand grab in XR](#hand-grab-in-xr)).
 
 | Tool (key) | What it does |
 | --- | --- |
@@ -51,7 +52,23 @@ Every control is a pointer event, so mouse, controller rays and hand rays behave
 
 A selected object shows drag handles (yellow sphere resizes, blue sphere rotates) and press
 buttons (green cube duplicates, purple cube cycles material/style, red cube deletes). They are
-ordinary pointer targets, so they work with controller and hand rays too.
+ordinary pointer targets: click them on desktop, poke them with a fingertip or grip them with a controller in XR.
+
+### Hand grab in XR
+
+With the **Select** tool, grab an object directly with your hand (pinch or close your fist on it)
+or with a controller (squeeze the grip while touching it). No rays are used.
+
+| Gesture | What it does |
+| --- | --- |
+| One hand: grab and move | Slides the object across the map; it stays on the ground |
+| One hand: twist your wrist | Turns the object (yaw only) |
+| Second hand grabs the same object | Two-hand rotate; pull hands apart or together to scale uniformly |
+| Release | The object stays where you left it; the robot replans |
+
+Snapping (G) applies while you hold the object: position snaps so footprint edges land on the 0.5-unit
+grid, yaw to 15°, width and depth to 0.5 and height to 0.25. A one-hand grab never resizes an object.
+The grab logic lives in `src/editor/grab.ts` and uses `@react-three/handle` for the hand tracking math.
 
 The **inspector** (top right, desktop) sets exact dimensions, material, building style and roof,
 picks what the creation tools place, toggles snapping, and loads the **Forge District** demo city.

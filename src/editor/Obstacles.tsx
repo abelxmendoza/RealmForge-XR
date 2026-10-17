@@ -1,4 +1,7 @@
+import { useRef } from 'react'
+import * as THREE from 'three'
 import type { ThreeEvent } from '@react-three/fiber'
+import { Handle as GrabHandle, type HandleState } from '@react-three/handle'
 import { clampToWorld, useWorld } from '../world/store'
 import type { Vec2, WorldObject } from '../world/types'
 import { snapAngle, snapFootprint, snapSize } from '../world/snap'
@@ -6,9 +9,16 @@ import { cycleVariant } from '../world/catalog'
 import { groundPoint } from '../scene/worldRoot'
 import { SelectionOutline, Structure } from '../scene/structures'
 import { beginDrag } from './drag'
+import { MIN_SIZE, grabPatch, samePatch, type GrabPatch } from './grab'
 import { useEditor } from './settings'
 
-const MIN_SIZE = 0.4
+/** What a hand grab remembers between frames: the object as grabbed, and the last patch sent. */
+interface GrabMemo {
+  base: WorldObject
+  last?: GrabPatch
+}
+
+const yawOf = new THREE.Euler()
 
 /** Map-local rotation helpers. three.js yaw θ maps local +x to (cos θ, −sin θ) on the ground. */
 const toWorld = (o: WorldObject, lx: number, lz: number): Vec2 => {
@@ -55,6 +65,33 @@ function Obstacle({ o }: { o: WorldObject }) {
   const selected = useWorld((s) => s.selectedId === o.id)
   const tool = useWorld((s) => s.tool)
   const [w, h, d] = o.size
+  const groupRef = useRef<THREE.Group>(null)
+
+  /**
+   * Hand / controller-grip grab (XR grab pointers only; rays and the mouse use onDown below).
+   * One hand moves the object on the map and wrist twist turns it; a second hand adds
+   * two-hand rotate and uniform scale. The store is the source of truth, so the target is never mutated.
+   */
+  const onGrab = (state: HandleState<GrabMemo>): GrabMemo => {
+    const world = useWorld.getState()
+    const memo = state.memo ?? { base: world.objects[o.id] ?? o }
+    if (state.first) {
+      world.select(o.id)
+      world.setDragging(true)
+    }
+    const { position, quaternion, scale } = state.current
+    const patch = grabPatch(
+      memo.base,
+      { x: position.x, z: position.z, rotationY: yawOf.setFromQuaternion(quaternion, 'YXZ').y, scale: scale.x },
+      useEditor.getState().snap,
+    )
+    if (!samePatch(memo.last, patch)) {
+      world.updateObject(o.id, patch)
+      memo.last = patch
+    }
+    if (state.last) world.setDragging(false)
+    return memo
+  }
 
   const onDown = (e: ThreeEvent<PointerEvent>) => {
     if (tool !== 'select') return
@@ -119,9 +156,18 @@ function Obstacle({ o }: { o: WorldObject }) {
   const bz = Math.max(d / 2, 0.7)
   const top = h + 0.35
   return (
-    <group position={o.position} rotation={[0, o.rotationY, 0]}>
+    <group ref={groupRef} position={o.position} rotation={[0, o.rotationY, 0]}>
       <group onPointerDown={onDown}>
-        <Structure o={o} />
+        <GrabHandle
+          targetRef={groupRef}
+          filter={(e) => e.pointerType === 'grab' && useWorld.getState().tool === 'select'}
+          translate={{ y: false }}
+          rotate="y"
+          scale={{ uniform: true }}
+          apply={(state) => onGrab(state as HandleState<GrabMemo>)}
+        >
+          <Structure o={o} />
+        </GrabHandle>
       </group>
       {selected && (
         <>
