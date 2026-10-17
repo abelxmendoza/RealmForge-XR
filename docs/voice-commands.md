@@ -103,6 +103,25 @@ Encrypted dotenvx does **not** make a `VITE_*` key safe for the browser.
 | “Reset selection” | `CLEAR_SELECTION` | Clears selection |
 | “Delete selected object” | `DELETE_SELECTED` | Deletes selection (**confirm required**) |
 
+### RealmForge Flow (routes)
+
+Voice chooses the action; the desktop cursor / XR pointer supplies coordinates. Speech never invents positions.
+
+| Spoken example | Command | Action |
+| --- | --- | --- |
+| “Create a new route” | `FLOW_CREATE_ROUTE` | Start waypoint draft |
+| “Add waypoint here” | `FLOW_ADD_WAYPOINT` | Add at current pointer |
+| “Finish route” / “Cancel route” | `FLOW_FINISH_ROUTE` / `FLOW_CANCEL_ROUTE` | Save or discard draft |
+| “Recalculate all routes” | `FLOW_RECALCULATE` | Revalidate vs geometry |
+| “Show routes” / “Hide routes” | `FLOW_SHOW_ROUTES` / `FLOW_HIDE_ROUTES` | Overlay toggle |
+| “Pause all agents” / “Resume simulation” | `FLOW_PAUSE` / `FLOW_RESUME` | Pause flag |
+| “Assign route” | `FLOW_ASSIGN_ROBOT` | Selected / first route → robot |
+| “Clear the selected route” | `FLOW_CLEAR_ROUTE` | Delete (**confirm required**) |
+| “Avoid the main aisle” / “One-way path” | `FLOW_AVOID_AREA` / `FLOW_MAKE_ONE_WAY` | Zone at pointer |
+| “Route tool” | `SELECT_TOOL` | `route` |
+
+See `docs/realmforge-flow.md`.
+
 ### Making and moving objects
 
 Parsed by `src/voice/objectCommands.ts`, executed through `src/world/spawn.ts` (store actions only, so navigation replans and each command is one undo step).

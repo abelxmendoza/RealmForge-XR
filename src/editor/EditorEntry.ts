@@ -1,5 +1,6 @@
 import { startActors } from '../actors/runtime'
 import App from '../App'
+import { startFlow } from '../flow/controller'
 import { startNavigation } from '../nav/navigation'
 import { installHistory } from '../world/history'
 import { installDirtyTracking } from '../world/persistence'
@@ -20,6 +21,7 @@ export async function initializeEditor(world?: LandingWorldId) {
     if (!result.ok) throw new Error(result.error)
   }
   startNavigation()
+  startFlow()
   startActors()
   installHistory()
   installDirtyTracking()

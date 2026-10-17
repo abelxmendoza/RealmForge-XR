@@ -1,4 +1,6 @@
 import { worldActions } from '../world/actions'
+import { flowActions } from '../flow/actions'
+import { useFlow } from '../flow/store'
 import { SelectionOutline } from '../scene/structures'
 import { useState } from 'react'
 import * as THREE from 'three'
@@ -79,11 +81,19 @@ export function Ground() {
     const p = groundPoint(e)
     if (!p) return
     const raw: Vec2 = [clampToWorld(p[0]), clampToWorld(p[1])]
+    flowActions.setPointerTarget(raw)
     const w = useWorld.getState()
     switch (tool) {
       case 'select':
         w.select(null)
         return
+      case 'route': {
+        e.stopPropagation()
+        const at = placePoint(raw)
+        if (!useFlow.getState().draft) flowActions.beginRoute('waypoint')
+        flowActions.addWaypoint(at)
+        return
+      }
       case 'goal':
         e.stopPropagation()
         if (w.selectedActorId) {
@@ -110,8 +120,21 @@ export function Ground() {
       case 'building':
       case 'decor': {
         e.stopPropagation()
-        const id = w.addObject(objectForTool(tool, placePoint(raw)))
+        const draftObj = objectForTool(tool, placePoint(raw))
+        const check = flowActions.validatePlacement(draftObj)
+        if (check.reject) {
+          setPlacementError(true)
+          useEditor.getState().set({
+            actorMessage: flowActions.placementMessage(check, [draftObj.position[0], draftObj.position[2]]),
+          })
+          return
+        }
+        if (check.reasons.length) {
+          useEditor.getState().set({ actorMessage: flowActions.placementMessage(check) })
+        }
+        const id = w.addObject(draftObj)
         w.select(id)
+        setPlacementError(false)
         return
       }
       case 'event': {
@@ -120,8 +143,20 @@ export function Ground() {
         const catalogId = useEditor.getState().eventCatalogId
         const prop = propFromCatalog(catalogId, [at[0], 0, at[1]])
         if (!prop) return
+        const check = flowActions.validatePlacement(prop)
+        if (check.reject) {
+          setPlacementError(true)
+          useEditor.getState().set({
+            actorMessage: flowActions.placementMessage(check, at),
+          })
+          return
+        }
+        if (check.reasons.length) {
+          useEditor.getState().set({ actorMessage: flowActions.placementMessage(check) })
+        }
         const id = w.addObject(prop)
         w.select(id)
+        setPlacementError(false)
         return
       }
       case 'wall':
@@ -162,9 +197,15 @@ export function Ground() {
   return (
     <>
       <Board size={size} onPointerDown={onDown} onPointerMove={(e) => {
-        if (tool !== 'asset' && tool !== 'actor') return
         const point = groundPoint(e)
-        if (point) { setHover(point); setPlacementError(false) }
+        if (point) {
+          const clamped: Vec2 = [clampToWorld(point[0]), clampToWorld(point[1])]
+          flowActions.setPointerTarget(clamped)
+          if (tool === 'asset' || tool === 'actor' || tool === 'building' || tool === 'event') {
+            setHover(clamped)
+            setPlacementError(false)
+          }
+        }
       }} onPointerOut={() => setHover(null)} />
       {preview && <group position={preview.object.position} rotation={[0, preview.object.rotationY, 0]}>
         <mesh position={[0, preview.object.size[1] / 2, 0]} raycast={() => null}>

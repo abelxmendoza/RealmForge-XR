@@ -2,7 +2,7 @@ import { cloneActor, type Actor } from '../actors/types'
 import { create } from 'zustand'
 import { WORLD, type ObjectKind, type Vec2, type Vec3, type WorldObject } from './types'
 
-export type Tool = 'select' | 'wall' | 'building' | 'platform' | 'decor' | 'event' | 'goal' | 'robot' | 'asset' | 'actor'
+export type Tool = 'select' | 'wall' | 'building' | 'platform' | 'decor' | 'event' | 'goal' | 'robot' | 'asset' | 'actor' | 'route'
 
 /** A whole world: what presets provide and loadWorld() installs. */
 export interface WorldSnapshot {

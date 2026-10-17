@@ -1,4 +1,6 @@
 import { actorsForSave } from '../actors/runtime'
+import { flowSnapshot, loadFlowSnapshot } from '../flow/controller'
+import { useFlow } from '../flow/store'
 import { useEnvironment } from './environment'
 import { confirmReplace } from './confirmation'
 import { create } from 'zustand'
@@ -70,11 +72,21 @@ export const useWorldLibrary = create<LibraryState>(() => ({
 export function worldFingerprint(): string {
   const { objects, robotStart, goal } = useWorld.getState()
   const ids = Object.keys(objects).sort()
+  const flow = flowSnapshot()
   return JSON.stringify({
     objects: ids.map((id) => objects[id]),
     robotStart,
     goal,
     actors: Object.values(useWorld.getState().actors).sort((a, b) => a.id.localeCompare(b.id)),
+    routes: flow.routes.map((r) => ({
+      id: r.id,
+      name: r.name,
+      mode: r.mode,
+      waypoints: r.waypoints,
+      assignedAgentIds: r.assignedAgentIds,
+      visible: r.visible,
+    })),
+    trafficZones: flow.trafficZones,
   })
 }
 
@@ -98,9 +110,11 @@ export function installDirtyTracking(): () => void {
   dirtyListening = true
   // Baseline = whatever is in the store at boot (default starter world).
   markClean()
-  const unsub = useWorld.subscribe(() => refreshDirty())
+  const unsubWorld = useWorld.subscribe(() => refreshDirty())
+  const unsubFlow = useFlow.subscribe(() => refreshDirty())
   return () => {
-    unsub()
+    unsubWorld()
+    unsubFlow()
     dirtyListening = false
   }
 }
@@ -142,7 +156,18 @@ const newSaveId = () => `w${Date.now().toString(36)}${Math.random().toString(36)
 /** The active world as a WorldFile (what save and export write). */
 export function currentWorldFile(name = useWorldLibrary.getState().activeName): WorldFile {
   const { objects, robotStart, goal } = useWorld.getState()
-  const file = serializeWorld({ objects, robotStart, goal, actors: actorsForSave() }, name)
+  const flow = flowSnapshot()
+  const file = serializeWorld(
+    {
+      objects,
+      robotStart,
+      goal,
+      actors: actorsForSave(),
+      routes: flow.routes,
+      trafficZones: flow.trafficZones,
+    },
+    name,
+  )
   const environmentId = useEnvironment.getState().activeId
   return environmentId ? { ...file, environmentId } : file
 }
@@ -167,6 +192,7 @@ function applyWorld(world: ParsedWorld, activeId: string | null) {
   withHistorySuppressed(() => {
     useWorld.getState().loadWorld(world)
   })
+  loadFlowSnapshot(world.flow ?? { routes: [], trafficZones: [] })
   clearHistory()
   useEnvironment.getState().setActive(world.environmentId ?? null)
   useWorldLibrary.setState({ activeId, activeName: world.name })

@@ -14,6 +14,7 @@ import { dragMove, endDrag } from '../editor/drag'
 import { tickDemo } from '../editor/demo'
 import { Robot } from '../agent/Robot'
 import { Attendee, AttendeeRoute } from '../sim/Attendee'
+import { FlowOverlay } from '../flow/RouteOverlay'
 import { Route } from './Route'
 import { Lighting } from './Lighting'
 import { ThumbnailCapture } from './ThumbnailCapture'
@@ -104,6 +105,7 @@ export function Scene() {
           <Ground />
           <Obstacles />
           <Route />
+          <FlowOverlay />
           <Robot />
           <AttendeeRoute />
           <Attendee />

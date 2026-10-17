@@ -2,6 +2,9 @@ import { ConfirmationDialog } from './editor/ConfirmationDialog'
 import { ControlsGuide } from './editor/ControlsGuide'
 import { VoicePanel } from './editor/VoicePanel'
 import { useGuide } from './guide/guideStore'
+import { flowActions } from './flow/actions'
+import { loadFlowSnapshot } from './flow/controller'
+import { useFlow } from './flow/store'
 import { worldActions } from './world/actions'
 import { confirmReplace } from './world/confirmation'
 import { enterARWithFallback, useXRSessionMeta } from './xr/session'
@@ -47,6 +50,7 @@ const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'asset', label: 'Catalog object', key: '8' },
   { id: 'actor', label: 'Actor', key: '9' },
   { id: 'event', label: 'Event object', key: '0' },
+  { id: 'route', label: 'Route / Flow', key: 'p' },
 ]
 
 const STATUS_TEXT = {
@@ -239,7 +243,10 @@ function Hud() {
             type="button"
             className="ghost"
             onClick={async () => {
-              if (await confirmReplace('Reset the current world?')) useWorld.getState().reset()
+              if (await confirmReplace('Reset the current world?')) {
+                useWorld.getState().reset()
+                loadFlowSnapshot({ routes: [], trafficZones: [] })
+              }
             }}
           >
             Reset
@@ -320,7 +327,17 @@ function useKeyboard() {
       }
 
       const w = useWorld.getState()
-      const tool = TOOLS.find((t) => t.key === e.key)
+      if (e.key === 'Enter' && useFlow.getState().draft) {
+        e.preventDefault()
+        flowActions.finishRoute()
+        return
+      }
+      if (e.key === 'Escape' && useFlow.getState().draft) {
+        e.preventDefault()
+        flowActions.cancelRoute()
+        return
+      }
+      const tool = TOOLS.find((t) => t.key === e.key || t.key === e.key.toLowerCase())
       if (tool) return worldActions.setTool(tool.id)
       if (e.key === 'b' || e.key === 'B') return blockRoute()
       if (e.key === 'g' || e.key === 'G') return useEditor.getState().set({ snap: !useEditor.getState().snap })

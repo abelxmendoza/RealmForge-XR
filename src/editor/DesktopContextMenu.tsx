@@ -37,6 +37,7 @@ const TOOLS: { id: Tool; label: string }[] = [
   { id: 'robot', label: 'Place robot' },
   { id: 'platform', label: 'Platform / road' },
   { id: 'decor', label: 'Decoration' },
+  { id: 'route', label: 'Route / Flow' },
 ]
 
 function isEditableTarget(t: EventTarget | null): boolean {

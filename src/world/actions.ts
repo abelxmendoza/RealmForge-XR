@@ -1,5 +1,6 @@
 import { selectActorKind, previewActor, placeActor, selectActor, updateActor, setActorGoal, sendActorToDestination, duplicateActor, removeActor } from '../actors/actions'
 export { selectActorKind, previewActor, placeActor, selectActor, updateActor, setActorGoal, sendActorToDestination, duplicateActor, removeActor } from '../actors/actions'
+import { loadFlowSnapshot } from '../flow/controller'
 import { selectCatalogAsset, rotateCatalogAsset, previewCatalogAsset, placeCatalogAsset, listDestinations, sendRobotToDestination } from './assetActions'
 export { selectCatalogAsset, rotateCatalogAsset, previewCatalogAsset, placeCatalogAsset, listDestinations, sendRobotToDestination } from './assetActions'
 /**
@@ -120,6 +121,8 @@ export function duplicateObject(id: string): string | null {
 /** Low-level world replace — caller must have already confirmed if needed. */
 export function applyWorldSnapshot(world: WorldSnapshot): void {
   useWorld.getState().loadWorld(world)
+  // Snapshots without Flow data clear planning state so routes never orphan across loads.
+  loadFlowSnapshot({ routes: [], trafficZones: [] })
 }
 
 // ---------- Robot ----------

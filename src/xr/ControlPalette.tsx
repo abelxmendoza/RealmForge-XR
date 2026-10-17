@@ -105,7 +105,7 @@ function PaletteContent() {
 
   let buttons: Button[] = []
   if (page === 'Tools') {
-    buttons = ([['select', 'Select / move'], ['building', 'Building'], ['wall', 'Wall'], ['platform', 'Road / platform'], ['decor', 'Decoration'], ['robot', 'Place robot'], ['goal', 'Set destination']] as const)
+    buttons = ([['select', 'Select / move'], ['building', 'Building'], ['wall', 'Wall'], ['platform', 'Road / platform'], ['decor', 'Decoration'], ['robot', 'Place robot'], ['goal', 'Set destination'], ['route', 'Route / Flow']] as const)
       .map(([id, label]) => ({ label, active: tool === id, run: () => worldActions.setTool(id) }))
     buttons.push({ label: snap ? 'Snap: on' : 'Snap: off', active: snap, run: () => useEditor.getState().set({ snap: !snap }) },
       { label: 'Block robot route', run: blockRoute },

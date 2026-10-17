@@ -31,6 +31,7 @@ import { WorldLibrary, openWorldLibrary } from './WorldLibrary'
 import { useEditor, type DecorKind } from './settings'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 import { SimulationPanel } from '../sim/SimulationPanel'
+import { FlowPanel } from '../flow/FlowPanel'
 
 /**
  * Desktop side panel for worldbuilding: exact dimensions and looks for the selected object,
@@ -43,6 +44,7 @@ export function Inspector() {
   return (
     <div className="inspector">
       {selected ? <ObjectPanel o={selected} /> : <BrushPanel tool={tool} />}
+      <FlowPanel />
       <ActorPanel />
       <AssetCatalogPanel />
       <EnvironmentsMenu />
@@ -255,6 +257,16 @@ function BrushPanel({ tool }: { tool: Tool }) {
       </section>
     )
   if (tool === 'event') return <EventBrushPanel />
+  if (tool === 'route')
+    return (
+      <section>
+        <h3>Route planning</h3>
+        <p className="hint">
+          Click the ground to drop waypoints. Finish the route in the Flow panel (or say &quot;finish route&quot;).
+          Blue dashed = your plan; solid = navigable trajectory.
+        </p>
+      </section>
+    )
   return (
     <section>
       <h3>Inspector</h3>

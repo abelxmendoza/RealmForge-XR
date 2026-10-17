@@ -3,6 +3,8 @@
  * Destructive actions require an injected ConfirmHandler — never window.confirm.
  */
 
+import { flowActions } from '../flow/actions'
+import { useFlow } from '../flow/store'
 import { startNavigation } from '../nav/navigation'
 import {
   worldActions,
@@ -32,6 +34,8 @@ function needsConfirmation(command: VoiceCommand): string | null {
       return 'Delete the selected object?'
     case 'RESET_WORLD':
       return 'Clear the world and start blank? Unsaved changes will be lost.'
+    case 'FLOW_CLEAR_ROUTE':
+      return 'Delete the selected route?'
     default:
       return null
   }
@@ -193,6 +197,7 @@ export async function executeVoiceCommand(
           robotStart: [0, 5],
           goal: null,
         })
+        // applyWorldSnapshot already clears Flow state
         const message = 'Blank world created'
         emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
         return { status: 'executed', command, message }
@@ -293,6 +298,135 @@ export async function executeVoiceCommand(
           const r = duplicateObjects(ids[ids.length - 1], command.count)
           message = r.ids.length ? `Made ${r.ids.length} ${r.ids.length === 1 ? 'copy' : 'copies'}` : 'No free space for copies'
         }
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'FLOW_CREATE_ROUTE': {
+        flowActions.beginRoute('waypoint')
+        const message = 'Route drawing started — point and add waypoints'
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'FLOW_ADD_WAYPOINT': {
+        const at = flowActions.spatialTarget()
+        if (!at) {
+          const message = 'Point at the ground first, then say "add waypoint here"'
+          emitVoiceEvent({ type: 'VOICE_COMMAND_REJECTED', command, message })
+          return { status: 'rejected', command, message }
+        }
+        if (!useFlow.getState().draft) flowActions.beginRoute('waypoint')
+        flowActions.addWaypoint(at)
+        const n = useFlow.getState().draft?.waypoints.length ?? 0
+        const message = `Waypoint ${n} added`
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'FLOW_FINISH_ROUTE': {
+        const route = flowActions.finishRoute()
+        if (!route) {
+          const message = 'Need at least two waypoints to finish a route'
+          emitVoiceEvent({ type: 'VOICE_COMMAND_REJECTED', command, message })
+          return { status: 'rejected', command, message }
+        }
+        const message = `Route "${route.name}" saved (${route.status})`
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'FLOW_CANCEL_ROUTE': {
+        flowActions.cancelRoute()
+        const message = 'Route draft cancelled'
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'FLOW_RECALCULATE': {
+        flowActions.revalidate()
+        const message = 'Routes recalculated'
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'FLOW_SHOW_ROUTES': {
+        flowActions.setShowRoutes(true)
+        const message = 'Routes visible'
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'FLOW_HIDE_ROUTES': {
+        flowActions.setShowRoutes(false)
+        const message = 'Routes hidden'
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'FLOW_PAUSE': {
+        flowActions.pause()
+        const message = 'Agents paused'
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'FLOW_RESUME': {
+        flowActions.resume()
+        const message = 'Agents resumed'
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'FLOW_ASSIGN_ROBOT': {
+        const selected = flowActions.getSelectedRoute()
+        const id = selected?.id ?? useFlow.getState().activeRouteId ?? Object.keys(useFlow.getState().routes)[0]
+        if (!id) {
+          const message = 'No route to assign — create one first'
+          emitVoiceEvent({ type: 'VOICE_COMMAND_REJECTED', command, message })
+          return { status: 'rejected', command, message }
+        }
+        const result = flowActions.assignToRobot(id)
+        if (!result.ok) {
+          emitVoiceEvent({ type: 'VOICE_COMMAND_REJECTED', command, message: result.error })
+          return { status: 'rejected', command, message: result.error }
+        }
+        const message = 'Route assigned to robot'
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'FLOW_CLEAR_ROUTE': {
+        const selected = flowActions.getSelectedRoute()
+        if (!selected) {
+          const message = 'No route selected'
+          emitVoiceEvent({ type: 'VOICE_COMMAND_REJECTED', command, message })
+          return { status: 'rejected', command, message }
+        }
+        flowActions.deleteRoute(selected.id)
+        const message = 'Selected route deleted'
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'FLOW_AVOID_AREA': {
+        const result = flowActions.addZoneAtPointer('no-go')
+        if (!result.ok) {
+          emitVoiceEvent({ type: 'VOICE_COMMAND_REJECTED', command, message: result.error })
+          return { status: 'rejected', command, message: result.error }
+        }
+        const message = 'No-go zone added at pointer'
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'FLOW_MAKE_ONE_WAY': {
+        const result = flowActions.addZoneAtPointer('one-way')
+        if (!result.ok) {
+          emitVoiceEvent({ type: 'VOICE_COMMAND_REJECTED', command, message: result.error })
+          return { status: 'rejected', command, message: result.error }
+        }
+        const message = 'One-way zone added at pointer'
         emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
         return { status: 'executed', command, message }
       }
