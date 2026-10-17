@@ -6,13 +6,19 @@ import { Wall } from './Wall'
 import { Platform } from './Platform'
 import { Crate, Streetlight, Tree } from './Decor'
 import { Pallet, Rack } from './Warehouse'
+import { ModelStructure } from './ModelStructure'
+import { getAsset, isWarehouseCatalogAsset } from '../../world/assetLibrary'
 
 /**
  * Draws one world object. Pure presentation: reads the object, never the store,
  * so it can be reused by previews, XR menus or thumbnails.
  */
 export function Structure({ o }: { o: WorldObject }) {
-  if (o.assetId) return <CatalogStructure o={o} />
+  // Library assets: custom 3D models, and main's procedural warehouse catalog. Everything else
+  // (pallets, racks, buildings, decor, even when placed from the library) draws by kind.
+  const asset = o.assetId ? getAsset(o.assetId) : undefined
+  if (asset?.render) return <ModelStructure o={o} asset={asset} />
+  if (o.assetId && isWarehouseCatalogAsset(o.assetId)) return <CatalogStructure o={o} />
   switch (o.kind) {
     case 'building':
       return <Building o={o} />

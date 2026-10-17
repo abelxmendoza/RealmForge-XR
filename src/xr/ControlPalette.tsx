@@ -1,4 +1,5 @@
-import { ASSETS, getAsset } from '../world/assets'
+import { getAsset } from '../world/assets'
+import { libraryAssets, useAssetLibrary } from '../world/assetLibrary'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useXR } from '@react-three/xr'
@@ -26,6 +27,7 @@ export function ControlPalette() {
 
 type Button = { label: string; run: () => unknown; active?: boolean; disabled?: boolean }
 function PaletteContent() {
+  useAssetLibrary((s) => s.version)
   const root = useRef<THREE.Group>(null)
   const gl = useThree((s) => s.gl)
   const [page, setPage] = useState('Tools')
@@ -92,10 +94,10 @@ function PaletteContent() {
       { label: 'Save as new', run: () => worldActions.saveWorld(activeName) },
       { label: 'Browse saved worlds', run: () => { worldActions.listSavedWorlds(); setSavePage(0); setPage('Saved') } })
   } else if (page === 'Assets') {
-    const offset = Math.min(assetPage, Math.ceil(ASSETS.length / 6) - 1)
-    buttons = ASSETS.slice(offset * 6, offset * 6 + 6).map((asset) => ({ label: asset.name, active: tool === 'asset' && editor.assetId === asset.id, run: () => { worldActions.selectCatalogAsset(asset.id); setMessage('Aim at ground: green places, red is blocked.') } }))
+    const offset = Math.min(assetPage, Math.ceil(libraryAssets().length / 6) - 1)
+    buttons = libraryAssets().slice(offset * 6, offset * 6 + 6).map((asset) => ({ label: asset.name, active: tool === 'asset' && editor.assetId === asset.id, run: () => { worldActions.selectCatalogAsset(asset.id); setMessage('Aim at ground: green places, red is blocked.') } }))
     buttons.push({ label: 'Rotate −90°', run: () => worldActions.rotateCatalogAsset(-1) }, { label: 'Rotate +90°', run: () => worldActions.rotateCatalogAsset(1) },
-      { label: 'Previous objects', disabled: offset === 0, run: () => setAssetPage(offset - 1) }, { label: 'More objects', disabled: (offset + 1) * 6 >= ASSETS.length, run: () => setAssetPage(offset + 1) })
+      { label: 'Previous objects', disabled: offset === 0, run: () => setAssetPage(offset - 1) }, { label: 'More objects', disabled: (offset + 1) * 6 >= libraryAssets().length, run: () => setAssetPage(offset + 1) })
   } else if (page === 'Routes') {
     const destinations = Object.values(objects).filter((object) => object.destinationRole)
     const offset = Math.min(destinationPage, Math.max(0, Math.ceil(destinations.length / 6) - 1))
