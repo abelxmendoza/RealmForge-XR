@@ -5,6 +5,7 @@ import { useWorld } from './store'
 import { forgeDistrict, marsOutpost, warehouse } from './presets'
 import { replaceWorld, type ReplaceOptions, type ReplaceResult } from './persistence'
 import { useEditor } from '../editor/settings'
+import { fail, safeConfirm, toErrorMessage } from './errors'
 
 /**
  * Multi-environment worldbuilding: appearance + defaults live here; object layouts
@@ -160,7 +161,14 @@ export function getEnvironment(id: string): EnvironmentConfig | undefined {
 }
 
 export function isEnvironmentId(id: string): id is EnvironmentId {
-  return id in ENVIRONMENTS
+  return typeof id === 'string' && id in ENVIRONMENTS
+}
+
+/** Trim and validate before loading — empty / whitespace ids fail closed. */
+export function normalizeEnvironmentId(id: unknown): EnvironmentId | null {
+  if (typeof id !== 'string') return null
+  const trimmed = id.trim()
+  return isEnvironmentId(trimmed) ? trimmed : null
 }
 
 interface EnvironmentState {
@@ -209,29 +217,71 @@ export type LoadEnvironmentOptions = {
  * await loadEnvironment('warehouse', { confirmReplace: showXRConfirm })
  */
 export async function loadEnvironment(id: EnvironmentId | string, opts: LoadEnvironmentOptions = {}): Promise<ReplaceResult> {
-  if (!isEnvironmentId(id)) return { ok: false, error: `Unknown environment: ${id}` }
-  const env = ENVIRONMENTS[id]
-  const snap = env.buildWorld()
-  const count = Object.keys(useWorld.getState().objects).length + Object.keys(useWorld.getState().actors).length
+  const envId = normalizeEnvironmentId(id)
+  if (!envId) {
+    const label = typeof id === 'string' && id.trim() ? id.trim() : String(id ?? '')
+    return fail(label ? `Unknown environment: ${label}` : 'Unknown environment: (empty id)')
 
-  if (count > 0) {
-    if (!opts.confirmReplace) {
-      return {
-        ok: false,
-        error: 'Confirmation required to replace a non-empty world. Pass confirmReplace (XR dialog or desktop confirm).',
-        cancelled: true,
-      }
-    }
-    const ok = await opts.confirmReplace(
-      `Load "${env.name}"?\n\nThe current world (${count} objects) will be replaced. Unsaved changes are lost.`,
-    )
-    if (!ok) return { ok: false, error: 'Cancelled.', cancelled: true }
   }
 
-  // Already confirmed (or world empty) — do not let replaceWorld fall back to window.confirm.
-  const result = await replaceWorld({ ...snap, name: env.name, environmentId: env.id }, { confirmReplace: () => true })
-  if (!result.ok) return result
-  useEnvironment.getState().setActive(env.id)
-  applyBrushDefaults(env)
-  return result
+  const previous = {
+    activeId: useEnvironment.getState().activeId,
+    actors: useWorld.getState().actors,
+    objects: useWorld.getState().objects,
+    robotStart: useWorld.getState().robotStart,
+    goal: useWorld.getState().goal,
+  }
+
+  try {
+    const env = ENVIRONMENTS[envId]
+    let snap: WorldSnapshot
+    try {
+      snap = env.buildWorld()
+    } catch (error) {
+      return fail(`Could not build "${env.name}": ${toErrorMessage(error)}`)
+    }
+
+    if (!Array.isArray(snap.objects) || !snap.robotStart) {
+      return fail(`Environment "${env.name}" produced an invalid world snapshot.`)
+    }
+
+    const count = Object.keys(useWorld.getState().objects).length + Object.keys(useWorld.getState().actors).length
+    if (count > 0) {
+      const gate = await safeConfirm(
+        opts.confirmReplace,
+        `Load "${env.name}"?\n\nThe current world (${count} objects) will be replaced. Unsaved changes are lost.`,
+      )
+      if (!gate.ok) {
+        // Preserve prior wording when confirm was simply omitted.
+        if (!opts.confirmReplace) {
+          return fail(
+            'Confirmation required to replace a non-empty world. Pass confirmReplace (XR dialog or desktop confirm).',
+            true,
+          )
+        }
+        return gate
+      }
+    }
+
+    // Already confirmed (or world empty) — do not let replaceWorld fall back to window.confirm.
+    const result = await replaceWorld({ ...snap, name: env.name, environmentId: env.id }, { confirmReplace: () => true })
+    if (!result.ok) return result
+    useEnvironment.getState().setActive(env.id)
+    applyBrushDefaults(env)
+    return result
+  } catch (error) {
+    // Best-effort restore if a late failure left stores half-applied.
+    try {
+      useEnvironment.getState().setActive(previous.activeId)
+      useWorld.getState().loadWorld({
+        objects: Object.values(previous.objects),
+        actors: Object.values(previous.actors),
+        robotStart: previous.robotStart,
+        goal: previous.goal,
+      })
+    } catch {
+      /* ignore restore errors — surface the original failure */
+    }
+    return fail(`Failed to load environment: ${toErrorMessage(error)}`)
+  }
 }

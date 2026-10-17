@@ -18,6 +18,10 @@ import { toggleRays } from '../editor/xrInput'
 import { blockRoute } from '../editor/demo'
 import { usePlacement } from './placement'
 import { blankPaletteWorld, createPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteEnvironment, loadPaletteSave, savePaletteWorld } from './paletteActions'
+import { FORGE } from '../theme/forge'
+import { useGuide } from '../guide/guideStore'
+import { useVoiceCommands } from '../voice/useVoiceCommands'
+import { VOICE_OPTIONS } from '../voice/sharedConfirm'
 
 /** Actual Three.js controls: visible to both eyes and interactive with XR pointers. */
 export function ControlPalette() {
@@ -32,7 +36,17 @@ function PaletteContent() {
   const [page, setPage] = useState('Tools')
   const [hidden, setHidden] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState('Point and trigger / pinch to choose.')
+  const [message, setMessage] = useState('Point and trigger / pinch to choose. Open Guide anytime.')
+  const guideOpen = useGuide((s) => s.open)
+  const openGuide = useGuide((s) => s.openGuide)
+  const closeGuide = useGuide((s) => s.closeGuide)
+  const voice = useVoiceCommands(VOICE_OPTIONS)
+  // Show what voice heard and did on the palette's message line.
+  useEffect(() => {
+    if (voice.lastError) setMessage(`Voice: ${voice.lastError}`)
+    else if (voice.lastResult && 'message' in voice.lastResult) setMessage(`Voice: ${voice.lastResult.message}`)
+    else if (voice.lastTranscript) setMessage(`Heard: "${voice.lastTranscript}"`)
+  }, [voice.lastTranscript, voice.lastResult, voice.lastError])
   const [savePage, setSavePage] = useState(0)
   const [assetPage, setAssetPage] = useState(0)
   const [destinationPage, setDestinationPage] = useState(0)
@@ -152,6 +166,14 @@ function PaletteContent() {
   }
 
   return <group ref={root} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
+    <Tile
+      text={voice.isListening ? `Listening… ${voice.lastPartial ? `"${voice.lastPartial}" · ` : ''}tap to run` : 'Voice command: tap to talk'}
+      y={0.39}
+      width={0.65}
+      height={0.065}
+      active={voice.isListening}
+      onClick={() => void (voice.isListening ? voice.stopListening() : voice.startListening())}
+    />
     <Tile text={hidden ? 'Show controls' : 'RealmForge controls'} y={0.32} width={0.65} height={0.065} onClick={() => { if (!request) setHidden(!hidden) }} />
     {!hidden && <>
       <Tile text={`${actor ? getActorRuntime(actor.id)?.status || 'idle' : status} · ${actor ? actor.name : selected ? (getAsset(selected.assetId || '')?.name || selected.kind) : 'no selection'}`} x={-0.11} y={0.267} height={0.035} width={0.43} />
@@ -163,9 +185,10 @@ function PaletteContent() {
       </> : <>
         {['Tools', 'Worlds', 'Edit', 'Brush', 'Assets', 'Routes', 'Actors'].map((tab, i) => <Tile key={tab} text={tab} x={(i - 3) * 0.094} y={0.21} width={0.089} active={page === tab || tab === 'Actors' && page === 'Actor settings' || tab === 'Worlds' && page === 'Saved'} onClick={() => setPage(tab)} />)}
         {buttons.map((button, i) => <Tile key={page + button.label} text={button.label} x={i % 2 ? 0.165 : -0.165} y={0.135 - Math.floor(i / 2) * 0.07} width={0.31} disabled={busy || button.disabled} active={button.active} onClick={() => void run(button)} />)}
-        <Tile text="Undo" x={-0.22} y={-0.235} width={0.21} disabled={busy || !history.canUndo} onClick={() => worldActions.undo()} />
-        <Tile text="Redo" y={-0.235} width={0.21} disabled={busy || !history.canRedo} onClick={() => worldActions.redo()} />
-        <Tile text="Recenter panel" x={0.22} y={-0.235} width={0.21} onClick={() => { positioned.current = false }} />
+        <Tile text="Undo" x={-0.24} y={-0.235} width={0.15} disabled={busy || !history.canUndo} onClick={() => worldActions.undo()} />
+        <Tile text="Redo" x={-0.08} y={-0.235} width={0.15} disabled={busy || !history.canRedo} onClick={() => worldActions.redo()} />
+        <Tile text={guideOpen ? 'Close guide' : 'Guide'} x={0.08} y={-0.235} width={0.15} active={guideOpen} onClick={() => (guideOpen ? closeGuide() : openGuide('start'))} />
+        <Tile text="Recenter" x={0.24} y={-0.235} width={0.15} onClick={() => { positioned.current = false }} />
         <Tile text={busy ? 'Working…' : page === 'Assets' ? `${getAsset(editor.assetId)?.name} · ${Math.round(editor.assetRotation * 180 / Math.PI)}° · Aim at clear ground.` : message} y={-0.31} width={0.65} height={0.065} />
       </>}
     </>}
@@ -181,13 +204,19 @@ function Tile({ text, x = 0, y, width, height = 0.06, active = false, disabled =
     const canvas = document.createElement('canvas')
     canvas.width = 1024; canvas.height = Math.round(1024 * height / width)
     const context = canvas.getContext('2d')!
-    context.fillStyle = disabled ? '#27303c' : active ? '#aa4d12' : hover && onClick ? '#344e6b' : '#182435'
+    context.fillStyle = disabled ? FORGE.panelDisabled : active ? FORGE.emberActive : hover && onClick ? FORGE.hover : FORGE.panelMuted
     context.fillRect(0, 0, canvas.width, canvas.height)
-    context.strokeStyle = active ? '#ffad55' : '#62768b'; context.lineWidth = 5
+    // Ember accent bar — matches desktop brand mark in immersive space.
+    context.fillStyle = active ? FORGE.emberHot : FORGE.emberDeep
+    context.fillRect(0, 0, canvas.width, Math.max(6, Math.round(canvas.height * 0.06)))
+    context.strokeStyle = active ? FORGE.emberHot : FORGE.lineSoft
+    context.lineWidth = 5
     context.strokeRect(2, 2, canvas.width - 4, canvas.height - 4)
-    context.fillStyle = disabled ? '#8190a0' : '#ffffff'
+    context.fillStyle = disabled ? FORGE.textMuted : FORGE.text
     const font = Math.round(1024 * 0.018 / width)
-    context.font = `600 ${font}px sans-serif`; context.textAlign = 'center'; context.textBaseline = 'middle'
+    context.font = `600 ${font}px "Sora", "Segoe UI", sans-serif`
+    context.textAlign = 'center'
+    context.textBaseline = 'middle'
     const words = text.split(/\s+/); const lines: string[] = []; let line = ''
     for (const word of words) { const candidate = line ? line + ' ' + word : word; if (line && context.measureText(candidate).width > 940) { lines.push(line); line = word } else line = candidate }
     if (line) lines.push(line)

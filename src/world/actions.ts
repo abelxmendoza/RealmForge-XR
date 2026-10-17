@@ -36,10 +36,12 @@ import {
   isEnvironmentId,
   listEnvironments,
   loadEnvironment,
+  normalizeEnvironmentId,
   useEnvironment,
   type EnvironmentId,
   type LoadEnvironmentOptions,
 } from './environment'
+import { safeConfirm } from './errors'
 
 // ---------- Confirmation ----------
 
@@ -62,21 +64,21 @@ export function objectCount(): number {
 export async function requireReplaceConfirm(
   message: string,
   opts: ConfirmOptions,
-): Promise<{ ok: true } | { ok: false; error: string; cancelled: true }> {
+): Promise<{ ok: true } | { ok: false; error: string; cancelled?: boolean }> {
   const count = objectCount()
   if (count === 0) return { ok: true }
-  if (!opts.confirmReplace) {
+  const gate = await safeConfirm(
+    opts.confirmReplace,
+    `${message}\n\nThe current world (${count} objects) will be replaced. Unsaved changes are lost.`,
+  )
+  if (!gate.ok && !opts.confirmReplace) {
     return {
       ok: false,
       error: 'Confirmation required to replace a non-empty world. Pass confirmReplace.',
       cancelled: true,
     }
   }
-  const accepted = await opts.confirmReplace(
-    `${message}\n\nThe current world (${count} objects) will be replaced. Unsaved changes are lost.`,
-  )
-  if (!accepted) return { ok: false, error: 'Cancelled.', cancelled: true }
-  return { ok: true }
+  return gate
 }
 
 // ---------- Tools & selection ----------
@@ -140,7 +142,7 @@ export function getGoal(): Vec2 | null {
 
 // ---------- Environments ----------
 
-export { listEnvironments, getEnvironment, isEnvironmentId, useEnvironment }
+export { listEnvironments, getEnvironment, isEnvironmentId, normalizeEnvironmentId, useEnvironment }
 export type { EnvironmentId }
 
 /**

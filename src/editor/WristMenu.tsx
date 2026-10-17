@@ -4,6 +4,8 @@ import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Text } from '@react-three/drei'
 import { XRSpace, useXRInputSourceState } from '@react-three/xr'
 import { SCALE_IDS, SCALE_PRESETS, recenterWorld } from '../scene/worldRoot'
+import { FORGE } from '../theme/forge'
+import { useGuide } from '../guide/guideStore'
 import { useEditor } from './settings'
 import { toggleRays, toggleSurface } from './xrInput'
 
@@ -119,7 +121,7 @@ export function WristMenu({ extra }: { extra?: ReactNode }) {
         <XRSpace space={tipSpace} ref={tip}>
           <mesh ref={tipDot} visible={false} raycast={() => null}>
             <sphereGeometry args={[0.005, 12, 8]} />
-            <meshBasicMaterial color="#7bdff2" depthTest={false} transparent opacity={0.9} />
+            <meshBasicMaterial color={FORGE.tip} depthTest={false} transparent opacity={0.9} />
           </mesh>
         </XRSpace>
       )}
@@ -133,6 +135,8 @@ export function WristMenu({ extra }: { extra?: ReactNode }) {
 function MenuContent({ extra }: { extra?: ReactNode }) {
   const { rays, snap, worldScale, surface } = useEditor()
   const set = useEditor((s) => s.set)
+  const guideOpen = useGuide((s) => s.open)
+  const toggleGuide = useGuide((s) => s.toggleGuide)
   const rowY = (i: number) => 0.05 - i * (BTN_H + GAP)
   const quarter = (W - GAP * 3) / 4
   const half = (W - GAP) / 2
@@ -140,11 +144,15 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
   const col = (i: number, w: number) => -W / 2 + w / 2 + i * (w + GAP)
   return (
     <group>
-      <mesh position={[0, 0.005, -0.004]} raycast={() => null}>
-        <planeGeometry args={[W + 0.02, 0.15]} />
-        <meshBasicMaterial color="#141a24" transparent opacity={0.85} />
+      <mesh position={[0, -0.01, -0.004]} raycast={() => null}>
+        <planeGeometry args={[W + 0.02, 0.19]} />
+        <meshBasicMaterial color={FORGE.panel} transparent opacity={0.9} />
       </mesh>
-      <Text position={[0, 0.068, 0]} fontSize={0.011} color="#e8eaed" anchorX="center" anchorY="middle" raycast={() => null}>
+      <mesh position={[0, 0.068, -0.0035]} raycast={() => null}>
+        <planeGeometry args={[0.028, 0.004]} />
+        <meshBasicMaterial color={FORGE.ember} transparent opacity={0.95} />
+      </mesh>
+      <Text position={[0, 0.068, 0]} fontSize={0.011} color={FORGE.text} anchorX="center" anchorY="middle" raycast={() => null}>
         RealmForge
       </Text>
       <MenuButton position={[col(0, third), rowY(0), 0]} width={third} label={`Rays ${rays ? 'on' : 'off'}`} active={rays} onPress={toggleRays} />
@@ -161,9 +169,16 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
         />
       ))}
       <MenuButton position={[col(0, half), rowY(2), 0]} width={half} label="Recenter" onPress={recenterWorld} />
-      {extra && <group position={[col(1, half), rowY(2), 0]}>{extra}</group>}
-      <Text position={[0, rowY(3) + 0.004, 0]} fontSize={0.008} color="#9aa4ad" anchorX="center" anchorY="middle" raycast={() => null}>
-        {`${SCALE_PRESETS[worldScale].label} · touch a button with your right fingertip`}
+      <MenuButton
+        position={[col(1, half), rowY(2), 0]}
+        width={half}
+        label={guideOpen ? 'Close guide' : 'Guide'}
+        active={guideOpen}
+        onPress={toggleGuide}
+      />
+      {extra && <group position={[col(0, W), rowY(3), 0]}>{extra}</group>}
+      <Text position={[0, rowY(4) + 0.004, 0]} fontSize={0.008} color={FORGE.copper} anchorX="center" anchorY="middle" raycast={() => null}>
+        {`${SCALE_PRESETS[worldScale].label} · Guide opens the help panel`}
       </Text>
     </group>
   )
@@ -219,9 +234,20 @@ export function MenuButton(props: {
     <group ref={frame} position={props.position}>
       <mesh ref={body} onPointerDown={onDown}>
         <boxGeometry args={[width, BTN_H, BTN_D]} />
-        <meshStandardMaterial color={props.active ? '#f4a261' : '#2d3748'} emissive={props.active ? '#f4a261' : '#000'} emissiveIntensity={0.25} />
+        <meshStandardMaterial
+          color={props.active ? FORGE.ember : FORGE.panelMuted}
+          emissive={props.active ? FORGE.emberHot : '#000000'}
+          emissiveIntensity={props.active ? 0.35 : 0}
+        />
       </mesh>
-      <Text position={[0, 0, BTN_D / 2 + 0.0005]} fontSize={0.0095} color={props.active ? '#1d2433' : '#e8eaed'} anchorX="center" anchorY="middle" raycast={() => null}>
+      <Text
+        position={[0, 0, BTN_D / 2 + 0.0005]}
+        fontSize={0.0095}
+        color={props.active ? FORGE.ink : FORGE.text}
+        anchorX="center"
+        anchorY="middle"
+        raycast={() => null}
+      >
         {props.label}
       </Text>
     </group>

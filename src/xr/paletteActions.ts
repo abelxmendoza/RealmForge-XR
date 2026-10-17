@@ -6,7 +6,12 @@ import { cycleVariant } from '../world/catalog'
 import { createWorld, nextWorldName, type TemplateId } from '../world/library'
 
 export async function loadPaletteEnvironment(id: string) {
-  return worldActions.loadEnvironment(id, { confirmReplace })
+  try {
+    return await worldActions.loadEnvironment(id, { confirmReplace })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { ok: false as const, error: `Environment load crashed: ${message || 'Something went wrong.'}` }
+  }
 }
 export async function loadPaletteSave(id: string) {
   return worldActions.loadSavedWorld(id, { confirmReplace })
