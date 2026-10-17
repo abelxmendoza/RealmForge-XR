@@ -1,0 +1,209 @@
+# Voice Commands (AssemblyAI)
+
+Agent 4 — speech recognition and spoken world actions for RealmForge XR.
+
+**Branch:** `cursor/assemblyai-voice-commands-96f4`
+
+## Architecture
+
+```
+USER SPEECH
+    │
+    ▼
+MICROPHONE CAPTURE          (push-to-talk)
+    │
+    ▼
+ASSEMBLYAI STREAMING STT    (temp token via /api/assemblyai/token)
+    │
+    ▼
+FINAL TRANSCRIPT            (partials ignored)
+    │
+    ▼
+commandParser.ts            (deterministic, no LLM)
+    │
+    ▼
+commandExecutor.ts          (confirm gate → worldActions)
+    │
+    ▼
+src/world/actions.ts        (Agent 2 World Action API)
+    │
+    ▼
+Zustand world / environment / history / nav
+```
+
+Mock path (no credentials / no mic):
+
+```
+submitMockTranscript("Load Mars Outpost")
+    → same parser + executor
+```
+
+| Module | Role |
+| --- | --- |
+| `src/voice/types.ts` | `VoiceCommand`, confirm + event types |
+| `src/voice/commandParser.ts` | Phrase → typed command |
+| `src/voice/commandExecutor.ts` | Execute via `worldActions` |
+| `src/voice/assemblyAIClient.ts` | Browser mic + WebSocket STT |
+| `src/voice/voiceController.ts` | Push-to-talk lifecycle |
+| `src/voice/useVoiceCommands.ts` | React / XR hook |
+| `src/voice/mockProvider.ts` | Manual transcript injection |
+| `src/voice/events.ts` | ElevenLabs-compatible event bus |
+| `vite/assemblyaiTokenPlugin.ts` | Server-side temp token proxy |
+
+Voice **does not** own a second world store. All mutations go through Agent 2’s `worldActions`.
+
+## AssemblyAI setup
+
+1. Create an AssemblyAI account and API key.
+2. Store the key **server-side only** with dotenvx:
+
+   ```bash
+   npm run env:set -- ASSEMBLYAI_API_KEY <your-key>
+   ```
+
+3. Run the app with dotenvx (already wired):
+
+   ```bash
+   npm run dev
+   ```
+
+4. The Vite plugin exposes `GET /api/assemblyai/token`, which calls  
+   `https://streaming.assemblyai.com/v3/token?expires_in_seconds=60`  
+   with `Authorization: <ASSEMBLYAI_API_KEY>` and returns `{ token }` to the browser.
+
+5. The browser opens  
+   `wss://streaming.assemblyai.com/v3/ws?sample_rate=16000&formatted_finals=true&token=...`
+
+### Secret management
+
+| Do | Don’t |
+| --- | --- |
+| `ASSEMBLYAI_API_KEY` in encrypted `.env` (server) | `VITE_ASSEMBLYAI_API_KEY` |
+| Issue temporary tokens via `/api/assemblyai/token` | Ship the permanent key in JS |
+| Keep `.env.keys` gitignored | Commit plaintext keys |
+
+Encrypted dotenvx does **not** make a `VITE_*` key safe for the browser.
+
+## Supported commands
+
+| Spoken example | Command | Action |
+| --- | --- | --- |
+| “Load Mars” / “Open Mars Outpost” | `LOAD_ENVIRONMENT` | `worldActions.loadEnvironment('mars-outpost')` |
+| “Switch to warehouse” | `LOAD_ENVIRONMENT` | `warehouse` |
+| “Load Forge District” | `LOAD_ENVIRONMENT` | `forge-district` |
+| “Create a blank world” | `RESET_WORLD` | Empty snapshot (confirm required) |
+| “Select building tool” / “Create a building” | `SELECT_TOOL` | Activates `building` tool (no arbitrary spawn) |
+| “Select wall tool” / “Create a wall” | `SELECT_TOOL` | `wall` |
+| “Select road tool” / “Place a platform” | `SELECT_TOOL` | `platform` |
+| “Select robot” / “Place robot” | `SELECT_TOOL` | `robot` |
+| “Set destination” | `SELECT_TOOL` | `goal` (goal-placement mode) |
+| “Start navigation” | `START_NAVIGATION` | Replans if a goal exists |
+| “Undo” / “Redo” | `UNDO` / `REDO` | History API |
+| “Save world” | `SAVE_WORLD` | `quickSave` / `saveWorld` |
+| “Reset selection” | `CLEAR_SELECTION` | Clears selection |
+| “Delete selected object” | `DELETE_SELECTED` | Deletes selection (**confirm required**) |
+
+**Unsupported (structured reject):** “Stop navigation” (no safe stop API yet), free-form NL, anything not listed.
+
+Destructive commands without a connected `ConfirmHandler` return `needs_confirmation` and **do not** mutate the world. Core voice logic never calls `window.confirm()`.
+
+## Microphone requirements
+
+- Secure context (HTTPS / localhost) — already required for WebXR.
+- `navigator.mediaDevices.getUserMedia({ audio: true })`.
+- Push-to-talk: call `startListening()` then `stopListening()`. Mic tracks are stopped on stop/unmount.
+- Audio is streamed for STT only; recordings are **not** retained by default.
+
+Quest Browser compatibility is **unverified on device** until headset testing.
+
+## XR integration (Emiliano)
+
+Do **not** edit Emiliano’s XR menu in this branch. Consume the hook/controller:
+
+```ts
+import { useVoiceCommands, subscribeVoiceEvents } from '../voice'
+
+function XrVoiceHud() {
+  const voice = useVoiceCommands({
+    provider: 'assemblyai', // or 'mock'
+    confirm: (req) => showXRConfirm(req.message),
+  })
+
+  // Map grip / menu buttons:
+  // onPress  → voice.startListening()
+  // onRelease → voice.stopListening()
+
+  return null // drive existing XR HUD from voice.isListening / voice.lastTranscript
+}
+```
+
+Imperative (no React):
+
+```ts
+import { createVoiceCommands } from '../voice'
+const voice = createVoiceCommands({ confirm: showXRConfirm })
+await voice.startListening()
+await voice.stopListening()
+await voice.dispose() // on XR session end
+```
+
+Expose to the player:
+
+- Listening status (`isListening`)
+- Last transcript / command
+- Confirmation request (`VOICE_CONFIRMATION_REQUIRED` or `pendingConfirmation`)
+- Errors (`lastError`)
+
+## ElevenLabs event integration (Agent 3)
+
+Subscribe without importing Agent 3 code:
+
+```ts
+import { subscribeVoiceEvents } from '../voice'
+
+subscribeVoiceEvents((event) => {
+  switch (event.type) {
+    case 'VOICE_COMMAND_RECOGNIZED':
+    case 'VOICE_COMMAND_EXECUTED':
+    case 'VOICE_COMMAND_REJECTED':
+    case 'VOICE_COMMAND_FAILED':
+    case 'VOICE_CONFIRMATION_REQUIRED':
+      // speak event.message or map to ElevenLabs lines
+      break
+  }
+})
+```
+
+Voice commands work with speech synthesis fully disabled.
+
+## Mock testing
+
+```ts
+import { VoiceController, submitMockTranscript } from '../voice'
+
+const voice = new VoiceController({ provider: 'mock' })
+await voice.startListening()
+submitMockTranscript('Load Mars Outpost')
+// or:
+await voice.submitTranscript('Select wall tool')
+```
+
+Demo remains usable when AssemblyAI is missing, mic is denied, or the network drops — the controller can fall back to `mock`.
+
+## Known limitations
+
+- Deterministic keyword parser only (no LLM / free-form world gen).
+- “Create a building” activates the tool; it does not place geometry at guessed coordinates.
+- “Stop navigation” is intentionally unsupported until a safe stop API exists.
+- Token proxy is Vite-dev middleware; production hosting needs an equivalent serverless/proxy route.
+- Quest mic + WebXR session behavior not yet validated on hardware.
+- Desktop UI chrome for PTT is not wired into `App.tsx` (avoids teammate merge conflicts) — use the hook or mock submitter.
+
+## Tests
+
+```bash
+npm test
+npm run build
+```
+
+Coverage includes parsing, tools, environments, undo/redo, unsupported commands, destructive confirms, duplicate finals, mock STT, connection fallback, and mic/socket cleanup.
