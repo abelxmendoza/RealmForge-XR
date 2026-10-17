@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RealmForge XR · Quest 2 test</title>
+    <style>
+      body {
+        margin: 0; min-height: 100vh; display: grid; place-items: center;
+        background: #1d2433; color: #eee; font: 15px/1.5 system-ui, sans-serif;
+      }
+      main { max-width: 560px; padding: 24px 16px; }
+      h1 { font-size: 1.4rem; margin: 0 0 8px; }
+      p, li { opacity: 0.85; }
+      #enter {
+        display: block; width: 100%; margin: 20px 0; padding: 16px;
+        font-size: 1.1rem; font-weight: 600; border-radius: 8px; cursor: pointer;
+        background: #f4a261; color: #1d2433; border: 1px solid #f4a261;
+      }
+      #enter:disabled { background: #2d3748; color: #a0aec0; border-color: #4a5568; cursor: default; }
+      #status { font-family: ui-monospace, monospace; font-size: 13px; white-space: pre-wrap; color: #9fd49f; }
+      a { color: #f4a261; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Quest 2 passthrough test</h1>
+      <p>
+        Checks passthrough, true-scale grabbing, snapping to real surfaces and anchors before we rely on them in
+        RealmForge. Same page runs on Quest 2 and Quest 3S; see <code>docs/quest2-testing.md</code>.
+      </p>
+      <button id="enter" disabled>Checking WebXR…</button>
+      <div id="status"></div>
+      <ul>
+        <li><b>Point + trigger</b> (or <b>pinch</b>) to grab an object.</li>
+        <li>Bring it near a real table, floor or wall: a green ghost shows where it will snap.</li>
+        <li>Release to place; it is then anchored to that spot.</li>
+        <li><b>Grip</b> respawns the objects in front of you.</li>
+      </ul>
+      <p><a href="../">← Back to RealmForge XR</a></p>
+    </main>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

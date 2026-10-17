@@ -15,6 +15,13 @@ npm run build
 On the Quest 3S, open `https://<laptop-LAN-IP>:5173` in the Quest Browser, accept the self-signed
 certificate, then press **Enter AR** (passthrough) or **Enter VR**.
 
+### Testing on a Quest 2
+
+The same URL runs on a Quest 2 (grayscale passthrough, no room mesh or depth occlusion). Open
+`/xr-test/` for a standalone passthrough check of true-scale grabbing, snapping to real surfaces and
+anchors. Setup over USB (`adb reverse`), the Quest 2 vs 3S feature table and a test checklist are in
+[docs/quest2-testing.md](docs/quest2-testing.md).
+
 ## Environment variables
 
 Shared secrets live in `.env`, committed **encrypted** with [dotenvx](https://dotenvx.com).
