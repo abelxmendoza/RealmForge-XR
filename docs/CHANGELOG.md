@@ -9,6 +9,7 @@ Dates are UTC.
 ### Fixed
 
 - Docs/examples cleanup: demo readiness reflects `main`; stale “do not merge Quest” / missing XR confirm notes removed; XR menu example points at production palette + confirmation.
+- Voice spawn for event `prop` objects: requires `catalogId`, wired through `propFromCatalog`; venue phrases (booth, registration desk, stage, …).
 
 ## [0.2.0] — 2026-10-17
 
