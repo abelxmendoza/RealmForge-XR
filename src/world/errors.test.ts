@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fail, ok, safeConfirm, toErrorMessage } from './errors'
+import { describeStorageError, fail, failResult, failSave, guardAsync, guardSync, ok, safeConfirm, toErrorMessage } from './errors'
 
 describe('toErrorMessage', () => {
   it('handles strings, Errors, and odd values', () => {
@@ -12,11 +12,24 @@ describe('toErrorMessage', () => {
   })
 })
 
-describe('fail / ok', () => {
+describe('fail / ok / failSave / failResult', () => {
   it('builds ReplaceResult shapes', () => {
     expect(ok(['w'])).toEqual({ ok: true, warnings: ['w'] })
     expect(fail('x')).toEqual({ ok: false, error: 'x' })
     expect(fail('c', true)).toEqual({ ok: false, error: 'c', cancelled: true })
+  })
+
+  it('builds SaveResult and Result failures', () => {
+    expect(failSave('s', true)).toEqual({ ok: false, error: 's', cancelled: true })
+    expect(failResult('r')).toEqual({ ok: false, error: 'r' })
+  })
+})
+
+describe('describeStorageError', () => {
+  it('maps quota errors to stable copy', () => {
+    expect(describeStorageError(Object.assign(new Error('x'), { name: 'QuotaExceededError' }))).toMatch(/storage is full/i)
+    expect(describeStorageError(Object.assign(new Error('x'), { name: 'NS_ERROR_DOM_QUOTA_REACHED' }))).toMatch(/storage is full/i)
+    expect(describeStorageError(new Error('disk'))).toMatch(/Browser storage error: disk/)
   })
 })
 
@@ -47,5 +60,24 @@ describe('safeConfirm', () => {
       expect(r.cancelled).toBeUndefined()
       expect(r.error).toMatch(/Confirmation failed: dialog blew up/)
     }
+  })
+})
+
+describe('guardAsync / guardSync', () => {
+  it('passes through successful Result values', async () => {
+    expect(await guardAsync(async () => ({ ok: true as const, value: 1 }))).toEqual({ ok: true, value: 1 })
+    expect(guardSync(() => ({ ok: true as const }))).toEqual({ ok: true })
+  })
+
+  it('converts thrown errors into failures', async () => {
+    const asyncFail = await guardAsync(async () => {
+      throw new Error('async boom')
+    }, 'Op')
+    expect(asyncFail).toEqual({ ok: false, error: 'Op: async boom' })
+
+    const syncFail = guardSync(() => {
+      throw new Error('sync boom')
+    }, 'Sync')
+    expect(syncFail).toEqual({ ok: false, error: 'Sync: sync boom' })
   })
 })
