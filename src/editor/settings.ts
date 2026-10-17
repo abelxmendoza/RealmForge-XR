@@ -1,3 +1,4 @@
+import type { ActorKind } from '../actors/types'
 import type { AssetId } from '../world/assetTypes'
 import { create } from 'zustand'
 import type { BuildingStyle, MaterialId, ObjectKind, RoofType, TreeStyle } from '../world/types'
@@ -10,6 +11,8 @@ export type DecorKind = Extract<ObjectKind, 'tree' | 'streetlight' | 'crate'>
  * Kept out of the world store so navigation never sees these changes.
  */
 export interface EditorSettings {
+  actorKind: ActorKind
+  actorMessage: string
   assetId: AssetId
   assetRotation: number
   snap: boolean
@@ -32,6 +35,8 @@ export interface EditorSettings {
 }
 
 export const useEditor = create<EditorSettings>((set) => ({
+  actorKind: 'worker',
+  actorMessage: '',
   assetId: 'storage-rack',
   assetRotation: 0,
   snap: true,

@@ -1,3 +1,5 @@
+import { selectActorKind, previewActor, placeActor, selectActor, updateActor, setActorGoal, sendActorToDestination, duplicateActor, removeActor } from '../actors/actions'
+export { selectActorKind, previewActor, placeActor, selectActor, updateActor, setActorGoal, sendActorToDestination, duplicateActor, removeActor } from '../actors/actions'
 import { selectCatalogAsset, rotateCatalogAsset, previewCatalogAsset, placeCatalogAsset, listDestinations, sendRobotToDestination } from './assetActions'
 export { selectCatalogAsset, rotateCatalogAsset, previewCatalogAsset, placeCatalogAsset, listDestinations, sendRobotToDestination } from './assetActions'
 /**
@@ -50,7 +52,7 @@ export interface ConfirmOptions {
 
 /** How many objects are in the active world (0 = empty sandbox). */
 export function objectCount(): number {
-  return Object.keys(useWorld.getState().objects).length
+  return Object.keys(useWorld.getState().objects).length + Object.keys(useWorld.getState().actors).length
 }
 
 /**
@@ -190,6 +192,8 @@ export const worldActions = {
   placeCatalogAsset,
   listDestinations,
   sendRobotToDestination,
+
+  selectActorKind, previewActor, placeActor, selectActor, updateActor, setActorGoal, sendActorToDestination, duplicateActor, removeActor,
 
   // tools
   setTool,

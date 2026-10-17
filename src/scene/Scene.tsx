@@ -1,3 +1,4 @@
+import { Actors } from '../actors/Actors'
 import { ControlPalette } from '../xr/ControlPalette'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
@@ -87,6 +88,7 @@ export function Scene() {
           <Obstacles />
           <Route />
           <Robot />
+          <Actors />
           {mocapOn && mocapInMap && (
             <group position={[robotStart[0], 0, robotStart[1]]}>
               <MocapSkeleton />

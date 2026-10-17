@@ -41,6 +41,7 @@ const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'platform', label: 'Platform / road', key: '6' },
   { id: 'decor', label: 'Decoration', key: '7' },
   { id: 'asset', label: 'Catalog object', key: '8' },
+  { id: 'actor', label: 'Actor', key: '9' },
 ]
 
 const STATUS_TEXT = {

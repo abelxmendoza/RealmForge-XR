@@ -1,3 +1,4 @@
+import { ActorPanel } from '../actors/ActorPanel'
 import { getAsset } from '../world/assets'
 import { AssetCatalogPanel } from './AssetCatalogPanel'
 import { useWorld, type Tool } from '../world/store'
@@ -35,6 +36,7 @@ export function Inspector() {
   return (
     <div className="inspector">
       {selected ? <ObjectPanel o={selected} /> : <BrushPanel tool={tool} />}
+      <ActorPanel />
       <AssetCatalogPanel />
       <WorldPanel />
       <WorldsPanel />

@@ -212,7 +212,7 @@ export async function loadEnvironment(id: EnvironmentId | string, opts: LoadEnvi
   if (!isEnvironmentId(id)) return { ok: false, error: `Unknown environment: ${id}` }
   const env = ENVIRONMENTS[id]
   const snap = env.buildWorld()
-  const count = Object.keys(useWorld.getState().objects).length
+  const count = Object.keys(useWorld.getState().objects).length + Object.keys(useWorld.getState().actors).length
 
   if (count > 0) {
     if (!opts.confirmReplace) {

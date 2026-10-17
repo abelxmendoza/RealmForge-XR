@@ -68,7 +68,7 @@ export function nextWorldName(base = 'My world', names: string[] = listSavedWorl
  */
 export async function createWorld(name: string, template: TemplateId = 'blank', opts: CreateWorldOptions = {}): Promise<SaveResult> {
   const label = cleanName(name, nextWorldName())
-  const count = Object.keys(useWorld.getState().objects).length
+  const count = Object.keys(useWorld.getState().objects).length + Object.keys(useWorld.getState().actors).length
   if (count > 0) {
     const ask = opts.confirmReplace ?? sharedConfirm
     const ok = await ask(`Start a new world "${label}"?\n\nThe current world (${count} objects) will be replaced. Save it first if you want to keep it.`)

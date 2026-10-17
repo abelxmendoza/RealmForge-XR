@@ -1,3 +1,4 @@
+import { actorsForSave } from '../actors/runtime'
 import { useEnvironment } from './environment'
 import { confirmReplace } from './confirmation'
 import { create } from 'zustand'
@@ -72,6 +73,7 @@ export function worldFingerprint(): string {
     objects: ids.map((id) => objects[id]),
     robotStart,
     goal,
+    actors: Object.values(useWorld.getState().actors).sort((a, b) => a.id.localeCompare(b.id)),
   })
 }
 
@@ -143,13 +145,13 @@ const newSaveId = () => `w${Date.now().toString(36)}${Math.random().toString(36)
 /** The active world as a WorldFile (what save and export write). */
 export function currentWorldFile(name = useWorldLibrary.getState().activeName): WorldFile {
   const { objects, robotStart, goal } = useWorld.getState()
-  const file = serializeWorld({ objects, robotStart, goal }, name)
+  const file = serializeWorld({ objects, robotStart, goal, actors: actorsForSave() }, name)
   const environmentId = useEnvironment.getState().activeId
   return environmentId ? { ...file, environmentId } : file
 }
 
 async function confirmIfNeeded(message: string, opts: ReplaceOptions): Promise<boolean> {
-  const count = Object.keys(useWorld.getState().objects).length
+  const count = Object.keys(useWorld.getState().objects).length + Object.keys(useWorld.getState().actors).length
   if (count === 0) return true
   const ask = opts.confirmReplace ?? confirmReplace
   return ask(`${message}\n\nThe current world (${count} objects) will be replaced. Unsaved changes are lost.`)
@@ -192,7 +194,7 @@ export function saveWorld(name: string, opts: SaveOptions = {}): SaveResult {
   if (opts.overwriteId && !index.some((m) => m.id === opts.overwriteId)) return { ok: false, error: 'That saved world no longer exists.' }
   const id = opts.overwriteId ?? newSaveId()
   const file = currentWorldFile(cleanName(name))
-  const meta: SavedWorldMeta = { id, name: file.name, savedAt: file.savedAt, objectCount: file.objects.length }
+  const meta: SavedWorldMeta = { id, name: file.name, savedAt: file.savedAt, objectCount: file.objects.length + (file.actors?.length ?? 0) }
   try {
     s.setItem(worldKey(id), JSON.stringify(file))
     writeIndex([...index.filter((m) => m.id !== id), meta])
@@ -288,7 +290,7 @@ export function copySavedWorld(id: string, name?: string): SaveResult {
   if (!parsed.ok) return { ok: false, error: `Saved world is damaged: ${parsed.error}` }
   const file = serializeWorld(parsed.world, cleanName(name, `Copy of ${meta.name}`))
   if (parsed.world.environmentId) file.environmentId = parsed.world.environmentId
-  const copy: SavedWorldMeta = { id: newSaveId(), name: file.name, savedAt: file.savedAt, objectCount: file.objects.length }
+  const copy: SavedWorldMeta = { id: newSaveId(), name: file.name, savedAt: file.savedAt, objectCount: file.objects.length + (file.actors?.length ?? 0) }
   try {
     s.setItem(worldKey(copy.id), JSON.stringify(file))
     const thumb = s.getItem(thumbnailKey(id))

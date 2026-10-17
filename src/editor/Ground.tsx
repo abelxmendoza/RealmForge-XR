@@ -64,6 +64,7 @@ type Draft = { kind: 'wall' | 'platform'; a: Vec2; b: Vec2 }
 /** The map's ground. Clicking it applies the current tool. */
 export function Ground() {
   const tool = useWorld((s) => s.tool)
+  useEditor((s) => s.actorKind)
   useEditor((s) => s.assetId)
   useEditor((s) => s.assetRotation)
   useEditor((s) => s.snap)
@@ -84,12 +85,21 @@ export function Ground() {
         return
       case 'goal':
         e.stopPropagation()
-        w.setGoal(raw)
+        if (w.selectedActorId) {
+          const result = worldActions.setActorGoal(w.selectedActorId, raw)
+          useEditor.getState().set({ actorMessage: result.ok ? 'Actor destination set.' : result.error })
+        } else w.setGoal(raw)
         return
       case 'robot':
         e.stopPropagation()
         w.placeRobot(raw)
         return
+      case 'actor': {
+        e.stopPropagation()
+        const result = worldActions.placeActor(raw)
+        useEditor.getState().set({ actorMessage: result.ok ? 'Actor placed. Select it to customize or choose its destination.' : result.error })
+        return
+      }
       case 'asset': {
         e.stopPropagation()
         const result = worldActions.placeCatalogAsset(raw)
@@ -136,11 +146,12 @@ export function Ground() {
   }
 
   // Read reactive settings and geometry so ghost validity always matches the commit action.
-  const preview = tool === 'asset' && hover ? worldActions.previewCatalogAsset(hover) : null
+  const actorPreview = tool === 'actor' && hover ? worldActions.previewActor(hover) : null
+  const preview = tool === 'asset' && hover ? worldActions.previewCatalogAsset(hover) : actorPreview ? { valid: actorPreview.valid, object: { size: actorPreview.actor.size, rotationY: actorPreview.actor.rotationY, position: [actorPreview.actor.position[0], 0, actorPreview.actor.position[1]] as Vec3 } } : null
   return (
     <>
       <Board size={size} onPointerDown={onDown} onPointerMove={(e) => {
-        if (tool !== 'asset') return
+        if (tool !== 'asset' && tool !== 'actor') return
         const point = groundPoint(e)
         if (point) { setHover(point); setPlacementError(false) }
       }} onPointerOut={() => setHover(null)} />

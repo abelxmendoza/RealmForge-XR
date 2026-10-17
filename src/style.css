@@ -89,3 +89,8 @@ dialog::backdrop { background: #0009; }
 .catalog-destinations button { width: 100%; margin-bottom: 4px; text-align: left; }
 
 .hud .editor-home { pointer-events: auto; color: #e8dbca; font-size: 12px; text-decoration: none; padding: 6px 8px; border: 1px solid #4a5568; border-radius: 6px; background: #2d3748; }
+
+.actor-kind-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.actor-kind-grid button { min-height: 36px; white-space: normal; }
+.inspector input[aria-label="Actor name"] { width: 125px; min-width: 0; background: #2d3748; color: #eee; border: 1px solid #4a5568; border-radius: 4px; padding: 5px; }
+.actor-status { color: #9ed8c2; margin: 2px 0; }
