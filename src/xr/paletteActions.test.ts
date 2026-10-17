@@ -1,11 +1,13 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useWorld } from '../world/store'
 import { useEnvironment } from '../world/environment'
 import { clearHistory, installHistory } from '../world/history'
-import { getConfirmation, resolveConfirmation, subscribeConfirmation } from '../world/confirmation'
+import { getConfirmation, resetConfirmationChannel, resolveConfirmation, subscribeConfirmation } from '../world/confirmation'
+import * as actions from '../world/actions'
 import { blankPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteEnvironment } from './paletteActions'
 
 beforeEach(() => {
+  resetConfirmationChannel()
   useWorld.getState().loadWorld({ objects: [{ id: 'wall-1', kind: 'wall', position: [0, 0, 0], size: [2, 2, 1], rotationY: 0 }], robotStart: [-8, 8], goal: [8, -8] })
   useWorld.getState().select('wall-1')
   installHistory()
@@ -52,5 +54,12 @@ describe('VR control palette', () => {
     expect(useWorld.getState().objects['wall-1']).toBeUndefined()
     expect(useWorld.getState().objects[second]).toBeDefined()
     stop()
+  })
+  it('turns unexpected load crashes into ReplaceResult failures', async () => {
+    const spy = vi.spyOn(actions.worldActions, 'loadEnvironment').mockRejectedValueOnce(new Error('palette boom'))
+    const r = await loadPaletteEnvironment('mars-outpost')
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error).toMatch(/crashed: palette boom/)
+    spy.mockRestore()
   })
 })

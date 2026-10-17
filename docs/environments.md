@@ -19,9 +19,20 @@ default building/wall/platform brush styles, and a `buildWorld()` snapshot
 
 Desktop uses the molten-forge HUD/inspector styling (`EnvironmentsMenu`):
 full list with descriptions in the inspector, plus a compact **Env** chip row in the HUD.
-Both call `worldActions.loadEnvironment(id, { confirmReplace })`.
+Both call `loadEnvironmentFromMenu` → `worldActions.loadEnvironment(id, { confirmReplace })`.
 
 In XR, the control palette **Worlds** tab and wrist env buttons use the same API.
+
+### Error handling
+
+- Unknown / empty ids → `{ ok: false, error }` (no store mutation)
+- Missing `confirmReplace` on a non-empty world → cancelled, world unchanged
+- `confirmReplace` throwing → non-cancelled failure message (world unchanged)
+- `buildWorld()` throwing / invalid snapshot → failure, `activeId` stays previous
+- Menu overlaps → busy guard returns an error toast; buttons disable while loading
+- Confirmation channel with no UI consumer → deny (never `window.confirm`)
+
+Tests: `environmentErrors.test.ts`, `environmentMenuController.test.ts`, `confirmation.test.ts`, `errors.test.ts`.
 
 ## Public API (for Emiliano / XR menu)
 

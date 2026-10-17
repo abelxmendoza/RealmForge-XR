@@ -1232,6 +1232,25 @@ dialog button.danger-confirm:hover:not(:disabled) {
   color: rgba(26, 16, 12, 0.72);
 }
 
+.inspector .env-list li button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.inspector .hint.toast-err {
+  color: #ffb4bf;
+}
+
+.hud .env-menu-status {
+  font-size: 11px;
+  color: var(--rf-muted);
+  max-width: 220px;
+}
+
+.hud .env-menu-status.err {
+  color: #ffb4bf;
+}
+
 /* ——— User & controls guide (desktop + Quest Browser) ——— */
 
 dialog.controls-guide {
