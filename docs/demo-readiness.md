@@ -1,12 +1,41 @@
 # Demo readiness — October 17, 2026
 
-Assessment: desktop integration is ready for rehearsal. Quest demonstration readiness is NOT established. Deadline supplied by the team: 6:30 PM Pacific.
+Assessment: desktop integration is ready for rehearsal. Quest demonstration readiness is NOT established until Emiliano marks the hardware checklist below. Do **not** merge `integration/quest-xr` → `main` until that PASS.
+
+## Live hardware session (cloud tunnel)
+
+Branch: `integration/quest-xr` @ `a0b904a` · draft PR: https://github.com/abelxmendoza/RealmForge-XR/pull/8
+
+| Item | Value |
+| --- | --- |
+| App URL (Quest Browser) | https://economics-calgary-worcester-ultra.trycloudflare.com/ |
+| Passthrough probe | https://economics-calgary-worcester-ultra.trycloudflare.com/xr-test/ |
+| Local Vite | `https://localhost:5173` (HTTPS, basic-ssl) |
+| Tunnel | `npx cloudflared tunnel --url https://localhost:5173 --no-tls-verify` |
+| Preflight | `npm test` 132/132 · `npm run build` PASS · tunnel HTTP 200 |
+
+Open the App URL on the headset (real cert — no warning). If the page fails after a long idle, ask for a fresh tunnel URL; quick tunnels change on restart.
+
+### Emiliano — mark PASS / FAIL / SKIP
+
+Full gesture detail lives in `docs/quest2-testing.md`. Minimum for a claimed Quest demo:
+
+| # | Check | Result |
+| --- | --- | --- |
+| 1 | Page loads; **Enter AR** starts a session (or VR fallback) | |
+| 2 | **Place city** / table edge grab places the world; scale presets 1:60 → 1:1 feel correct | |
+| 3 | Pinch/grip grab moves a building; robot replans when a wall crosses its path | |
+| 4 | Left-palm **wrist menu** appears; poke toggles rays / Real·Virtual / Recenter | |
+| 5 | Wrist or typed **Load Mars / Warehouse / Forge** shows confirm; confirm swaps env | |
+| 6 | Usable FPS at 1:1 Forge District (feel or panel); no crash on exit AR | |
+
+On FAIL: headset + browser version, room/Space Setup notes, exact step, expected vs actual, console line if available (`chrome://inspect` over USB).
 
 ## Actual validation in this session
 
 | Check | Result | Evidence |
 | --- | --- | --- |
-| `npm test` | PASS | 109 tests, 12 files |
+| `npm test` | PASS | 132 tests, 17 files (integration/quest-xr) |
 | `npm run build` | PASS | TypeScript + Vite; app and `/xr-test/` emitted |
 | Desktop tool command | PASS | Typed “Select wall tool” showed “Command executed” and inspector “New wall” |
 | Voice-command environment replacement | PASS | Typed “Load Mars Outpost” opened confirmation; confirming loaded Mars and started navigation |
@@ -34,7 +63,7 @@ Build warnings: large chunks (including XR emulation assets) and extensionless V
 
 ## Quest hardware record
 
-Follow `docs/quest2-testing.md`. None of these checks were performed on physical hardware in this session:
+Follow `docs/quest2-testing.md` and the live-session table above. None of these checks were performed on physical hardware in this agent session:
 
 | Check | Status |
 | --- | --- |
@@ -47,14 +76,14 @@ Follow `docs/quest2-testing.md`. None of these checks were performed on physical
 | Microphone permission in XR / commands | NOT TESTED |
 | Performance / resource cleanup on device | NOT TESTED |
 
-For a failure, record headset/browser version, environment, exact interaction, expected/actual behavior, console message and repeatable steps. No headset failures can be reported because hardware testing was unavailable.
+For a failure, record headset/browser version, environment, exact interaction, expected/actual behavior, console message and repeatable steps. No headset PASS/FAIL can be claimed until Emiliano fills the live-session table.
 
 ## Remaining ownership
 
 | Owner | Next task |
 | --- | --- |
-| Abel | Review integration delta and dependency graph; choose persistence lineage; approve merge order; provide production token backend if deploying live voice |
-| Emiliano | Coordinate newer #1 vs earlier #2 XR work; wire existing wrist menu to typed contract; provide XR confirmation consumer; run physical Quest checklist |
+| Abel | Review integration delta; approve merge to `main` only after Quest checklist PASS; production token backend if deploying live voice |
+| Emiliano | Open live App URL on Quest; run physical checklist (table above + `docs/quest2-testing.md`); report PASS/FAIL |
 | Chris | Rehearse desktop fallback; test object manipulation and persistence UX; review voice controls on target screen/headset mirror |
 | Agent 2 | Review shared confirmation adapter and actions contract; verify safe target selection across asynchronous confirmations |
 | Agent 4 | Run live AssemblyAI mic tests over HTTPS, including permission denial, reconnect, release during startup and XR session exit |
