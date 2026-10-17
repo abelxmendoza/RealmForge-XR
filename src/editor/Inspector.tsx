@@ -136,8 +136,12 @@ function ObjectPanel({ o }: { o: WorldObject }) {
       )}
       {o.assetId && <label>Color<input type="color" value={o.color || '#8fa6c9'} onChange={(e) => update({ color: e.target.value })} /></label>}
       <div className="row">
-        <button onClick={duplicateSelected}>D Duplicate</button>
-        <button onClick={deleteSelected}>Del Delete</button>
+        <button type="button" onClick={duplicateSelected}>
+          D Duplicate
+        </button>
+        <button type="button" className="danger" onClick={deleteSelected}>
+          Del Delete
+        </button>
       </div>
     </section>
   )
