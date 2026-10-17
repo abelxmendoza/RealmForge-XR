@@ -99,7 +99,14 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
   )
 }
 
-/** A pokeable button. Works with fingertip touch, controller grab and (if on) rays. */
+/** Ignore repeat presses this soon after one (a fingertip hovering at the touch threshold can re-trigger). */
+const PRESS_COOLDOWN_MS = 350
+
+/**
+ * A pokeable button. Fires on pointer *down*, like the in-scene object buttons: XR touch pointers only
+ * emit `click` when the poke is quicker than the click threshold, so a normal poke never clicked.
+ * Works with fingertip touch, controller grab and (if on) rays.
+ */
 export function MenuButton(props: {
   position?: [number, number, number]
   width?: number
@@ -108,13 +115,22 @@ export function MenuButton(props: {
   onPress: () => void
 }) {
   const width = props.width ?? (W - GAP) / 2
-  const onClick = (e: ThreeEvent<MouseEvent>) => {
+  const last = useRef(0)
+  const body = useRef<THREE.Mesh>(null)
+  const onDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation()
+    const now = performance.now()
+    if (now - last.current < PRESS_COOLDOWN_MS) return
+    last.current = now
     props.onPress()
   }
+  // Brief press feedback: the button sinks a little for the cooldown.
+  useFrame(() => {
+    if (body.current) body.current.scale.z = performance.now() - last.current < PRESS_COOLDOWN_MS ? 0.4 : 1
+  })
   return (
     <group position={props.position}>
-      <mesh onClick={onClick}>
+      <mesh ref={body} onPointerDown={onDown}>
         <boxGeometry args={[width, BTN_H, 0.008]} />
         <meshStandardMaterial color={props.active ? '#f4a261' : '#2d3748'} emissive={props.active ? '#f4a261' : '#000'} emissiveIntensity={0.25} />
       </mesh>

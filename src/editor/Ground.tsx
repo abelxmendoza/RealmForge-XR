@@ -169,7 +169,8 @@ function Board({ size, onPointerDown }: { size: number; onPointerDown: (e: Three
 function TableEdge({ size, cm }: { size: number; cm: (v: number) => number }) {
   return (
     <>
-      <mesh position={[0, -cm(0.6), 0]} raycast={() => null} receiveShadow>
+      {/* Top sits 1 mm below the ground plane: coplanar faces z-fight. */}
+      <mesh position={[0, -cm(0.1) - cm(0.6), 0]} raycast={() => null} receiveShadow>
         <boxGeometry args={[size + cm(3), cm(1.2), size + cm(3)]} />
         <meshStandardMaterial color="#d9d4c8" roughness={0.7} />
       </mesh>
@@ -189,7 +190,7 @@ function TableEdge({ size, cm }: { size: number; cm: (v: number) => number }) {
           WORLD_ROOT.position.copy(state.current.position)
         }}
       >
-        <mesh position={[0, -cm(1.2) - cm(2.5), 0]}>
+        <mesh position={[0, -cm(1.4) - cm(2.5), 0]}>
           <boxGeometry args={[size + cm(6), cm(5), size + cm(6)]} />
           <meshStandardMaterial color="#2c2f36" roughness={0.6} />
         </mesh>

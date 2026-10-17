@@ -6,6 +6,7 @@ import { worldRootRef } from './worldRoot'
 
 const SUN_DIR = new THREE.Vector3(1.2, 2.2, 0.9)
 const RIM_DIR = new THREE.Vector3(-1.5, 1.2, -2)
+const SHADOW_MAP = 1024
 
 /**
  * Lighting for the world at any scale: sky/ground fill plus one shadow-casting sun whose
@@ -40,6 +41,8 @@ export function Lighting() {
       cam.near = extent * 0.25
       cam.far = extent * 6
       cam.updateProjectionMatrix()
+      // Offset shadow lookups by about 1.5 shadow texels so flat ground doesn't show acne stripes at any scale.
+      sun.current.shadow.normalBias = ((2 * extent) / SHADOW_MAP) * 1.5
       fitted.current = extent
     }
   })
@@ -54,9 +57,8 @@ export function Lighting() {
         intensity={2.2}
         color="#fff4e0"
         castShadow
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={[SHADOW_MAP, SHADOW_MAP]}
         shadow-bias={-0.0004}
-        shadow-normalBias={0.004}
       />
       {/* Cool rim light from the back so building silhouettes separate from the board. */}
       <directionalLight ref={rim} target={target} intensity={0.5} color="#9cc8ff" />
