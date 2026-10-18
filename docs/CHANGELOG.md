@@ -15,7 +15,18 @@ Dates are UTC.
 - Backward-compatible single-scan loading, per-section runtime status/dirty tracking, aggregate import limits, and hidden-section GPU cleanup.
 - XR Property scans pages with an explicit exit to browser file controls and pagination for long control lists.
 
+### Changed
+
+- Editor tabs follow the three-step loop: **Build · Routes · Test** first, then smaller **View** and **Save**. The Edit tab is folded into Build (Select is there; edit actions appear when something is selected; Undo / Redo always). The VR control panel keeps its own Edit tab.
+- Phones in portrait: the open menu is a bottom sheet with the tabs nearest the thumb, so the world stays visible above it.
+- Editor HUD adapts to the device: **Enter XR** only shows where the browser supports AR or VR (VR-only headsets get VR instead of an error), **Place world** only with AR, and devices without a headset get **Open on Quest** (copies the editor link).
+- Robot status says what to do next ("No destination yet · Plan Routes → Add Waypoint") and only counts replans once there are some.
+- Wall and Road / Platform stay armed after each one, like the other Build tools; **Done placing** or 1 returns to Select.
+- Touch-friendly side panel copy; the right-click tip only shows with a mouse.
+
 ### Fixed
+
+- Phone layout: the status pill no longer overlaps the side panel when the menu is open (it now shows under the folded top bar).
 
 - Docs/examples cleanup: demo readiness reflects `main`; stale “do not merge Quest” / missing XR confirm notes removed; XR menu example points at production palette + confirmation.
 - Voice spawn for event `prop` objects: requires `catalogId`, wired through `propFromCatalog`; venue phrases (booth, registration desk, stage, …).

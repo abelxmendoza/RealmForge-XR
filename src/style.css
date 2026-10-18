@@ -115,7 +115,8 @@ button:disabled {
   gap: 10px;
   max-width: min(560px, calc(100vw - 280px));
   pointer-events: none;
-  animation: rf-rise 480ms var(--rf-ease) both;
+  /* backwards, not both: a lingering transform would trap the phone bottom sheet (position: fixed) inside .hud. */
+  animation: rf-rise 480ms var(--rf-ease) backwards;
 }
 
 .hud-brand {
@@ -223,6 +224,23 @@ button:disabled {
   font-weight: 600;
   font-size: 12px;
   padding: 8px 10px;
+}
+
+/* View / Save sit after the three steps, smaller and quieter. */
+.hud-tab.secondary {
+  flex: 0 0 auto;
+  min-width: 0;
+  font-weight: 500;
+  color: var(--rf-muted);
+}
+
+.hud-tab.secondary.on {
+  color: inherit;
+}
+
+/* The selection hint takes its own line so Undo / Redo sit together below it. */
+.hud-edit-actions .hud-inline-hint {
+  flex-basis: 100%;
 }
 
 .hud-section-actions {
@@ -1045,8 +1063,12 @@ dialog button.danger-confirm:hover:not(:disabled) {
     background: var(--rf-panel-solid);
   }
 
-  .hud-collapsed .hud-menu > .hud-panel,
-  .hud-collapsed .hud-menu > .status {
+  .hud-collapsed .hud-menu > .hud-panel {
+    display: none;
+  }
+
+  /* The status pill shows under the folded top bar; an open menu hides it so it never sits on the side panel. */
+  .hud:not(.hud-collapsed) > .status {
     display: none;
   }
 
@@ -1057,6 +1079,17 @@ dialog button.danger-confirm:hover:not(:disabled) {
 
   .hud .tools {
     grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  }
+
+  /* All five tabs on one row, even at phone width. */
+  .hud-tabs {
+    flex-wrap: nowrap;
+  }
+
+  .hud-tab {
+    min-width: 0;
+    min-height: 40px;
+    padding: 8px 6px;
   }
 
   .inspector {
@@ -1098,6 +1131,49 @@ dialog button.danger-confirm:hover:not(:disabled) {
     right: auto;
     bottom: calc(68px + min(40dvh, 340px) + 8px);
     max-height: 28vh;
+  }
+}
+
+/* Phone in portrait: the open menu is a bottom sheet (thumb reach), so the world stays visible above it. */
+@media (max-width: 820px) and (min-height: 521px) {
+  .hud-menu {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: 68px;
+    max-height: min(58dvh, calc(100dvh - 200px));
+    padding: 16px 8px 8px;
+    border-radius: var(--rf-radius);
+    background: var(--rf-panel-solid);
+    border: 1px solid var(--rf-line);
+    box-shadow: var(--rf-shadow);
+    pointer-events: auto;
+  }
+
+  /* Grab-bar cue that this is a sheet. */
+  .hud-menu::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    width: 40px;
+    height: 4px;
+    margin-left: -20px;
+    border-radius: 2px;
+    background: var(--rf-line-strong);
+  }
+
+  .hud-collapsed .hud-menu {
+    display: none;
+  }
+
+  /* Tabs at the bottom of the sheet, nearest the thumb; the tool grid sits above them. */
+  .hud-menu > .hud-nav {
+    order: 2;
+  }
+
+  .hud .hud-menu-toggle [aria-hidden] {
+    display: none;
   }
 }
 
