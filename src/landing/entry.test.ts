@@ -10,19 +10,23 @@ describe('landing page editor entry', () => {
     expect(readEntry(editorHref(world.id))).toEqual({ editor: true, world: world.id })
   })
   it('exposes event venues alongside the original worlds', () => {
-    expect(LANDING_WORLDS).toHaveLength(3)
-    expect(LANDING_VENUES.map((v) => v.id)).toEqual(['empty-event-venue', 'job-fair'])
-    expect(LANDING_TEMPLATES).toHaveLength(5)
+    expect(LANDING_WORLDS.map((w) => w.id)).toEqual(['forge-district', 'mars-outpost', 'warehouse', 'factory-floor'])
+    expect(LANDING_VENUES.map((v) => v.id)).toEqual(['empty-event-venue', 'job-fair', 'music-festival'])
+    expect(LANDING_TEMPLATES).toHaveLength(7)
   })
   it('starts the hero picker with Empty Space', () => {
     expect(LANDING_TEMPLATES[0]).toMatchObject({ id: 'empty-event-venue', name: 'Empty Space', number: '01' })
     expect(LANDING_TEMPLATES.map((t) => t.id)).toEqual([
       'empty-event-venue',
       'job-fair',
+      'music-festival',
       'forge-district',
       'mars-outpost',
       'warehouse',
+      'factory-floor',
     ])
+    // Numbered in picker order.
+    expect(LANDING_TEMPLATES.map((t) => t.number)).toEqual(['01', '02', '03', '04', '05', '06', '07'])
   })
   it('opens the editor without a template and ignores unknown template input', () => {
     expect(readEntry(editorHref())).toEqual({ editor: true })
