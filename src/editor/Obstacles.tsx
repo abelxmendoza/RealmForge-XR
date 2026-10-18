@@ -76,7 +76,7 @@ function Obstacle({ o }: { o: WorldObject }) {
     const world = useWorld.getState()
     const memo = state.memo ?? { base: world.objects[o.id] ?? o }
     if (state.first) {
-      // Grabbing always means move, even if a place tool was armed.
+      // Grabbing always selects for edit, even if a place tool was armed.
       world.setTool('select')
       world.select(o.id)
       world.setDragging(true)

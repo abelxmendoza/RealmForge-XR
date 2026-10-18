@@ -31,7 +31,7 @@ type Item =
   | { kind: 'sep' }
 
 const TOOLS: { id: Tool; label: string }[] = [
-  { id: 'select', label: 'Move' },
+  { id: 'select', label: 'Select' },
   { id: 'wall', label: 'Wall' },
   { id: 'building', label: 'Building' },
   { id: 'goal', label: 'Set Destination' },

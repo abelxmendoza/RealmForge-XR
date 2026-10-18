@@ -2,8 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useWorld } from '../world/store'
 
 /**
- * Placement should hand control back to Move after a successful place, and
- * pressing an existing object should force Move so clicks never spawn over objects.
+ * Placement should hand control back to Select after a successful place, and
+ * pressing an existing object should force Select so clicks never spawn over objects.
+ * Move is drag-on-selection, not a separate tool label.
  */
 describe('select-over-spawn placement rules', () => {
   beforeEach(() => {
@@ -11,7 +12,7 @@ describe('select-over-spawn placement rules', () => {
     useWorld.getState().setTool('building')
   })
 
-  it('returns to Move after placing an object', () => {
+  it('returns to Select after placing an object', () => {
     const id = useWorld.getState().addObject({
       kind: 'building',
       position: [0, 0, 0],
@@ -25,7 +26,7 @@ describe('select-over-spawn placement rules', () => {
     expect(useWorld.getState().selectedId).toBe(id)
   })
 
-  it('forces Move when an existing object is pressed while a place tool is armed', () => {
+  it('forces Select when an existing object is pressed while a place tool is armed', () => {
     const id = useWorld.getState().addObject({
       kind: 'crate',
       position: [1, 0, 1],
@@ -33,7 +34,7 @@ describe('select-over-spawn placement rules', () => {
       rotationY: 0,
     })
     useWorld.getState().setTool('wall')
-    // Mirrors Obstacles onDown: stop spawn, select, enter Move
+    // Mirrors Obstacles onDown: stop spawn, select, enter Select
     useWorld.getState().setTool('select')
     useWorld.getState().select(id)
     expect(useWorld.getState().tool).toBe('select')
