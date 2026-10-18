@@ -108,7 +108,7 @@ export function placeAssetAt(point: Vec2): boolean {
   if (result.ok) {
     settleObject(result.id)
     pulse('active', HAPTIC.place)
-    finishPlacement(result.id)
+    keepPlacing(result.id)
   }
   return result.ok
 }
@@ -140,7 +140,7 @@ export function placeEventAt(point: Vec2): boolean {
   const id = w.addObject(data)
   settleObject(id)
   pulse('active', HAPTIC.place)
-  finishPlacement(id)
+  keepPlacing(id)
   return true
 }
 
@@ -236,7 +236,7 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
       if (check.reasons.length) useEditor.getState().set({ actorMessage: flowActions.placementMessage(check) })
       const id = w.addObject(draftObj)
       settleObject(id)
-      finishPlacement(id)
+      keepPlacing(id)
       return
     }
     case 'wall':
@@ -277,6 +277,17 @@ function finishPlacement(id?: string | null) {
   const w = useWorld.getState()
   if (id) w.select(id)
   w.setTool('select')
+}
+
+/**
+ * Catalog placements (buildings, decorations, library assets, event objects) keep the tool armed
+ * and the catalog open, so you can place several in a row. Clicking an existing object still
+ * selects it instead of spawning; "Done placing" (or 1 / Esc) returns to Select.
+ */
+function keepPlacing(id: string) {
+  const o = useWorld.getState().objects[id]
+  useWorld.getState().select(null)
+  if (o) useEditor.getState().set({ actorMessage: 'Placed. Click empty ground to place another, or press Done placing.' })
 }
 
 /** The map's ground. Empty-ground clicks apply the current place tool; object presses select/move instead. */

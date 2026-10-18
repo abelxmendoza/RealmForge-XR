@@ -46,6 +46,8 @@ function useLibraryKey() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target
+      // Esc closes the library even while typing in its name or search box.
+      if (e.key === 'Escape' && !getConfirmation()) return useLibraryPalette.getState().set(false)
       if (t instanceof HTMLInputElement || t instanceof HTMLSelectElement || t instanceof HTMLTextAreaElement) return
       if ((e.key === 'l' || e.key === 'L') && !e.ctrlKey && !e.metaKey) {
         const s = useLibraryPalette.getState()

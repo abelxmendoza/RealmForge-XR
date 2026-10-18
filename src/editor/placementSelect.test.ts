@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useWorld } from '../world/store'
 
 /**
- * Placement should hand control back to Select after a successful place, and
- * pressing an existing object should force Select so clicks never spawn over objects.
+ * Catalog placement keeps the place tool armed (place several in a row); "Done placing"
+ * returns to Select. Pressing an existing object forces Select so clicks never spawn over objects.
  * Move is drag-on-selection, not a separate tool label.
  */
 describe('select-over-spawn placement rules', () => {
@@ -12,7 +12,7 @@ describe('select-over-spawn placement rules', () => {
     useWorld.getState().setTool('building')
   })
 
-  it('returns to Select after placing an object', () => {
+  it('can still return to Select explicitly (Done placing)', () => {
     const id = useWorld.getState().addObject({
       kind: 'building',
       position: [0, 0, 0],
