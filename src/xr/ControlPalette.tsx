@@ -24,6 +24,7 @@ import { toggleMocap, useMocap } from '../mocap/store'
 import { scanRoom } from './roomTracker'
 import { toggleRealSurfaces } from './realSurfaces'
 import { readSpatial, useSpatial } from './spatialSave'
+import { EVENT_CATALOG } from '../world/eventCatalog'
 import { blockRoute } from '../editor/demo'
 import { usePlacement } from './placement'
 import { createPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteSave, savePaletteWorld } from './paletteActions'
@@ -66,6 +67,7 @@ function PaletteContent() {
   }, [voice.lastTranscript, voice.lastResult, voice.lastError])
   const [savePage, setSavePage] = useState(0)
   const [assetPage, setAssetPage] = useState(0)
+  const [eventPage, setEventPage] = useState(0)
   const [destinationPage, setDestinationPage] = useState(0)
   const [history, setHistory] = useState(getHistoryState)
   const request = useSyncExternalStore(subscribeConfirmation, getConfirmation, getConfirmation)
@@ -152,6 +154,12 @@ function PaletteContent() {
     buttons = libraryAssets().slice(offset * 6, offset * 6 + 6).map((asset) => ({ label: asset.name, active: tool === 'asset' && editor.assetId === asset.id, run: () => { worldActions.selectCatalogAsset(asset.id); setMessage('Aim at ground: green places, red is blocked.') } }))
     buttons.push({ label: 'Rotate −90°', run: () => worldActions.rotateCatalogAsset(-1) }, { label: 'Rotate +90°', run: () => worldActions.rotateCatalogAsset(1) },
       { label: 'Previous objects', disabled: offset === 0, run: () => setAssetPage(offset - 1) }, { label: 'More objects', disabled: (offset + 1) * 6 >= libraryAssets().length, run: () => setAssetPage(offset + 1) })
+  } else if (page === 'Events') {
+    // Event / venue objects (chairs, tables, booths, stages, signs…) from the universal event catalog.
+    const offset = Math.min(eventPage, Math.ceil(EVENT_CATALOG.length / 6) - 1)
+    buttons = EVENT_CATALOG.slice(offset * 6, offset * 6 + 6).map((item) => ({ label: item.label, active: tool === 'event' && editor.eventCatalogId === item.id, run: () => { useEditor.getState().set({ eventCatalogId: item.id }); worldActions.setTool('event'); setMessage('Aim at the floor and pinch / pull the trigger to place.') } }))
+    buttons.push({ label: 'Rotate −90°', run: () => worldActions.rotateCatalogAsset(-1) }, { label: 'Rotate +90°', run: () => worldActions.rotateCatalogAsset(1) },
+      { label: 'Previous objects', disabled: offset === 0, run: () => setEventPage(offset - 1) }, { label: 'More objects', disabled: (offset + 1) * 6 >= EVENT_CATALOG.length, run: () => setEventPage(offset + 1) })
   } else if (page === 'Actors') {
     buttons = ACTOR_KINDS.map((kind) => ({ label: 'Place ' + ACTOR_CATALOG[kind].name, active: tool === 'actor' && editor.actorKind === kind, run: () => worldActions.selectActorKind(kind) }))
     buttons.push(
@@ -217,7 +225,7 @@ function PaletteContent() {
         <Tile text="Cancel" x={-0.165} y={-0.12} width={0.31} onClick={() => resolveConfirmation(request.id, false)} />
         <Tile text="Confirm" x={0.165} y={-0.12} width={0.31} active onClick={() => resolveConfirmation(request.id, true)} />
       </> : <>
-        {['Tools', 'View', 'Worlds', 'Edit', 'Brush', 'Assets', 'Routes', 'Actors'].map((tab, i) => <Tile key={tab} text={tab} x={(i - 3.5) * 0.0815} y={0.21} width={0.0775} active={page === tab || tab === 'Actors' && page === 'Actor settings' || tab === 'Worlds' && page === 'Saved'} onClick={() => setPage(tab)} />)}
+        {['Tools', 'View', 'Worlds', 'Edit', 'Brush', 'Assets', 'Events', 'Routes', 'Actors'].map((tab, i) => <Tile key={tab} text={tab} x={(i - 4) * 0.0725} y={0.21} width={0.069} active={page === tab || tab === 'Actors' && page === 'Actor settings' || tab === 'Worlds' && page === 'Saved'} onClick={() => setPage(tab)} />)}
         {buttons.map((button, i) => <Tile key={page + button.label} text={button.label} x={i % 2 ? 0.165 : -0.165} y={0.135 - Math.floor(i / 2) * 0.07} width={0.31} disabled={busy || button.disabled} active={button.active} onClick={() => void run(button)} />)}
         <Tile text="Undo" x={-0.24} y={-0.235} width={0.15} disabled={busy || !history.canUndo} onClick={() => worldActions.undo()} />
         <Tile text="Redo" x={-0.08} y={-0.235} width={0.15} disabled={busy || !history.canRedo} onClick={() => worldActions.redo()} />

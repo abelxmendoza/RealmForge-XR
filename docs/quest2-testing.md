@@ -221,3 +221,9 @@ enabled features (`[MR] session started: …`).
 | No **Enter AR**, or "not supported" | Page must be `https://` or `localhost` |
 | No outlines, nothing snaps | Redo Space Setup with a table, and allow spatial-data access when prompted |
 | Page won't load after unplugging | Re-run `adb reverse tcp:5173 tcp:5173` |
+
+## Event objects in the headset and standing inside objects
+
+- [ ] Palette **Events** tab lists tables, chairs, booths, stages, signs (6 per page, More objects for the rest)
+- [ ] Pick one: a ghost follows your aim on the floor; pinch / trigger (or a ray press) places it; stick flick rotates
+- [ ] At 1:1, stand inside a booth or under the stage edge: your ray still works and reaches objects beyond it

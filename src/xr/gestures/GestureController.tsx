@@ -12,7 +12,7 @@ import { REQUIRED_JOINTS, dist, handFeatures, rollAngle, type HandFeatures, type
 import { GestureRecognizer, type GestureEvent } from './recognizer'
 import { applyPull, insideViewFrame, nearestEquivalent, pullStep, rotateAbout, rotateGroup, yawAligning } from './actions'
 import { ControllerRecognizer, type ControllerEvent, type ControllerSample } from './controllerInput'
-import { placeAssetAt, setGroundHover } from '../../editor/Ground'
+import { isPlacingTool, placeAt, setGroundHover } from '../../editor/Ground'
 import { worldActions } from '../../world/actions'
 import { HAPTIC, pulse } from '../haptics'
 
@@ -104,7 +104,7 @@ export function GestureController() {
 
     // Asset tool: the ghost follows where you aim on the floor (right controller ray, else your eyes
     // through a pinch point), so you can place without rays, even at 1:1.
-    const placingAssets = world.tool === 'asset' && !useEditor.getState().rays
+    const placingAssets = isPlacingTool(world.tool) && !useEditor.getState().rays
     if (placingAssets) {
       const aim = aimRay(head, pads.right ?? pads.left, hands.right ?? hands.left)
       setGroundHover(aim ? floorPoint(aim) : null)
@@ -145,7 +145,7 @@ export function GestureController() {
         moveYou(root, head, e.x, e.z)
         return
       case 'turn':
-        if (useWorld.getState().tool === 'asset') {
+        if (isPlacingTool(useWorld.getState().tool)) {
           worldActions.rotateCatalogAsset(e.yaw > 0 ? 1 : -1)
           pulse('right', HAPTIC.tick)
           return
@@ -199,10 +199,10 @@ export function GestureController() {
       }
       case 'pinch-start':
         if (useEditor.getState().rays) return // rays already pinch-drag
-        if (useWorld.getState().tool === 'asset') {
+        if (isPlacingTool(useWorld.getState().tool)) {
           const aim = ray ?? { origin: head, dir: toV3(new THREE.Vector3(...e.f.pinchPoint).sub(new THREE.Vector3(...head)).normalize()) }
           const at = floorPoint(aim)
-          if (at) placeAssetAt(at)
+          if (at) placeAt(at)
           return
         }
         startPinchRotate(root, e.hand, e.f, ray ?? { origin: head, dir: toV3(new THREE.Vector3(...e.f.pinchPoint).sub(new THREE.Vector3(...head)).normalize()) })

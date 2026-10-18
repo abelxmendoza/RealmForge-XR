@@ -99,6 +99,35 @@ export function placeAssetAt(point: Vec2): boolean {
   return result.ok
 }
 
+/** Tools that place a picked object where you aim: library assets and event objects (chairs, tables, booths…). */
+export const isPlacingTool = (tool: string) => tool === 'asset' || tool === 'event'
+
+/** The event object (chairs, tables, booths, stages…) picked for the Event tool, as it would sit at `point`. */
+function eventPreview(point: Vec2): WorldObject | null {
+  const { eventCatalogId, assetRotation } = useEditor.getState()
+  const at = placePoint(point)
+  const prop = propFromCatalog(eventCatalogId, [at[0], 0, at[1]], assetRotation)
+  return prop ? ({ id: 'preview', ...prop } as WorldObject) : null
+}
+
+/** Place the picked event object at `point` (map metres); haptic tick on success. */
+export function placeEventAt(point: Vec2): boolean {
+  const prop = eventPreview(point)
+  if (!prop) return false
+  const { id: _preview, ...data } = prop
+  const w = useWorld.getState()
+  const id = w.addObject(data)
+  settleObject(id)
+  w.select(id)
+  pulse('active', HAPTIC.place)
+  return true
+}
+
+/** Place whatever the current placing tool holds (asset or event object). */
+export function placeAt(point: Vec2): boolean {
+  return useWorld.getState().tool === 'event' ? placeEventAt(point) : placeAssetAt(point)
+}
+
 /**
  * Apply the current tool at a ground press. Used by the ground itself and by walkable objects
  * (slabs, roads, plazas): those cover the ground, so a placement tool pressed on them lands here,
@@ -139,12 +168,7 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
     }
     case 'event': {
       e.stopPropagation()
-      const at = placePoint(raw)
-      const prop = propFromCatalog(useEditor.getState().eventCatalogId, [at[0], 0, at[1]])
-      if (!prop) return
-      const id = w.addObject(prop)
-      settleObject(id)
-      w.select(id)
+      placeEventAt(raw)
       return
     }
     case 'building':
@@ -197,10 +221,12 @@ export function Ground() {
   useEditor((s) => s.actorKind)
   useEditor((s) => s.assetId)
   useEditor((s) => s.assetRotation)
+  useEditor((s) => s.eventCatalogId)
   useEditor((s) => s.snap)
   useWorld((s) => s.objects)
   const size = WORLD.half * 2
-  const preview = tool === 'asset' && hover ? worldActions.previewCatalogAsset(hover) : null
+  const eventGhost = tool === 'event' && hover ? eventPreview(hover) : null
+  const preview = tool === 'asset' && hover ? worldActions.previewCatalogAsset(hover) : eventGhost ? { object: eventGhost, valid: true } : null
   const ok = !!preview && preview.valid && !placementError
   return (
     <>

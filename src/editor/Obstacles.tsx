@@ -92,10 +92,19 @@ function Obstacle({ o }: { o: WorldObject }) {
   const [hovered, setHovered] = useState(false)
   const [holding, setHolding] = useState(false)
   const free = useRef<{ x: number; z: number; yaw: number } | null>(null)
-  useFrame(() => {
+  useFrame((state) => {
     const g = groupRef.current
+    if (!g) return
+    // Standing inside it (a booth, stage or building at 1:1): pointers pass through it, otherwise your hand's
+    // grab pointer touches it from inside and switches your ray off, so nothing beyond can be reached.
+    if (state.gl.xr.isPresenting && !free.current) {
+      const inside = headInside(g.worldToLocal(state.camera.getWorldPosition(headLocal)), o.size)
+      const pe = inside ? 'none' : undefined
+      const holder = g as THREE.Group & { pointerEvents?: 'none' }
+      if (holder.pointerEvents !== pe) holder.pointerEvents = pe
+    }
     const f = free.current
-    if (!g || !f) return
+    if (!f) return
     g.position.x = f.x
     g.position.z = f.z
     g.rotation.y = f.yaw
@@ -259,6 +268,13 @@ function Obstacle({ o }: { o: WorldObject }) {
       )}
     </>
   )
+}
+
+const headLocal = new THREE.Vector3()
+
+/** Whether a point (in an object's local space: base centre, yaw applied) is inside its box, with a small margin. */
+export function headInside(p: { x: number; y: number; z: number }, size: readonly [number, number, number], margin = 0.05): boolean {
+  return Math.abs(p.x) <= size[0] / 2 + margin && Math.abs(p.z) <= size[2] / 2 + margin && p.y >= -margin && p.y <= size[1] + margin
 }
 
 type HandleProps = { position: [number, number, number]; size: number; color: string; onPointerDown: (e: ThreeEvent<PointerEvent>) => void }
