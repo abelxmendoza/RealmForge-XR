@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { BRAND } from '../theme/brand'
 import { worldActions } from '../world/actions'
 import { confirmReplace, requestConfirmation } from '../world/confirmation'
-import { enterARWithFallback, useXRSessionMeta } from '../xr/session'
+import { detectXRSupport, enterARWithFallback, useXRSessionMeta, useXRSupport } from '../xr/session'
 import { usePlacement } from '../xr/placement'
 import { useWorld, type Tool } from '../world/store'
 import { useNav } from '../nav/navigation'
@@ -48,7 +48,7 @@ import { useHudSection } from './hudSectionStore'
 import { xrStore } from '../xr/xrStore'
 
 const STATUS_TEXT = {
-  idle: 'No goal set',
+  idle: 'No destination yet',
   moving: 'Robot moving',
   paused: 'Route paused',
   arrived: 'Arrived',
@@ -68,6 +68,12 @@ const PHASE_LABEL: Record<string, string> = {
 const COMPACT_QUERY = '(max-width: 820px), (max-height: 520px)'
 const isCompact = () => typeof window !== 'undefined' && window.matchMedia?.(COMPACT_QUERY).matches === true
 
+/** Robot status for the pill: says what to do next when idle, and only counts replans once there are some. */
+function robotStatusLine(status: keyof typeof STATUS_TEXT, replans: number) {
+  const text = status === 'idle' ? `${STATUS_TEXT.idle} · Plan Routes → Add Waypoint` : STATUS_TEXT[status]
+  return replans > 0 ? `${text} · replans ${replans}` : text
+}
+
 function tooltip(base: string, disabledWhy?: string) {
   return disabledWhy ? `${base} — ${disabledWhy}` : base
 }
@@ -85,6 +91,8 @@ export function ToolbarHud() {
   const placement = usePlacement((s) => s.status)
   const xrError = useXRSessionMeta((s) => s.lastError)
   const entering = useXRSessionMeta((s) => s.entering)
+  const xrSupport = useXRSupport()
+  const [shareMsg, setShareMsg] = useState<string | null>(null)
   const dirty = useWorldLibrary((s) => s.dirty)
   const worldScale = useEditor((s) => s.worldScale)
   const rays = useEditor((s) => s.rays)
@@ -108,6 +116,17 @@ export function ToolbarHud() {
     if (isCompact()) setMenuOpen(false)
   }
   useEffect(() => subscribeHistory((s) => setHist({ canUndo: s.canUndo, canRedo: s.canRedo })), [])
+  useEffect(() => void detectXRSupport(), [])
+
+  /** No headset here: copy the editor link so it can be opened in the Quest Browser. */
+  const shareToHeadset = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setShareMsg('Link copied. Open it in the Quest Browser, then press Enter XR.')
+    } catch {
+      setShareMsg(`Open ${window.location.href} in the Quest Browser, then press Enter XR.`)
+    }
+  }
 
   // Follow placement / route tools into their section when the keyboard picks them (1–0).
   // Leave Select alone so first-time users stay on Build until they choose.
@@ -184,34 +203,50 @@ export function ToolbarHud() {
           {menuOpen ? 'Close' : 'Menu'} <span aria-hidden="true">{menuOpen ? '▴' : '▾'}</span>
         </button>
         <div className="hud-session">
-          <button
-            type="button"
-            className="primary"
-            disabled={entering}
-            title="Enter immersive mode — AR when available, otherwise VR"
-            onClick={() => void enterARWithFallback()}
-          >
-            {entering ? 'Entering…' : 'Enter XR'}
-          </button>
-          <button
-            type="button"
-            className="ghost hud-vr-alt"
-            title="VR only — no camera passthrough. Prefer Enter XR on Quest."
-            onClick={() => void xrStore.enterVR()}
-          >
-            VR
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const p = usePlacement.getState()
-              if (p.status === 'choosing') p.cancelChoosing()
-              else p.startChoosing()
-            }}
-            title="Pin the miniature world onto a real table or floor (AR)"
-          >
-            {placement === 'choosing' ? 'Cancel place' : 'Place world'}
-          </button>
+          {(xrSupport.ar || xrSupport.vr) && (
+            <button
+              type="button"
+              className="primary"
+              disabled={entering}
+              title={xrSupport.ar ? 'Enter immersive mode with passthrough (AR)' : 'Enter immersive mode (VR)'}
+              onClick={() => void (xrSupport.ar ? enterARWithFallback() : xrStore.enterVR())}
+            >
+              {entering ? 'Entering…' : 'Enter XR'}
+            </button>
+          )}
+          {xrSupport.ar && xrSupport.vr && (
+            <button
+              type="button"
+              className="ghost hud-vr-alt"
+              title="VR only — no camera passthrough. Prefer Enter XR on Quest."
+              onClick={() => void xrStore.enterVR()}
+            >
+              VR
+            </button>
+          )}
+          {xrSupport.checked && !xrSupport.ar && !xrSupport.vr && (
+            <button
+              type="button"
+              className="primary"
+              title="This device has no headset. Copy the link to open it on a Quest."
+              onClick={() => void shareToHeadset()}
+            >
+              Open on Quest
+            </button>
+          )}
+          {xrSupport.ar && (
+            <button
+              type="button"
+              onClick={() => {
+                const p = usePlacement.getState()
+                if (p.status === 'choosing') p.cancelChoosing()
+                else p.startChoosing()
+              }}
+              title="Pin the miniature world onto a real table or floor (AR)"
+            >
+              {placement === 'choosing' ? 'Cancel place' : 'Place world'}
+            </button>
+          )}
           {placement === 'pinned' && (
             <button type="button" className="ghost" onClick={() => usePlacement.getState().resetToDefault()}>
               Unpin
@@ -227,6 +262,21 @@ export function ToolbarHud() {
             Guide
           </button>
         </div>
+      </div>
+
+      {shareMsg && (
+        <p className="hint-banner" role="status">
+          {shareMsg}
+        </p>
+      )}
+
+      <div className="status" role="status">
+        <span className={`status-dot${statusTone ? ` ${statusTone}` : ''}`} aria-hidden />
+        <span>
+          {robotStatusLine(status, replans)}
+          {dirty ? ' · unsaved' : ''}
+          {mocap.enabled && ` · motion capture ${mocap.status}${mocap.status === 'live' ? ` ${mocap.fps} fps` : ''}`}
+        </span>
       </div>
 
       <div className="hud-menu" id="hud-menu">
@@ -457,12 +507,12 @@ export function ToolbarHud() {
             <div className="hud-sim-status">
               <strong>{routeStatusLabel(route)}</strong>
               <span>
-                Robot: {STATUS_TEXT[status]} · replans {replans}
+                Robot: {robotStatusLine(status, replans)}
               </span>
               {routeMsg ? <span>{routeMsg}</span> : null}
             </div>
             <p className="hud-inline-hint">
-              Use Add Waypoint and click several points on the ground, then Play. Drag objects anytime — placement returns to Select.
+              Use Add Waypoint and tap several points on the ground, then Play. Drag objects anytime to see the route change.
             </p>
           </div>
         )}
@@ -511,7 +561,7 @@ export function ToolbarHud() {
                 Step {attendee.stepIndex + 1} · replans {attendee.replanCount}
               </span>
             </div>
-            <p className="hud-inline-hint">Robot: {STATUS_TEXT[status]} · replans {replans}</p>
+            <p className="hud-inline-hint">Robot: {robotStatusLine(status, replans)}</p>
           </div>
         )}
 
@@ -616,14 +666,6 @@ export function ToolbarHud() {
         )}
       </div>
 
-      <div className="status" role="status">
-        <span className={`status-dot${statusTone ? ` ${statusTone}` : ''}`} aria-hidden />
-        <span>
-          {STATUS_TEXT[status]} · replans {replans}
-          {dirty ? ' · unsaved' : ''}
-          {mocap.enabled && ` · motion capture ${mocap.status}${mocap.status === 'live' ? ` ${mocap.fps} fps` : ''}`}
-        </span>
-      </div>
       {xrError && (
         <div className="alert" role="alert">
           {xrError}

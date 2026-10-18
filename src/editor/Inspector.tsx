@@ -134,7 +134,7 @@ export function Inspector() {
       </div>
 
       {sim.running && section !== 'simulate' && (
-        <p className="inspector-sim-pill" role="status" title="Open Simulate on the left for full controls">
+        <p className="inspector-sim-pill" role="status" title="Open Simulate in the menu for full controls">
           {simStatusLabel(sim)}
         </p>
       )}
@@ -198,13 +198,16 @@ function DonePlacingButton() {
   )
 }
 
+/** Mouse-only tips (right-click) are hidden on touch screens. */
+const hasMouse = () => typeof window !== 'undefined' && window.matchMedia?.('(hover: hover) and (pointer: fine)').matches === true
+
 function SelectEmptyPanel() {
   return (
     <section>
       <p className="hint">
-        Click an object in the world to edit it, or choose a Build / Plan tool on the left to place something new.
+        Tap an object in the world to edit it, or pick a Build or Plan Routes tool from the menu to place something new.
       </p>
-      <p className="hint">Tip: right-click the scene for quick world actions.</p>
+      {hasMouse() && <p className="hint">Tip: right-click the scene for quick world actions.</p>}
     </section>
   )
 }
