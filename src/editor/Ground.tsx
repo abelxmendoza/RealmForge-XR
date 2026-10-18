@@ -20,8 +20,8 @@ import { HAPTIC, pulse } from '../xr/haptics'
 import { usePlacement } from '../xr/placement'
 import { useEnvironment } from '../world/environment'
 import { propFromCatalog } from '../world/eventCatalog'
-import { restLocalY, settleObject } from '../xr/realSurfaces'
 import { addWaypoint } from '../nav/routePlan'
+import { restLocalY, settleObject } from '../xr/realSurfaces'
 
 const MIN_WALL = 0.6
 const MIN_PLATFORM = 0.5
