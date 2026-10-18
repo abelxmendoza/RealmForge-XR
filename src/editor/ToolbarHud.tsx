@@ -22,6 +22,7 @@ import {
 } from '../nav/routePlan'
 import { blockRoute } from './demo'
 import { openWorldLibrary } from './WorldLibrary'
+import { openObjectLibrary } from './Inspector'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 import { useEditor } from './settings'
 import { downloadWorld, importWorld, quickSave, useWorldLibrary } from '../world/persistence'
@@ -250,7 +251,13 @@ export function ToolbarHud() {
             >
               {snap ? 'Align to Grid · On' : 'Align to Grid'}
             </button>
-            <button type="button" title="Open the worlds library for templates and catalogs (L)" onClick={openWorldLibrary}>
+            <button
+              type="button"
+              className={tool === 'asset' ? 'on' : ''}
+              aria-pressed={tool === 'asset'}
+              title="Browse the object catalog in the side panel (8)"
+              onClick={openObjectLibrary}
+            >
               Object library
             </button>
           </div>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { create } from 'zustand'
 import { ActorPanel } from '../actors/ActorPanel'
 import { getAsset } from '../world/assets'
 import { AssetCatalogPanel } from './AssetCatalogPanel'
@@ -36,12 +37,25 @@ import { useHudSection } from './hudSectionStore'
 import { resolveInspectorContext, TOOL_PANEL_HEADINGS } from './inspectorContext'
 import { useAttendee, type AttendeeStatus } from '../sim/attendee'
 
+/** Whether the right panel is hidden; a store so toolbar buttons can reopen it. */
+export const useInspectorPanel = create<{ collapsed: boolean; setCollapsed: (collapsed: boolean) => void }>((set) => ({
+  collapsed: false,
+  setCollapsed: (collapsed) => set({ collapsed }),
+}))
+
+/** Switch to the catalog-object tool and make sure its panel is visible. */
+export function openObjectLibrary() {
+  worldActions.setTool('asset')
+  useInspectorPanel.getState().setCollapsed(false)
+}
+
 /**
  * Context-sensitive right panel: shows only controls for the active Hud section,
  * selected object/actor, or placement tool. Uses existing world/editor/attendee stores.
  */
 export function Inspector() {
-  const [collapsed, setCollapsed] = useState(false)
+  const collapsed = useInspectorPanel((s) => s.collapsed)
+  const setCollapsed = useInspectorPanel((s) => s.setCollapsed)
   const section = useHudSection((s) => s.section)
   const selected = useWorld((s) => (s.selectedId ? s.objects[s.selectedId] : null))
   const selectedActorId = useWorld((s) => s.selectedActorId)

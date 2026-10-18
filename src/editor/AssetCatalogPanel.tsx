@@ -20,7 +20,7 @@ export function AssetCatalogPanel() {
   const destinations = Object.values(objects).filter((o) => o.destinationRole)
   const asset = getAsset(assetId) ?? assetsIn('Warehouse')[0]
   return <section>
-    <h3>Asset library</h3>
+    <h3>Object library</h3>
     <div className="row">{categories.map((value) => <button key={value} className={category === value ? 'on' : ''} onClick={() => setCategory(value)}>{value}</button>)}</div>
     <div className="catalog-grid">{assetsIn(category).map((entry) => <button key={entry.id} className={tool === 'asset' && entry.id === assetId ? 'on' : ''} title={entry.description} onClick={() => worldActions.selectCatalogAsset(entry.id)}>{entry.name}</button>)}</div>
     <p>{asset.name} · {Math.round(rotation * 180 / Math.PI)}°</p>
