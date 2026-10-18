@@ -55,7 +55,7 @@ const PAGES: { words: RegExp; page: PalettePage; bare: boolean }[] = [
   { words: /plan routes|route planning|planning/, page: 'plan', bare: true },
   { words: /build|building tools/, page: 'build', bare: true },
   { words: /edit|editing tools/, page: 'edit', bare: true },
-  { words: /simulate|simulation/, page: 'simulate', bare: false },
+  { words: /simulate|simulation|test|testing/, page: 'simulate', bare: false },
   { words: /plan|routes/, page: 'plan', bare: false },
   { words: /view|display/, page: 'view', bare: false },
   { words: /save|saving/, page: 'save', bare: false },

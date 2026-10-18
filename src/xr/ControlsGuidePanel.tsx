@@ -56,9 +56,18 @@ export function guideSpec(sectionId: GuideSectionId, collapsed: boolean): PanelS
         padding: 8,
         blocks: [
           {
-            type: 'row',
+            // Two rows of five: nine tabs in one row would cut their labels off.
+            type: 'grid',
+            columns: 5,
+            rowHeight: 30,
             gap: 4,
-            items: GUIDE_SECTIONS.map((s) => ({ type: 'button' as const, id: `section:${s.id}`, label: s.tab, variant: s.id === sectionId ? ('on' as const) : ('tab' as const) })),
+            items: GUIDE_SECTIONS.map((s) => ({
+              type: 'button' as const,
+              id: `section:${s.id}`,
+              label: s.tab,
+              align: 'center' as const,
+              variant: s.id === sectionId ? ('on' as const) : ('tab' as const),
+            })),
           },
         ],
       },

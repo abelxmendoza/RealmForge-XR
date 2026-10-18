@@ -280,4 +280,17 @@ See [landing page verification](docs/landing-page.md).
 
 Build → **Property scans** assembles up to 24 named GLB mesh sections (250 MB total): rooms, garage, and outdoor areas. Align sections, calibrate scale, label floors, and show/hide or solo parts of a property. Web and immersive controls share the same transforms and actions. Export a **property bundle (.rfproperty)** to carry the actual mesh files to another device; ordinary world JSON carries alignment only. Native file controls run outside immersive mode. Navigation remains on one flat plane; scan surfaces are visual references.
 
+### Scanning with Scaniverse
+
+RealmForge doesn't capture scans itself. Use the free [Scaniverse](https://scaniverse.com) app (iPhone or Android):
+
+1. Scan one room or area at a time. Move slowly and include a doorway that the next room shares.
+2. Get a **mesh** as a **GLB** file (not a splat):
+   - **Classic** experience: choose **Mesh** when you start, let it process, then **Share → Export Model → GLB**.
+   - **New** experience: capture into a Site, generate a Mesh asset, then download its GLB from Scaniverse Web.
+3. Send the `.glb` to the computer or headset running RealmForge (AirDrop, Google Drive, email, or USB).
+4. In the editor: **Build → Property scans → Add scans (.glb)**. In the headset, open **Property scans → Files / names (exit XR)** first, since file picking happens in the browser. Line rooms up at the shared doorway, then use **Measure scale** with a distance you know, like a door width.
+
+The same steps are in the scan panel and in the in-app **Guide** (Scans tab), on web and in the headset.
+
 See [property scan workflow, transfer format, and validation](docs/property-scans.md).

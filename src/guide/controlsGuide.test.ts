@@ -12,6 +12,13 @@ describe('controls guide', () => {
     }
   })
 
+  it('tells users to scan with Scaniverse as a mesh and export GLB', () => {
+    const text = getGuideSection('scans').lines.join(' ')
+    expect(text).toContain('Scaniverse')
+    expect(text).toContain('Mesh')
+    expect(text).toContain('GLB')
+  })
+
   it('cycles sections', () => {
     const first = GUIDE_SECTIONS[0]!.id
     const last = GUIDE_SECTIONS[GUIDE_SECTIONS.length - 1]!.id

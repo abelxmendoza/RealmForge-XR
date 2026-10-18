@@ -46,7 +46,7 @@ import { voiceConfirm } from '../voice/sharedConfirm'
 import type { ButtonItem, Card, Item, PanelSpec } from './panel/layout'
 import { toggleOcclusion } from './occlusion'
 import { createPaletteWorld, editPaletteSelection, loadPaletteSave, savePaletteWorld } from './paletteActions'
-import { PAGE_TITLE, backPage, closePalette, currentPage, isSection, openPage, setPaletteHidden, usePaletteUI, type PalettePage } from './paletteUI'
+import { PAGE_TITLE, type PaletteTab, backPage, closePalette, currentPage, isSection, openPage, setPaletteHidden, usePaletteUI, type PalettePage } from './paletteUI'
 import { usePlacement } from './placement'
 import { toggleRealSurfaces } from './realSurfaces'
 import { scanRoom } from './roomTracker'
@@ -435,7 +435,7 @@ export function buildPalette(s: PaletteSnapshot): PaletteModel {
     return { spec: { width: PALETTE_WIDTH, cards }, actions }
   }
 
-  const section: ToolbarSection | null = isSection(s.page) ? s.page : null
+  const section: PaletteTab | null = isSection(s.page) ? s.page : null
   cards.push({
     type: 'card',
     padding: 8,
@@ -443,7 +443,7 @@ export function buildPalette(s: PaletteSnapshot): PaletteModel {
       {
         type: 'row',
         gap: 4,
-        items: TOOLBAR_SECTIONS.map((t) => {
+        items: PALETTE_TABS.map((t) => {
           actions[`section:${t.id}`] = () => {
             if (s.measuring) startMeasuring(false)
             openPage(t.id)
@@ -459,7 +459,7 @@ export function buildPalette(s: PaletteSnapshot): PaletteModel {
   Object.assign(actions, content.actions)
   const header: Item[] = s.canBack
     ? [btn('back', '‹ Back', { width: 'auto' }), { type: 'text', text: `${PAGE_TITLE[sectionOf(s.page)]} › ${PAGE_TITLE[s.page]}`, size: 12.5, weight: 600, color: 'copper', flex: 1 }]
-    : [{ type: 'text', text: TOOLBAR_SECTIONS.find((t) => t.id === s.page)?.hint ?? PAGE_TITLE[s.page], size: 11.5, color: 'muted', flex: 1 }]
+    : [{ type: 'text', text: PALETTE_TABS.find((t) => t.id === s.page)?.hint ?? PAGE_TITLE[s.page], size: 11.5, color: 'muted', flex: 1 }]
   cards.push({
     type: 'card',
     blocks: [
@@ -505,8 +505,21 @@ export function buildPalette(s: PaletteSnapshot): PaletteModel {
   return { spec: { width: PALETTE_WIDTH, cards }, actions }
 }
 
-/** The section a page belongs to (sub-pages light up their parent tab). */
-export function sectionOf(page: PalettePage): ToolbarSection {
+/** The desktop HUD's sections with VR's Edit tab after Build (see PaletteTab), with the HUD's labels and hints. */
+export const PALETTE_TABS: { id: PaletteTab; label: string; hint: string }[] = [
+  TOOLBAR_SECTIONS[0]!,
+  { id: 'edit', label: 'Edit', hint: 'Select an object, then move, rotate, resize, or remove it' },
+  ...TOOLBAR_SECTIONS.slice(1),
+]
+
+/** The desktop HUD section to show after VR (it has no Edit section: editing lives in Build). */
+export const hudSectionOf = (page: PalettePage): ToolbarSection => {
+  const tab = sectionOf(page)
+  return tab === 'edit' ? 'build' : tab
+}
+
+/** The tab a page belongs to (sub-pages light up their parent tab). */
+export function sectionOf(page: PalettePage): PaletteTab {
   if (isSection(page)) return page
   if (page === 'saved') return 'save'
   if (page === 'styles' || page === 'room') return 'view'

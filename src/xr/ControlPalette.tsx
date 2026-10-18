@@ -21,7 +21,7 @@ import { useWorld } from '../world/store'
 import { useVoiceCommands } from '../voice/useVoiceCommands'
 import { VOICE_OPTIONS } from '../voice/sharedConfirm'
 import { XRPanel } from './panel/XRPanel'
-import { buildPalette, readPaletteSnapshot, sectionOf, usePaletteOffsets } from './paletteModel'
+import { buildPalette, hudSectionOf, readPaletteSnapshot, usePaletteOffsets } from './paletteModel'
 import { currentPage, openPage, paletteAnchor, summonPalette, usePaletteUI } from './paletteUI'
 import { usePlacement } from './placement'
 
@@ -65,7 +65,7 @@ function PaletteContent() {
   useEffect(() => {
     usePaletteUI.setState((s) => ({ closed: false, hidden: false, spot: 'side', recenter: s.recenter + 1 }))
     openPage(useHudSection.getState().section)
-    return () => useHudSection.getState().setSection(sectionOf(currentPage()))
+    return () => useHudSection.getState().setSection(hudSectionOf(currentPage()))
   }, [])
   useEffect(() => {
     worldActions.listSavedWorlds()

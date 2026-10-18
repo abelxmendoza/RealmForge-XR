@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { TOOLBAR_SECTIONS } from '../editor/toolbar'
 import { layoutPanel, type FontSpec } from './panel/layout'
-import { buildPalette, sectionOf, type PaletteSnapshot } from './paletteModel'
+import { PALETTE_TABS, buildPalette, hudSectionOf, sectionOf, type PaletteSnapshot } from './paletteModel'
 import { errorPanelSpec } from './XRErrorBoundary'
+import { guideSpec } from './ControlsGuidePanel'
+import { GUIDE_SECTIONS } from '../guide/controlsGuide'
 import type { PalettePage } from './paletteUI'
 
 const measure = (text: string, font: FontSpec) => text.length * font.size * 0.56
@@ -66,10 +68,13 @@ describe('VR palette model', () => {
     expect(new Set(ids).size, `duplicate ids on ${page}: ${ids}`).toBe(ids.length)
   })
 
-  it('shows the desktop HUD sections with the same labels, the current one lit', () => {
+  it('shows the desktop HUD sections with the same labels plus the VR Edit tab, the current one lit', () => {
     const layout = layoutPanel(buildPalette({ ...base, page: 'plan' }).spec, measure)
     const tabs = layout.nodes.filter((n) => n.kind === 'button' && n.item.id.startsWith('section:'))
-    expect(tabs.map((n) => n.kind === 'button' && n.item.label)).toEqual(TOOLBAR_SECTIONS.map((s) => s.label))
+    expect(tabs.map((n) => n.kind === 'button' && n.item.label)).toEqual(PALETTE_TABS.map((s) => s.label))
+    expect(PALETTE_TABS.filter((t) => t.id !== 'edit').map((t) => t.label)).toEqual(TOOLBAR_SECTIONS.map((s) => s.label))
+    // The desktop has no Edit section: leaving VR on Edit shows Build.
+    expect(hudSectionOf('edit')).toBe('build')
     expect(tabs.find((n) => n.kind === 'button' && n.item.id === 'section:plan')).toMatchObject({ item: { variant: 'on' } })
   })
 
@@ -127,6 +132,15 @@ describe('property scans in VR', () => {
     const measuring = (n: number) => layoutPanel(buildPalette({ ...base, page: 'scan-measure', canBack: true, measuring: true, measurePoints: n }).spec, measure).hits
     expect(measuring(1).find((h) => h.id === 'scan:apply')?.disabled).toBe(true)
     expect(measuring(2).find((h) => h.id === 'scan:apply')?.disabled).toBe(false)
+  })
+})
+
+describe('XR guide panel', () => {
+  it('shows every guide tab with its full label', () => {
+    const nodes = layoutPanel(guideSpec('start', false), measure).nodes
+    const tabs = nodes.filter((n) => n.kind === 'button' && n.item.id.startsWith('section:'))
+    expect(tabs).toHaveLength(GUIDE_SECTIONS.length)
+    for (const t of tabs) if (t.kind === 'button') expect(t.label, t.item.id).toBe(t.item.label)
   })
 })
 

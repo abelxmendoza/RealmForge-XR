@@ -9,7 +9,7 @@ Dates are UTC.
 ### Added
 
 - Each new XR session starts with the palette open at your side.
-- Headset panels that look like the desktop HUD: one renderer (`src/xr/panel/`) paints the palette, guide, wrist menu and error fallback with the HUD's CSS values; the palette has the HUD's six tabs, sub-pages with ‹ Back, Home, Exit VR, Collapse and Close.
+- Headset panels that look like the desktop HUD: one renderer (`src/xr/panel/`) paints the palette, guide, wrist menu and error fallback with the HUD's CSS values; the palette has the HUD's tabs (Build, Routes, Test, View, Save, plus an Edit tab in VR), sub-pages with ‹ Back, Home, Exit VR, Collapse and Close.
 - Always a way back in VR: palette ‹ Back, wrist Menu / Hide all / ‹ Back / Home / Exit VR, and voice “go back”, “hide / show the menu”, “hide everything”, “open the object catalog”, “exit VR”.
 - Voice route stops: “add a waypoint at the goal / near the robot / 10 meters north of the robot / here”, “remove the last waypoint”, “clear the waypoints”, “start / pause / stop the route”, “next stop”.
 - Controllers: Y pins the wrist menu open (Y again hides it).
@@ -18,6 +18,7 @@ Dates are UTC.
 
 - Easier delete: press B / Y while holding an object with a controller to delete it; every delete (red cube, wrist menu, keys, voice, B / Y) gives a distinct double buzz.
 - Voice delete understands “delete it”, “remove that”, “get rid of them”, “trash this” and a bare “delete”; “them” deletes what the last command made. No confirm dialog: one undo restores it.
+- Scaniverse instructions for scanning a real space: step-by-step **How to scan with Scaniverse** in the scan panel (open until the first scan is added), a **Scans** tab in the in-app Guide (web and headset), and a README section.
 - Multi-section property scans: named rooms/areas, floor elevation and labels, shared web/XR alignment, visibility/solo, clipping, and two-point scale calibration.
 - Portable `.rfproperty` bundles include original mesh assets for cross-device viewing; imports preserve saved worlds' files through remapped IDs.
 - Backward-compatible single-scan loading, per-section runtime status/dirty tracking, aggregate import limits, and hidden-section GPU cleanup.
@@ -38,7 +39,18 @@ Dates are UTC.
 - Deleting a framed group is one undo step (was one per object).
 - Landing page builds again: restored the `InstallButton` component lost in the PR #31 merge.
 
+### Changed
+
+- Editor tabs follow the three-step loop: **Build · Routes · Test** first, then smaller **View** and **Save**. The Edit tab is folded into Build (Select is there; edit actions appear when something is selected; Undo / Redo always). The VR control panel keeps its own Edit tab.
+- Phones in portrait: the open menu is a bottom sheet with the tabs nearest the thumb, so the world stays visible above it.
+- Editor HUD adapts to the device: **Enter XR** only shows where the browser supports AR or VR (VR-only headsets get VR instead of an error), **Place world** only with AR, and devices without a headset get **Open on Quest** (copies the editor link).
+- Robot status says what to do next ("No destination yet · Plan Routes → Add Waypoint") and only counts replans once there are some.
+- Wall and Road / Platform stay armed after each one, like the other Build tools; **Done placing** or 1 returns to Select.
+- Touch-friendly side panel copy; the right-click tip only shows with a mouse.
+
 ### Fixed
+
+- Phone layout: the status pill no longer overlaps the side panel when the menu is open (it now shows under the folded top bar).
 
 - Docs/examples cleanup: demo readiness reflects `main`; stale “do not merge Quest” / missing XR confirm notes removed; XR menu example points at production palette + confirmation.
 - Voice spawn for event `prop` objects: requires `catalogId`, wired through `propFromCatalog`; venue phrases (booth, registration desk, stage, …).

@@ -4,7 +4,9 @@ Assemble a house, garage, and yard from multiple mesh scans. This is spatial vie
 
 ## Capture and import
 
-1. Capture manageable, overlapping sections in Scaniverse (a kitchen, bathroom, living room, garage, front yard, backyard). Use a doorway or another shared feature to align neighbouring sections; record a real measured distance.
+Users are pointed to [Scaniverse](https://scaniverse.com) (free, iPhone and Android) in three places: the **How to scan with Scaniverse** steps in the scan panel (open until the first scan is added), the in-app **Guide → Scans** tab (also in the headset), and the README.
+
+1. Capture manageable, overlapping sections in Scaniverse (Classic experience: choose **Mesh**, not Splat; New experience: generate a Mesh asset in a Site and download its GLB from Scaniverse Web): a kitchen, bathroom, living room, garage, front yard, backyard. Use a doorway or another shared feature to align neighbouring sections; record a real measured distance.
 2. Export polygon **mesh GLB** assets, not Gaussian splats (SPZ/splat PLY). RealmForge supports uncompressed and Meshopt GLB; Draco is not supported. Scaniverse export availability depends on its app/experience and plan.
 3. Open **Build → Property scans → Add scans (.glb)**. Multiple file selection adds sections; it does not replace existing sections. Auto-detected floor/orientation/unit scale is a starting guess, not a survey.
 4. Give each section a name and floor/area label. Select it, position and rotate it until shared features line up, then measure two known points to calibrate its scale. Alignment is manual; there is no automatic scan stitching.

@@ -21,7 +21,7 @@ never drift apart. **If you change the HUD's CSS, change `HUD` in `src/theme/for
 ## The palette
 
 - **Title bar:** grab strip (move it), ← Home, Exit VR, Collapse / Expand, Close.
-- **Tabs:** Build, Edit, Plan Routes, Simulate, View, Save — the HUD's sections. It opens on the tab the desktop HUD
+- **Tabs:** Build, Edit, Routes, Test, View, Save — the HUD's sections, plus Edit (the desktop folds editing into Build; the headset's edit actions need their own page). It opens on the tab the desktop HUD
   was on, and the HUD follows the palette when you take the headset off.
 - **Page:** a 3-column grid. Sub-pages (Object catalog, Event objects, Actors, Materials, Saved worlds, Real room,
   Styles) have **‹ Back** and a breadcrumb; Back always returns where you came from.

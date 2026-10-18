@@ -4,14 +4,20 @@ import { useGuide } from '../guide/guideStore'
 import type { ToolbarSection } from '../editor/toolbar'
 import { getWebXRManager } from './session'
 
-/** Every page of the in-VR Control Palette: the six HUD sections plus their sub-pages. */
+/**
+ * The palette's tabs: the desktop HUD's sections plus Edit. The desktop folds editing a selection into Build,
+ * but the in-headset edit actions don't fit on the Build page, so VR keeps an Edit tab after Build.
+ */
+export type PaletteTab = ToolbarSection | 'edit'
+
+/** Every page of the in-VR Control Palette: its tabs plus their sub-pages. */
 export type PalettePage =
-  | ToolbarSection
+  | PaletteTab
   | 'assets' | 'events' | 'actors' | 'actor-settings' | 'brush' | 'saved' | 'styles' | 'room'
   | 'scans' | 'scan-align' | 'scan-display' | 'scan-measure'
 
-const SECTIONS: readonly ToolbarSection[] = ['build', 'edit', 'plan', 'simulate', 'view', 'save']
-export const isSection = (page: PalettePage): page is ToolbarSection => (SECTIONS as readonly string[]).includes(page)
+const TABS: readonly PaletteTab[] = ['build', 'edit', 'plan', 'simulate', 'view', 'save']
+export const isSection = (page: PalettePage): page is PaletteTab => (TABS as readonly string[]).includes(page)
 
 /** Where Back goes from a sub-page opened directly (by voice or the wrist), with no history behind it. */
 export const PAGE_PARENT: Partial<Record<PalettePage, PalettePage>> = {
@@ -32,8 +38,8 @@ export const PAGE_PARENT: Partial<Record<PalettePage, PalettePage>> = {
 export const PAGE_TITLE: Record<PalettePage, string> = {
   build: 'Build',
   edit: 'Edit',
-  plan: 'Plan Routes',
-  simulate: 'Simulate',
+  plan: 'Routes',
+  simulate: 'Test',
   view: 'View',
   save: 'Save',
   assets: 'Object catalog',

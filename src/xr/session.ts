@@ -184,3 +184,27 @@ export async function enterVRSafely(enter: () => Promise<unknown>): Promise<bool
     return false
   }
 }
+
+/** Which immersive modes this browser offers. `checked` stays false until detection finishes. */
+export interface XRSupport {
+  ar: boolean
+  vr: boolean
+  checked: boolean
+}
+
+export const useXRSupport = create<XRSupport>(() => ({ ar: false, vr: false, checked: false }))
+
+let supportCheck: Promise<XRSupport> | null = null
+
+/** Ask the browser once whether immersive AR / VR are available (phones and most desktops say no). */
+export function detectXRSupport(): Promise<XRSupport> {
+  if (supportCheck) return supportCheck
+  const xr = typeof navigator === 'undefined' ? undefined : navigator.xr
+  const ask = (mode: XRSessionMode) => (xr ? xr.isSessionSupported(mode).catch(() => false) : Promise.resolve(false))
+  supportCheck = Promise.all([ask('immersive-ar'), ask('immersive-vr')]).then(([ar, vr]) => {
+    const support = { ar, vr, checked: true }
+    useXRSupport.setState(support)
+    return support
+  })
+  return supportCheck
+}
