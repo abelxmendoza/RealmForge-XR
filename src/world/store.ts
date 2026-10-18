@@ -50,6 +50,8 @@ export interface WorldState {
   addObject: (o: Omit<WorldObject, 'id'> & { id?: string }) => string
   updateObject: (id: string, patch: Partial<Omit<WorldObject, 'id'>>) => void
   removeObject: (id: string) => void
+  /** Remove several objects in one update, so deleting a group is one undo step. */
+  removeObjects: (ids: readonly string[]) => void
   /** Copy an object next to the original and select the copy. Returns the new id. */
   duplicateObject: (id: string) => string | null
   /** Replace the whole world (objects, robot, goal). Always teleports the robot to robotStart. Callers confirm with the user first. */
@@ -152,6 +154,13 @@ export const useWorld = create<WorldState>((set) => ({
     set((s) => {
       const { [id]: _removed, ...rest } = s.objects
       return { objects: rest, selectedId: s.selectedId === id ? null : s.selectedId, geometryVersion: s.geometryVersion + 1 }
+    }),
+  removeObjects: (ids) =>
+    set((s) => {
+      const gone = new Set(ids.filter((id) => s.objects[id]))
+      if (!gone.size) return s
+      const objects = Object.fromEntries(Object.entries(s.objects).filter(([id]) => !gone.has(id)))
+      return { objects, selectedId: s.selectedId && gone.has(s.selectedId) ? null : s.selectedId, geometryVersion: s.geometryVersion + 1 }
     }),
   duplicateObject: (id) => {
     const src = useWorld.getState().objects[id]

@@ -91,6 +91,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Place robot / Set destination — pathfinding.',
       'Yellow handle resize · blue rotate.',
       'Green duplicate · purple style · red delete.',
+      'Holding it with a controller? Press B / Y to delete.',
     ],
   },
   {
@@ -105,6 +106,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       '"Move them 10 meters left" · "move it to the goal"',
       '"Rotate it 45 degrees" · "make it taller"',
       '"Duplicate it 3 times" · "undo" · "save world"',
+      '"Delete it" · "remove that" · "get rid of them"',
       '"New Mars world" · "open my world 2" · "resume"',
       '"Go home" leaves editor · "go home now" skips confirm.',
       '"it" = selection · "them" = what you just added.',

@@ -101,7 +101,8 @@ Encrypted dotenvx does **not** make a `VITE_*` key safe for the browser.
 | “Undo” / “Redo” | `UNDO` / `REDO` | History API |
 | “Save world” | `SAVE_WORLD` | `quickSave` / `saveWorld` |
 | “Reset selection” | `CLEAR_SELECTION` | Clears selection |
-| “Delete selected object” | `DELETE_SELECTED` | Deletes selection (**confirm required**) |
+| “Delete it” / “Remove that” / “Get rid of this” / “Delete” | `DELETE_SELECTED` | Deletes the selection or framed group at once (one undo step; say “undo” to restore) |
+| “Delete them” / “Remove those” | `DELETE_SELECTED` (`which: 'last'`) | Deletes everything the last add/duplicate made |
 
 ### Making and moving objects
 
@@ -122,6 +123,7 @@ Parsed by `src/voice/objectCommands.ts`, executed through `src/world/spawn.ts` (
 - **Objects:** tree, pine tree, streetlight, crate, metal crate, house, office, tower/skyscraper, factory/warehouse, brick/glass/wood/metal wall, road, park, platform, and every catalog asset.
 - **Places:** near / by / next to / in / at the robot, goal, center, or “here” (selected object); north/south/east/west, left/right/forward/back; “N meters”.
 - **“it”** = selected object (else the last one added); **“them”** = everything from the last add/duplicate.
+- **Delete** takes only pronouns or “selected”: “delete the tree” is not guessed at. It never asks to confirm (one undo restores it) and buzzes both controllers twice.
 - Objects land on free ground, spaced apart and snapped; solid ones never cover the robot start or goal. If space runs out, it adds what fits and says so.
 
 ### Worlds

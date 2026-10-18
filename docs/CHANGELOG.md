@@ -6,6 +6,16 @@ Dates are UTC.
 
 ## [Unreleased]
 
+### Added
+
+- Easier delete: press B / Y while holding an object with a controller to delete it; every delete (red cube, wrist menu, keys, voice, B / Y) gives a distinct double buzz.
+- Voice delete understands “delete it”, “remove that”, “get rid of them”, “trash this” and a bare “delete”; “them” deletes what the last command made. No confirm dialog: one undo restores it.
+
+### Fixed
+
+- Deleting a framed group is one undo step (was one per object).
+- Landing page builds again: restored the `InstallButton` component lost in the PR #31 merge.
+
 ### Fixed
 
 - Docs/examples cleanup: demo readiness reflects `main`; stale “do not merge Quest” / missing XR confirm notes removed; XR menu example points at production palette + confirmation.

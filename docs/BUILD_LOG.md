@@ -59,3 +59,11 @@ Pair each entry with CHANGELOG (user-facing) and STATE (runtime) updates when st
 - **Commit / PR:** PR https://github.com/abelxmendoza/RealmForge-XR/pull/2
 - **Verified:** merge conflict check only; headset not re-run in this session
 - **Follow-ups:** Merge PR #2; implement P0.1 session fallback on `/`
+
+### 2026-10-18 — Easier delete (haptics + voice)
+
+- **Who:** Abel via Claude Code
+- **Did:** One delete path (`src/editor/deleteObjects.ts`) with a double-buzz haptic; B / Y while holding deletes the held object; voice delete accepts "delete it" / "remove that" / "get rid of them" with no confirm; group delete is one undo step (`removeObjects`). Restored landing `InstallButton` lost in the PR #31 merge.
+- **Why:** Deleting in the headset took a poke on a small red cube or a voice phrase plus a confirm tap.
+- **Verified:** `npm test` (418) + `npm run build` green; B / Y and buzz still need a Quest check
+- **Follow-ups:** Headset check of B / Y delete mid-grab

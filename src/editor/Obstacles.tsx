@@ -13,7 +13,8 @@ import { beginDrag } from './drag'
 import { applyGroundHover, applyGroundTool } from './Ground'
 import { MIN_SIZE, grabPatch, samePatch, type GrabPatch } from './grab'
 import { useEditor } from './settings'
-import { HAPTIC, pulse } from '../xr/haptics'
+import { HAPTIC, pulse, secondaryPressed } from '../xr/haptics'
+import { deleteObjects, deleteSelected } from './deleteObjects'
 import { clampToRoom, settleObject } from '../xr/realSurfaces'
 import { groupIds, useSelection } from './selection'
 
@@ -51,17 +52,7 @@ export function duplicateSelected() {
   }
   if (w.selectedId) w.duplicateObject(w.selectedId)
 }
-/** Delete the framed group, or the single selected object. */
-export function deleteSelected() {
-  const w = useWorld.getState()
-  const group = groupIds()
-  if (group.length) {
-    for (const id of group) w.removeObject(id)
-    useSelection.getState().clear()
-    return
-  }
-  if (w.selectedId) w.removeObject(w.selectedId)
-}
+export { deleteSelected }
 export function cycleSelected() {
   const w = useWorld.getState()
   const o = w.selectedId ? w.objects[w.selectedId] : null
@@ -92,9 +83,18 @@ function Obstacle({ o }: { o: WorldObject }) {
   const [hovered, setHovered] = useState(false)
   const [holding, setHolding] = useState(false)
   const free = useRef<{ x: number; z: number; yaw: number } | null>(null)
+  // B / Y while holding deletes the held object. `secondaryWas` starts true on each grab, so a button
+  // already down when you grab needs a fresh press.
+  const held = useRef(false)
+  const secondaryWas = useRef(true)
   useFrame((state) => {
     const g = groupRef.current
     if (!g) return
+    if (held.current) {
+      const down = secondaryPressed(state.gl.xr.getSession()?.inputSources as Iterable<XRInputSource> | undefined)
+      if (down && !secondaryWas.current) return dropAndDelete()
+      secondaryWas.current = down
+    }
     // Standing inside it (a booth, stage or building at 1:1): pointers pass through it, otherwise your hand's
     // grab pointer touches it from inside and switches your ray off, so nothing beyond can be reached.
     if (state.gl.xr.isPresenting && !free.current) {
@@ -111,6 +111,15 @@ function Obstacle({ o }: { o: WorldObject }) {
   })
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
 
+  /** End the grab (committing any move as its own undo step), then delete the object. */
+  const dropAndDelete = () => {
+    held.current = false
+    free.current = null
+    setHolding(false)
+    useWorld.getState().setDragging(false)
+    deleteObjects([o.id])
+  }
+
   /**
    * Hand / controller-grip grab (XR grab pointers only; rays and the mouse use onDown below).
    * One hand moves the object on the map and wrist twist turns it; a second hand adds
@@ -125,6 +134,8 @@ function Obstacle({ o }: { o: WorldObject }) {
       world.select(o.id)
       world.setDragging(true)
       setHolding(true)
+      held.current = true
+      secondaryWas.current = true
       pulse('active', HAPTIC.grab)
     }
     const { position, quaternion, scale } = state.current
@@ -147,6 +158,7 @@ function Obstacle({ o }: { o: WorldObject }) {
     }
     if (state.last) {
       free.current = null
+      held.current = false
       setHolding(false)
       settleObject(o.id)
       world.setDragging(false)

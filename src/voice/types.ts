@@ -10,7 +10,8 @@ export type VoiceCommand =
   | { type: 'UNDO' }
   | { type: 'REDO' }
   | { type: 'SAVE_WORLD'; name?: string }
-  | { type: 'DELETE_SELECTED' }
+  /** "delete it" / "remove that" (selection or framed group); "delete them" = what the last command made */
+  | { type: 'DELETE_SELECTED'; which?: 'selected' | 'last' }
   | { type: 'CLEAR_SELECTION' }
   | { type: 'RESET_WORLD' }
   | { type: 'START_NAVIGATION' }

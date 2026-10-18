@@ -45,6 +45,25 @@ const TOOL_RULES: { phrases: string[]; tool: Tool }[] = [
   { phrases: ['select tool', 'select mode', 'move tool'], tool: 'select' },
 ]
 
+const DELETE_VERB = /^(?:(?:please|can you|could you|just)\s+)*(?:delete|remove|erase|trash|destroy|get rid of|throw away|throw out|bin)\b/
+// What may follow the verb: nothing, a pronoun, or "the selected object" in its spoken variations.
+const DELETE_TARGET =
+  /^(?:the )?(?:(?:it|this|that|them|those|these|selection|selected|group|everything selected|everything you made)(?: (?:one|ones|object|objects|thing|things|item|items))?|(?:selected )?(?:object|objects|one|thing|item))?(?: (?:please|now))?$/
+const DELETE_THEM = /^(?:the )?(?:them|those|these|everything you made)\b/
+
+/**
+ * "delete it", "remove that", "get rid of them", "trash this", or just "delete".
+ * Only pronouns and "selected": "delete the tree" is rejected rather than guessing which tree.
+ * Routes keep their own command ("delete the selected route").
+ */
+export function parseDelete(t: string): VoiceCommand | null {
+  const verb = DELETE_VERB.exec(t)
+  if (!verb) return null
+  const rest = t.slice(verb[0].length).trim()
+  if (!DELETE_TARGET.test(rest)) return null
+  return { type: 'DELETE_SELECTED', which: DELETE_THEM.test(rest) ? 'last' : 'selected' }
+}
+
 /**
  * Deterministic parser — no LLM. Returns unsupported for unrecognized speech.
  * "Create a building" / "add three trees" now creates objects on free ground (see objectCommands.ts);
@@ -81,13 +100,6 @@ export function parseVoiceCommand(transcript: string): ParseResult {
     { test: (s) => /\bundo\b/.test(s), command: { type: 'UNDO' } },
     { test: (s) => /\bredo\b/.test(s), command: { type: 'REDO' } },
     { test: (s) => /\bsave( the)? world\b/.test(s) || s === 'save' || s === 'save world', command: { type: 'SAVE_WORLD' } },
-    {
-      test: (s) =>
-        /\bdelete selected\b/.test(s) ||
-        /\bdelete (the )?object\b/.test(s) ||
-        /\bremove selected\b/.test(s),
-      command: { type: 'DELETE_SELECTED' },
-    },
     {
       test: (s) => /\breset selection\b/.test(s) || /\bclear selection\b/.test(s) || /\bdeselect\b/.test(s),
       command: { type: 'CLEAR_SELECTION' },
@@ -180,6 +192,9 @@ export function parseVoiceCommand(transcript: string): ParseResult {
   for (const r of rules) {
     if (r.test(t)) return { ok: true, command: r.command }
   }
+
+  const del = parseDelete(t)
+  if (del) return { ok: true, command: del }
 
   // "open harbor" with no environment by that name: try the saved worlds.
   const openSaved = parseOpenSaved(t)

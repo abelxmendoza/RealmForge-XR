@@ -18,6 +18,8 @@ import { createWorld, nextWorldName, openWorld } from '../world/library'
 import { listSavedWorlds, useWorldLibrary } from '../world/persistence'
 import { resumeAutosave } from '../world/autosave'
 import { leaveEditor } from '../editor/leaveEditor'
+import { deleteObjects } from '../editor/deleteObjects'
+import { actionTargets } from '../editor/selection'
 import { matchSavedWorld } from './worldCommands'
 
 export type ExecuteResult =
@@ -35,8 +37,6 @@ function needsConfirmation(command: VoiceCommand): string | null {
   switch (command.type) {
     case 'LOAD_ENVIRONMENT':
       return `Load "${getEnvironment(command.environmentId)?.name ?? command.environmentId}" and replace the current world?`
-    case 'DELETE_SELECTED':
-      return 'Delete the selected object?'
     case 'RESET_WORLD':
       return 'Clear the world and start blank? Unsaved changes will be lost.'
     case 'FLOW_CLEAR_ROUTE':
@@ -176,15 +176,15 @@ export async function executeVoiceCommand(
       }
 
       case 'DELETE_SELECTED': {
-        const id = worldActions.getSelectedId()
-        if (!id) {
-          const message = 'No object selected'
+        // No confirm: the whole delete is one undo step, and "undo" is one word away.
+        const ids = command.which === 'last' ? targetIds('last') : actionTargets().length ? actionTargets() : targetIds('selected')
+        const count = deleteObjects(ids)
+        if (!count) {
+          const message = 'Nothing selected to delete'
           emitVoiceEvent({ type: 'VOICE_COMMAND_REJECTED', command, message })
           return { status: 'rejected', command, message }
         }
-        worldActions.deleteObject(id)
-        worldActions.selectObject(null)
-        const message = 'Deleted selected object'
+        const message = `Deleted ${count === 1 ? 'it' : `${count} objects`} — say "undo" to bring ${count === 1 ? 'it' : 'them'} back`
         emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
         return { status: 'executed', command, message }
       }

@@ -62,6 +62,8 @@ Every control is a pointer event, so mouse, controller rays and hand rays behave
 | P Place world | In AR: highlight Space Setup planes; click a table/floor to pin the miniature (optional anchor). |
 | Voice “go home” / “go home now” | Leave the editor for the landing page (force skips unsaved confirm). |
 | R / Shift+R, `[` `]`, Del | Rotate 15°, lower/raise height, delete the selected object. |
+| B / Y while holding (XR) | Deletes the object in your controller's grip. |
+| Voice “delete it” / “get rid of them” | Deletes the selection (or the last batch) at once; “undo” brings it back. |
 | D, M, T, G | Duplicate, cycle material/style, toggle flat/pitched roof, toggle grid snapping. |
 | X, V | Toggle XR rays; toggle Real / Virtual ground. |
 | ? / **Guide** | Open the user & controls guide (same content in VR from wrist or control panel). |
@@ -81,6 +83,7 @@ or with a controller (squeeze the grip while touching it). Rays are off by defau
 | One hand: twist your wrist | Turns the object (yaw only) |
 | Second hand grabs the same object | Two-hand rotate; pull hands apart or together to scale uniformly |
 | Release | The object stays where you left it; the robot replans |
+| Press **B / Y** while holding (controllers) | Deletes the held object; every delete gives a double buzz |
 | Grab the dark table edge | Moves the whole map (up, down, closer); two hands turn it. Works with any tool (tabletop scale only) |
 
 Snapping (G) applies while you hold the object: position snaps so footprint edges land on the 0.5-unit
