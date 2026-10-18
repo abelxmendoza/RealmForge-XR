@@ -8,6 +8,7 @@ import { getConfirmation, subscribeConfirmation } from '../world/confirmation'
  * Tap it and speak; the command runs when you pause (tap again to run it right away).
  * Hold Space to talk instead. "Type" runs a command without a microphone.
  * Shares one AssemblyAI controller with the VR control palette's voice tile.
+ * Falls back to browser speech when the cloud token/mic path fails.
  */
 export function VoicePanel() {
   const voice = useVoiceCommands(VOICE_OPTIONS)
@@ -28,11 +29,12 @@ export function VoicePanel() {
   }
   const toggle = () => (voice.isListening ? void voice.stopListening() : void start())
 
-  // Hold Space to talk (ignored while typing in a field).
+  // Hold Space to talk (ignored while typing in a field or with modifiers — keep copy shortcuts).
   useEffect(() => {
-    const inField = (t: EventTarget | null) => t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement
+    const inField = (t: EventTarget | null) =>
+      t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement
     const down = (e: KeyboardEvent) => {
-      if (e.code !== 'Space' || e.repeat || inField(e.target)) return
+      if (e.code !== 'Space' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || inField(e.target)) return
       e.preventDefault()
       holding.current = true
       void voice.controller.startListening()
@@ -53,7 +55,15 @@ export function VoicePanel() {
   const heard = voice.isListening ? voice.lastPartial : voice.lastTranscript
   const result = voice.lastResult && 'message' in voice.lastResult ? voice.lastResult.message : null
   const ok = voice.lastResult?.status === 'executed'
-  const label = starting ? 'Starting mic…' : voice.isListening ? 'Listening… pause to run' : confirmation ? 'Confirm on screen' : 'Voice command'
+  const engine =
+    voice.provider === 'webspeech' ? 'device' : voice.provider === 'assemblyai' ? 'cloud' : null
+  const label = starting
+    ? 'Starting mic…'
+    : voice.isListening
+      ? `Listening${engine ? ` (${engine})` : ''}… pause to run`
+      : confirmation
+        ? 'Confirm on screen'
+        : 'Voice command'
   const line = voice.lastError
     ? voice.lastError
     : voice.isListening
@@ -75,7 +85,10 @@ export function VoicePanel() {
           onClick={toggle}
         >
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z" />
+            <path
+              fill="currentColor"
+              d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"
+            />
           </svg>
           <span>{label}</span>
         </button>

@@ -108,16 +108,36 @@ function PaletteContent() {
 
   let buttons: Button[] = []
   if (page === 'Tools') {
-    buttons = ([['select', 'Select / move'], ['building', 'Building'], ['wall', 'Wall'], ['platform', 'Road / platform'], ['decor', 'Decoration'], ['event', 'Event object'], ['robot', 'Place robot'], ['goal', 'Set destination']] as const)
-      .map(([id, label]) => ({ label, active: tool === id, run: () => worldActions.setTool(id) }))
-    buttons.push({ label: snap ? 'Snap: on' : 'Snap: off', active: snap, run: () => useEditor.getState().set({ snap: !snap }) },
-      { label: 'Block robot route', run: blockRoute },
-      { label: 'Place world (AR)', disabled: !inAR, run: () => usePlacement.getState().startChoosing() })
+    // Build + Plan + select — mirrors desktop sections with large XR targets.
+    buttons = ([
+      ['select', 'Select & Move'],
+      ['building', 'Place Building'],
+      ['wall', 'Draw Wall'],
+      ['platform', 'Place Road'],
+      ['decor', 'Decoration'],
+      ['event', 'Event Object'],
+      ['robot', 'Place Robot'],
+      ['goal', 'Set Destination'],
+    ] as const).map(([id, label]) => ({ label, active: tool === id, run: () => worldActions.setTool(id) }))
+    buttons.push(
+      { label: snap ? 'Align to Grid: On' : 'Align to Grid: Off', active: snap, run: () => useEditor.getState().set({ snap: !snap }) },
+      { label: 'Block Path', run: blockRoute },
+      { label: 'Place World (AR)', disabled: !inAR, run: () => usePlacement.getState().startChoosing() },
+    )
   } else if (page === 'Worlds') {
     buttons = listTemplates().map((template) => ({ label: template.name, run: () => createPaletteWorld(template.id) }))
-    buttons.push({ label: 'Save world', run: savePaletteWorld },
-      { label: 'Save as new', run: () => worldActions.saveWorld(activeName) },
-      { label: 'Browse saved worlds', run: () => { worldActions.listSavedWorlds(); setSavePage(0); setPage('Saved') } })
+    buttons.push(
+      { label: 'Save World', run: savePaletteWorld },
+      { label: 'Save as New', run: () => worldActions.saveWorld(activeName) },
+      {
+        label: 'Browse Saves',
+        run: () => {
+          worldActions.listSavedWorlds()
+          setSavePage(0)
+          setPage('Saved')
+        },
+      },
+    )
   } else if (page === 'Assets') {
     const offset = Math.min(assetPage, Math.ceil(ASSETS.length / 6) - 1)
     buttons = ASSETS.slice(offset * 6, offset * 6 + 6).map((asset) => ({ label: asset.name, active: tool === 'asset' && editor.assetId === asset.id, run: () => { worldActions.selectCatalogAsset(asset.id); setMessage('Aim at ground: green places, red is blocked.') } }))
@@ -192,19 +212,51 @@ function PaletteContent() {
     <Tile text={hidden ? 'Show controls' : 'RealmForge controls'} y={0.32} width={0.65} height={0.065} onClick={() => { if (!request) setHidden(!hidden) }} />
     {!hidden && <>
       <Tile text={`${actor ? getActorRuntime(actor.id)?.status || 'idle' : status} · ${actor ? actor.name : selected ? (getAsset(selected.assetId || '')?.name || selected.kind) : 'no selection'}`} x={-0.11} y={0.267} height={0.035} width={0.43} />
-      <Tile text={editor.rays ? 'Rays: on' : 'Rays: off'} x={0.22} y={0.267} height={0.035} width={0.21} active={editor.rays} onClick={toggleRays} />
+      <Tile text={editor.rays ? 'Pointer Rays: On' : 'Pointer Rays: Off'} x={0.22} y={0.267} height={0.035} width={0.21} active={editor.rays} onClick={toggleRays} />
       {request ? <>
         <Tile text={request.message} y={0.08} height={0.29} width={0.65} />
         <Tile text="Cancel" x={-0.165} y={-0.12} width={0.31} onClick={() => resolveConfirmation(request.id, false)} />
         <Tile text="Confirm" x={0.165} y={-0.12} width={0.31} active onClick={() => resolveConfirmation(request.id, true)} />
       </> : <>
-        {['Tools', 'Worlds', 'Edit', 'Brush', 'Assets', 'Routes', 'Actors'].map((tab, i) => <Tile key={tab} text={tab} x={(i - 3) * 0.094} y={0.21} width={0.089} active={page === tab || tab === 'Actors' && page === 'Actor settings' || tab === 'Worlds' && page === 'Saved'} onClick={() => setPage(tab)} />)}
-        {buttons.map((button, i) => <Tile key={page + button.label} text={button.label} x={i % 2 ? 0.165 : -0.165} y={0.135 - Math.floor(i / 2) * 0.07} width={0.31} disabled={busy || button.disabled} active={button.active} onClick={() => void run(button)} />)}
+        {['Tools', 'Worlds', 'Edit', 'Brush', 'Assets', 'Routes', 'Actors'].map((tab, i) => (
+          <Tile
+            key={tab}
+            text={tab}
+            x={(i - 3) * 0.094}
+            y={0.21}
+            width={0.089}
+            active={page === tab || (tab === 'Actors' && page === 'Actor settings') || (tab === 'Worlds' && page === 'Saved')}
+            onClick={() => setPage(tab)}
+          />
+        ))}
+        {buttons.map((button, i) => (
+          <Tile
+            key={page + button.label}
+            text={button.label}
+            x={i % 2 ? 0.165 : -0.165}
+            y={0.135 - Math.floor(i / 2) * 0.07}
+            width={0.31}
+            disabled={busy || button.disabled}
+            active={button.active}
+            onClick={() => void run(button)}
+          />
+        ))}
         <Tile text="Undo" x={-0.24} y={-0.235} width={0.15} disabled={busy || !history.canUndo} onClick={() => worldActions.undo()} />
         <Tile text="Redo" x={-0.08} y={-0.235} width={0.15} disabled={busy || !history.canRedo} onClick={() => worldActions.redo()} />
-        <Tile text={guideOpen ? 'Close guide' : 'Guide'} x={0.08} y={-0.235} width={0.15} active={guideOpen} onClick={() => (guideOpen ? closeGuide() : openGuide('start'))} />
+        <Tile text={guideOpen ? 'Close Help' : 'Help'} x={0.08} y={-0.235} width={0.15} active={guideOpen} onClick={() => (guideOpen ? closeGuide() : openGuide('start'))} />
         <Tile text="Recenter" x={0.24} y={-0.235} width={0.15} onClick={() => { positioned.current = false }} />
-        <Tile text={busy ? 'Working…' : page === 'Assets' ? `${getAsset(editor.assetId)?.name} · ${Math.round(editor.assetRotation * 180 / Math.PI)}° · Aim at clear ground.` : message} y={-0.31} width={0.65} height={0.065} />
+        <Tile
+          text={
+            busy
+              ? 'Working…'
+              : page === 'Assets'
+                ? `${getAsset(editor.assetId)?.name} · ${Math.round((editor.assetRotation * 180) / Math.PI)}° · Aim at clear ground.`
+                : message
+          }
+          y={-0.31}
+          width={0.65}
+          height={0.065}
+        />
       </>}
     </>}
   </group>

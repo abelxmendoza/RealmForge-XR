@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "env:set": "dotenvx set",
+    "token:serve": "dotenvx run -- node --experimental-strip-types tools/token-server.ts",
     "mocap:bridge": "node tools/mocap-bridge.ts",
     "mocap:mock": "node tools/mocap-bridge.ts --mock"
   },

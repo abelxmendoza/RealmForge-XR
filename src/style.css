@@ -47,6 +47,37 @@ body,
   -webkit-font-smoothing: antialiased;
 }
 
+/* Let users select and copy UI text (transcripts, status, guide, inspector). */
+.hud,
+.inspector,
+.voice-panel,
+.voice-mic .heard,
+dialog,
+.ctx-menu {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Keep clicks on controls from accidentally selecting labels. */
+button,
+.tool-btn,
+.hud-nav button,
+summary {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+canvas {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 /* Keep DOM chrome above the full-bleed R3F canvas */
 #root > canvas,
 #root canvas {
@@ -201,6 +232,67 @@ button:disabled {
   align-items: center;
 }
 
+.hud-nav {
+  pointer-events: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--rf-radius);
+  background: var(--rf-panel);
+  border: 1px solid var(--rf-line);
+  box-shadow: var(--rf-shadow);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.hud-nav button {
+  flex: 1 1 auto;
+  min-width: 4.5rem;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+.hud-section-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--rf-muted);
+  line-height: 1.35;
+}
+
+.hud-section-actions {
+  margin-top: 8px;
+}
+
+.hud-section .hint {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  color: var(--rf-muted);
+  line-height: 1.4;
+}
+
+.hud-section .env-menu-compact {
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.hud-save-name {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.hud-save-name input {
+  flex: 1 1 140px;
+}
+
 .hud .tools {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
@@ -259,28 +351,50 @@ dialog button.primary:hover:not(:disabled) {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: center;
   gap: 2px;
   text-align: left;
-  min-height: 46px;
-  padding: 7px 10px;
-}
-
-.hud .tool-key {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--rf-copper);
-  opacity: 0.9;
-}
-
-.hud button.on .tool-key {
-  color: rgba(26, 16, 12, 0.7);
+  min-height: 44px;
+  padding: 8px 10px;
 }
 
 .hud .tool-label {
-  font-size: 12px;
-  line-height: 1.2;
+  font-size: 12.5px;
+  line-height: 1.25;
+  font-weight: 550;
+}
+
+.hud .tool-state {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(26, 16, 12, 0.72);
+}
+
+.hud button:disabled {
+  opacity: 0.42;
+}
+
+.hud button:disabled[title] {
+  cursor: help;
+}
+
+.hud button.danger-action:not(:disabled):hover {
+  border-color: rgba(239, 107, 124, 0.45);
+  color: #ffb4bf;
+}
+
+@media (max-width: 720px) {
+  .hud {
+    max-width: calc(100vw - 24px);
+  }
+
+  .hud-nav button {
+    min-width: 0;
+    flex: 1 1 calc(33.33% - 4px);
+    font-size: 11px;
+    padding: 7px 6px;
+  }
 }
 
 .hud .field {
@@ -1366,9 +1480,17 @@ dialog.controls-guide::backdrop {
 .voice-mic .mic { pointer-events: auto; display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 999px; border: 1px solid var(--rf-line, #4a5568); background: var(--rf-panel, #141a26); color: var(--rf-text, #eee); font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
 .voice-mic .mic:hover:not(:disabled) { border-color: var(--rf-ember, #e07845); }
 .voice-mic .mic.listening { background: linear-gradient(180deg, var(--rf-ember-hot, #ff9a5c), var(--rf-ember, #e07845)); color: #1a100c; border-color: transparent; animation: mic-pulse 1.2s ease-in-out infinite; }
-.voice-mic .heard { margin: 0; max-width: 420px; padding: 4px 10px; border-radius: 8px; background: rgba(0, 0, 0, 0.55); color: var(--rf-text, #eee); font-size: 12px; text-align: center; }
+.voice-mic .heard { pointer-events: auto; margin: 0; max-width: 420px; padding: 4px 10px; border-radius: 8px; background: rgba(0, 0, 0, 0.55); color: var(--rf-text, #eee); font-size: 12px; text-align: center; cursor: text; }
 .voice-mic .heard.error { color: #ffb4b4; }
-.voice-mic .heard.hint { opacity: 0.6; }
+.voice-mic .heard.hint { opacity: 0.6; cursor: default; }
+
+.voice-panel .voice-transcript,
+.voice-panel .voice-result,
+.voice-panel .voice-error {
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+}
 @keyframes mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(224, 120, 69, 0.55); } 50% { box-shadow: 0 0 0 12px rgba(224, 120, 69, 0); } }
 
 .actor-kind-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }

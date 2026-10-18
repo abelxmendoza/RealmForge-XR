@@ -18,6 +18,15 @@ Pair each entry with CHANGELOG (user-facing) and STATE (runtime) updates when st
 
 ---
 
+### 2026-10-18 — Prepare app for demo
+
+- **Who:** Cursor agent (Abel demo ownership)
+- **Phase:** demo wrap-up
+- **Did:** Merged Quest stabilize (table grab, floor snap, Event palette) + sectioned HUD / laptop voice polish onto `cursor/demo-prep-f511`. Kept simplified single mic VoicePanel from main. Added `docs/demo-script.md`, shared token mint + `npm run token:serve`, Vite preview token route. Updated demo-readiness / CHANGELOG / STATE.
+- **Why:** Demo needs stable Quest code, clearer first-time HUD, a spoken script, and a voice token path outside Vite-only middleware.
+- **Verified:** `npm test` + `npm run build` on this branch.
+- **Follow-ups:** Emiliano Quest hardware checklist; Chris desktop rehearsal with demo script.
+
 ### 2026-10-17 — Tie up loose ends (prop spawn + docs)
 
 - **Who:** Cursor agent

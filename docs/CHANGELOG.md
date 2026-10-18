@@ -6,6 +6,13 @@ Dates are UTC.
 
 ## [Unreleased]
 
+### Added
+
+- Sectioned desktop HUD (Build / Edit / Plan Routes / Simulate / View / Save) for first-time demo users.
+- Browser SpeechRecognition fallback when AssemblyAI token/mic fails; PCM resample for laptop mics.
+- Shared AssemblyAI token mint (`tools/assemblyai-token.ts`) + `npm run token:serve` for demos beyond Vite; Vite preview also serves `/api/assemblyai/token`.
+- Demo script: `docs/demo-script.md`.
+
 ### Fixed
 
 - Quest table-edge grab: Select tool no longer steals grabs from the map rim; rim is part of the grab handle; wider base.
@@ -15,6 +22,7 @@ Dates are UTC.
 - Virtual ground / table edge follow the active environment appearance.
 - Docs/examples cleanup: demo readiness reflects `main`; stale “do not merge Quest” / missing XR confirm notes removed; XR menu example points at production palette + confirmation.
 - Voice spawn for event `prop` objects: requires `catalogId`, wired through `propFromCatalog`; venue phrases (booth, registration desk, stage, …).
+
 
 ## [0.2.0] — 2026-10-17
 

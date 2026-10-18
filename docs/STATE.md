@@ -74,6 +74,8 @@ Replans when `geometryVersion` or goal/robot placement changes (see nav module).
 | --- | --- |
 | `KAEDIM_API_TOKEN` | In encrypted `.env`; unused in app code |
 | AssemblyAI key | Encrypted `.env`; needs `.env.keys` / `DOTENV_PRIVATE_KEY` for live mic |
+| Token route | Vite `configureServer` + `configurePreviewServer`; standalone `npm run token:serve` (`tools/token-server.ts`) |
+| Voice fallback | AssemblyAI → browser WebSpeech (Chrome/Edge/Safari) → typed / mock |
 
 ## Current harness state (`/xr-test/` — vanilla)
 

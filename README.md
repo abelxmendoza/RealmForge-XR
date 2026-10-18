@@ -35,7 +35,8 @@ We document as we build. Update these in the same change when behavior or state 
 
 | Doc | Purpose |
 | --- | --- |
-| [docs/demo-readiness.md](docs/demo-readiness.md) | What’s on `main` + Quest hardware checklist |
+| [docs/demo-readiness.md](docs/demo-readiness.md) | What’s demo-ready + Quest hardware checklist |
+| [docs/demo-script.md](docs/demo-script.md) | Timed walkthrough for live demos |
 | [docs/controls-guide.md](docs/controls-guide.md) | Shared web/VR user & controls guide |
 | [docs/quest2-testing.md](docs/quest2-testing.md) | Headset setup + gesture checklist |
 | [docs/plan.md](docs/plan.md) | Best-of-both roadmap (Abel product + Emiliano headset) |

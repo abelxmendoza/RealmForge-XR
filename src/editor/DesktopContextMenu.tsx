@@ -195,14 +195,14 @@ export function DesktopContextMenu() {
     {
       kind: 'action',
       id: 'snap',
-      label: snap ? 'Snap grid ✓' : 'Snap grid',
+      label: snap ? 'Align to grid ✓' : 'Align to grid',
       shortcut: 'G',
       run: () => useEditor.getState().set({ snap: !useEditor.getState().snap }),
     },
     {
       kind: 'action',
       id: 'block',
-      label: 'Block route (demo)',
+      label: 'Block path (demo)',
       shortcut: 'B',
       run: () => blockRoute(),
     },

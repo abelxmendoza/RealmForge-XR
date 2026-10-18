@@ -28,20 +28,31 @@ export function SimulationPanel() {
       <div className="row">
         {!status.running || status.phase === 'done' ? (
           <button
+            type="button"
+            title="Start the attendee walking the event route"
             onClick={() => {
               resetAttendeeSimulation()
               startAttendeeSimulation()
             }}
           >
-            Start
+            Start Simulation
           </button>
         ) : status.paused ? (
-          <button onClick={() => resumeAttendeeSimulation()}>Resume</button>
+          <button type="button" title="Resume the paused attendee" onClick={() => resumeAttendeeSimulation()}>
+            Resume
+          </button>
         ) : (
-          <button onClick={() => pauseAttendeeSimulation()}>Pause</button>
+          <button type="button" title="Pause the attendee where they are" onClick={() => pauseAttendeeSimulation()}>
+            Pause
+          </button>
         )}
-        <button onClick={() => resetAttendeeSimulation()} disabled={!status.running && status.phase === 'idle'}>
-          Reset
+        <button
+          type="button"
+          title={!status.running && status.phase === 'idle' ? 'Simulation is already idle' : 'Stop the attendee and clear progress'}
+          onClick={() => resetAttendeeSimulation()}
+          disabled={!status.running && status.phase === 'idle'}
+        >
+          Reset Simulation
         </button>
       </div>
       <div className="sim-status">

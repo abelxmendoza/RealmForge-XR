@@ -227,7 +227,8 @@ Demo remains usable when AssemblyAI is missing, mic is denied, or the network dr
 - Deterministic keyword parser only (no LLM / free-form world gen).
 - “Create a building” activates the tool; it does not place geometry at guessed coordinates.
 - “Stop navigation” is intentionally unsupported until a safe stop API exists.
-- Token proxy is Vite-dev middleware; production hosting needs an equivalent serverless/proxy route.
+- Token proxy: Vite `configureServer` + `configurePreviewServer` (`vite/assemblyaiTokenPlugin.ts`).
+- Beyond Vite (static `dist/` + tunnel): `npm run token:serve` runs `tools/token-server.ts` on port 8787 (`TOKEN_PORT`). Shared mint logic lives in `tools/assemblyai-token.ts`.
 - Quest mic + WebXR session behavior not yet validated on hardware.
 - Desktop: right-click the canvas for **World actions** (tools, save/undo, environments, voice). Orbit pans with middle-drag; right-click is reserved for the menu.
 

@@ -11,11 +11,11 @@ import { WORLD, type Vec2 } from '../world/types'
 export type ScaleId = 'tabletop' | 'room' | 'large' | 'life'
 
 /** World scale relative to your room. ratio = real metres per map metre. */
-export const SCALE_PRESETS: Record<ScaleId, { label: string; ratio: number }> = {
-  tabletop: { label: 'Tabletop 1:60', ratio: 1 / 60 }, // ~1.3 m board on a table
-  room: { label: 'Room 1:20', ratio: 1 / 20 }, // ~4 m, on the floor
-  large: { label: 'Large 1:4', ratio: 1 / 4 }, // ~20 m, walk among knee-high buildings
-  life: { label: 'Life size 1:1', ratio: 1 }, // stand next to real doorways
+export const SCALE_PRESETS: Record<ScaleId, { label: string; short: string; ratio: number }> = {
+  tabletop: { label: 'Miniature View (1:60)', short: '1:60', ratio: 1 / 60 }, // ~1.3 m board on a table
+  room: { label: 'Room View (1:20)', short: '1:20', ratio: 1 / 20 }, // ~4 m, on the floor
+  large: { label: 'Large View (1:4)', short: '1:4', ratio: 1 / 4 }, // ~20 m, walk among knee-high buildings
+  life: { label: 'Life Size (1:1)', short: '1:1', ratio: 1 }, // stand next to real doorways
 }
 export const SCALE_IDS = Object.keys(SCALE_PRESETS) as ScaleId[]
 
