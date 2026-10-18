@@ -1,3 +1,4 @@
+import { worldContentCount } from './content'
 import { actorsForSave } from '../actors/runtime'
 import { flowSnapshot, loadFlowSnapshot } from '../flow/controller'
 import { useFlow } from '../flow/store'
@@ -183,7 +184,7 @@ async function confirmIfNeeded(
   message: string,
   opts: ReplaceOptions,
 ): Promise<{ ok: true } | { ok: false; error: string; cancelled?: boolean }> {
-  const count = Object.keys(useWorld.getState().objects).length + Object.keys(useWorld.getState().actors).length
+  const count = worldContentCount()
   if (count === 0) return { ok: true }
   return safeConfirm(
     opts.confirmReplace ?? confirmReplace,

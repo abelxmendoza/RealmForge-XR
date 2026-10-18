@@ -36,6 +36,8 @@ interface ScanState {
   measurePoints: Vec3[]
   /** Bumped on every settings change, for dirty tracking. */
   version: number
+  /** Bumped when a (possibly re-linked) model file is installed, so the scene reloads it. */
+  modelVersion: number
 }
 
 export const useScan = create<ScanState>(() => ({
@@ -46,10 +48,19 @@ export const useScan = create<ScanState>(() => ({
   measuring: false,
   measurePoints: [],
   version: 0,
+  modelVersion: 0,
 }))
 
 export function setScan(scan: ScanSettings | null, status: ScanStatus = scan ? 'loading' : 'none', message: string | null = null) {
-  useScan.setState((s) => ({ scan, status, message, measuring: false, measurePoints: [], version: s.version + 1 }))
+  useScan.setState((s) => ({
+    scan,
+    status,
+    message,
+    measuring: false,
+    measurePoints: [],
+    version: s.version + 1,
+    modelVersion: s.modelVersion + 1,
+  }))
 }
 
 export function patchScan(patch: Partial<Omit<ScanSettings, 'id' | 'analysis'>>) {

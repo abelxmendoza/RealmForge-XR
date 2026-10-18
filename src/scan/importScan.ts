@@ -89,21 +89,28 @@ const newScanId = () => `scan-${Date.now().toString(36)}-${Math.random().toStrin
  * With `relink`, the file replaces a missing model and keeps the current alignment.
  */
 export async function importScanFile(file: File, { relink = false } = {}): Promise<{ ok: true; warning?: string } | { ok: false; error: string }> {
-  const buffer = await file.arrayBuffer()
-  const problem = checkScanFile(file.name, new Uint8Array(buffer, 0, Math.min(4, buffer.byteLength)), buffer.byteLength)
+  // Check the size and header before reading a possibly huge file into memory.
+  const head = new Uint8Array(await file.slice(0, 4).arrayBuffer())
+  const problem = checkScanFile(file.name, head, file.size)
   if (problem) return { ok: false, error: problem }
 
+  const before = useScan.getState()
+  const fail = (error: string) => {
+    setScanStatus(before.status, before.message)
+    return { ok: false as const, error }
+  }
   setScanStatus('loading', `Reading ${file.name}…`)
+  let buffer: ArrayBuffer
   let root: THREE.Object3D
   try {
+    buffer = await file.arrayBuffer()
     root = await parse(buffer)
   } catch (error) {
-    setScanStatus(useScan.getState().scan ? useScan.getState().status : 'none')
-    return { ok: false, error: error instanceof Error ? error.message : String(error) }
+    return fail(error instanceof Error ? error.message : String(error))
   }
 
   const tri = extractTriangles(root)
-  if (!tri.length) return { ok: false, error: 'This file has no 3D surfaces in it.' }
+  if (!tri.length) return fail('This file has no 3D surfaces in it.')
   const unit = guessUnit(analyzeTriangles(tri).size)
   const analysis = analyzeTriangles(tri, unit)
   const blob = new Blob([buffer], { type: 'model/gltf-binary' })
@@ -127,7 +134,7 @@ export async function importScanFile(file: File, { relink = false } = {}): Promi
   try {
     await putScanBlob(scan.id, blob)
   } catch {
-    return { ok: false, error: 'This browser couldn’t store the scan (storage may be full or blocked).' }
+    return fail('This browser couldn’t store the scan (storage may be full or blocked).')
   }
   parsed.set(scan.id, root)
   setScan(scan, 'ready')

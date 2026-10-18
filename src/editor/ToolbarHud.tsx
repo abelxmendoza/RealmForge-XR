@@ -23,7 +23,7 @@ import {
 import { blockRoute } from './demo'
 import { openWorldLibrary } from './WorldLibrary'
 import { openObjectLibrary, openScanImport } from './Inspector'
-import { useScan } from '../scan/store'
+import { setScan, useScan } from '../scan/store'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 import { useEditor } from './settings'
 import { downloadWorld, importWorld, quickSave, useWorldLibrary } from '../world/persistence'
@@ -126,7 +126,10 @@ export function ToolbarHud() {
   }
 
   const onClearWorld = async () => {
-    if (await confirmReplace('Clear the current world? Unsaved changes will be lost.')) useWorld.getState().reset()
+    if (await confirmReplace('Clear the current world? Unsaved changes will be lost.')) {
+      useWorld.getState().reset()
+      setScan(null)
+    }
   }
 
   const onSave = async () => {

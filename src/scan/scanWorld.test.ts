@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useWorld, newId } from '../world/store'
 import { currentWorldFile, replaceWorld } from '../world/persistence'
 import { parseWorld } from '../world/serialize'
-import { checkScanFile, MAX_SCAN_BYTES } from './importScan'
+import { checkScanFile, importScanFile, MAX_SCAN_BYTES } from './importScan'
 import { patchScan, scanPosition, setScan, useScan, type ScanSettings } from './store'
 
 const scan = (): ScanSettings => ({
@@ -54,6 +54,47 @@ describe('scans in world files', () => {
   it('places the floor at y = 0 plus the user nudge', () => {
     expect(scanPosition(scan())[1]).toBeCloseTo(1.3)
     expect(scanPosition({ ...scan(), offset: [0, 0.25, 0] })[1]).toBeCloseTo(1.55)
+  })
+})
+
+describe('review fixes', () => {
+  it('asks before replacing a world that only has a scan in it', async () => {
+    setScan(scan())
+    const r = await replaceWorld({ name: 'Other', objects: [], robotStart: [0, 0], goal: null }, { confirmReplace: () => false })
+    expect(r.ok).toBe(false)
+    expect(useScan.getState().scan?.id).toBe('scan-test-1')
+  })
+
+  it('reloads the model when a file is re-linked under the same id, not on every tweak', () => {
+    setScan(scan())
+    const v = useScan.getState().modelVersion
+    patchScan({ opacity: 0.4 })
+    expect(useScan.getState().modelVersion).toBe(v)
+    setScan({ ...useScan.getState().scan!, name: 'relinked.glb' }, 'ready')
+    expect(useScan.getState().modelVersion).toBe(v + 1)
+  })
+
+  it('rejects an oversized file without reading it into memory', async () => {
+    let read = false
+    const huge = {
+      name: 'hall.glb',
+      size: MAX_SCAN_BYTES + 1,
+      slice: () => new Blob([new Uint8Array([0x67, 0x6c, 0x54, 0x46])]),
+      arrayBuffer: async () => {
+        read = true
+        return new ArrayBuffer(0)
+      },
+    } as unknown as File
+    const r = await importScanFile(huge)
+    expect(r.ok).toBe(false)
+    expect(read).toBe(false)
+  })
+
+  it('puts the status back when an import fails', async () => {
+    const broken = new File([new Uint8Array([0x67, 0x6c, 0x54, 0x46, 9, 9, 9, 9])], 'broken.glb')
+    const r = await importScanFile(broken)
+    expect(r.ok).toBe(false)
+    expect(useScan.getState().status).toBe('none')
   })
 })
 

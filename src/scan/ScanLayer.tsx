@@ -36,6 +36,7 @@ export function ScanLayer() {
   const points = useScan((s) => s.measurePoints)
   const [model, setModel] = useState<THREE.Object3D | null>(null)
   const id = scan?.id
+  const modelVersion = useScan((s) => s.modelVersion)
   const cut = scan?.cutHeight ?? null
   const cutOn = cut !== null
   const gl = useThree((s) => s.gl)
@@ -70,7 +71,8 @@ export function ScanLayer() {
     return () => {
       cancelled = true
     }
-  }, [id])
+    // modelVersion: a re-linked file arrives under the same id.
+  }, [id, modelVersion])
 
   // See-through materials and click-through meshes (except while measuring). The cut height itself only
   // moves the plane in useFrame; switching the cut on or off is what needs the materials rebuilt.
