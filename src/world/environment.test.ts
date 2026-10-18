@@ -74,6 +74,8 @@ describe('environment registry', () => {
       'warehouse',
       'empty-event-venue',
       'job-fair',
+      'factory-floor',
+      'music-festival',
     ])
     expect(listEnvironments().map((e) => e.id)).toEqual(ENVIRONMENT_IDS)
     expect(PRESETS.map((p) => p.id)).toEqual(ENVIRONMENT_IDS)

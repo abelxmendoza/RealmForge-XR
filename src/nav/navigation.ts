@@ -60,6 +60,8 @@ let started = false
 export function startNavigation() {
   if (started) return
   started = true
+  // A template may have loaded before navigation started (landing-page links); begin at its start.
+  robotRuntime.pos = [...useWorld.getState().robotStart]
   useWorld.subscribe((s, prev) => {
     if (s.robotVersion !== prev.robotVersion) {
       robotRuntime.pos = [...s.robotStart]

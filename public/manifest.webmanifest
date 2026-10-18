@@ -1,7 +1,7 @@
 {
   "name": "RealmForge XR",
   "short_name": "RealmForge",
-  "description": "Spatial worldbuilding, event venue and robot navigation sandbox for desktop and WebXR.",
+  "description": "Lay out venues, festivals and factory floors and simulate the traffic through them, on desktop and in WebXR.",
   "id": "/",
   "start_url": "/?editor=1",
   "scope": "/",
