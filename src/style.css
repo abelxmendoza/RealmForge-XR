@@ -1045,8 +1045,12 @@ dialog button.danger-confirm:hover:not(:disabled) {
     background: var(--rf-panel-solid);
   }
 
-  .hud-collapsed .hud-menu > .hud-panel,
-  .hud-collapsed .hud-menu > .status {
+  .hud-collapsed .hud-menu > .hud-panel {
+    display: none;
+  }
+
+  /* The status pill shows under the folded top bar; an open menu hides it so it never sits on the side panel. */
+  .hud:not(.hud-collapsed) > .status {
     display: none;
   }
 

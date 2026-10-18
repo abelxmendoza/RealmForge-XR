@@ -264,7 +264,7 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
             if (plat.size[0] < MIN_PLATFORM || plat.size[2] < MIN_PLATFORM) return
             id = store.addObject({ kind: 'platform', ...plat, material: s.platformMaterial })
           }
-          finishPlacement(id)
+          keepPlacing(id)
         },
       })
     }
@@ -280,14 +280,14 @@ function finishPlacement(id?: string | null) {
 }
 
 /**
- * Catalog placements (buildings, decorations, library assets, event objects) keep the tool armed
+ * Build placements (walls, roads, buildings, decorations, library assets, event objects) keep the tool armed
  * and the catalog open, so you can place several in a row. Clicking an existing object still
  * selects it instead of spawning; "Done placing" (or 1 / Esc) returns to Select.
  */
 function keepPlacing(id: string) {
   const o = useWorld.getState().objects[id]
   useWorld.getState().select(null)
-  if (o) useEditor.getState().set({ actorMessage: 'Placed. Click empty ground to place another, or press Done placing.' })
+  if (o) useEditor.getState().set({ actorMessage: 'Placed. Add another on empty ground, or press Done placing.' })
 }
 
 /** The map's ground. Empty-ground clicks apply the current place tool; object presses select/move instead. */
