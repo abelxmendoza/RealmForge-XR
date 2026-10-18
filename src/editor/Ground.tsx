@@ -16,6 +16,7 @@ import { Structure } from '../scene/structures'
 import { beginDrag } from './drag'
 import { useEditor } from './settings'
 import { propFromCatalog } from '../world/eventCatalog'
+import { addWaypoint } from '../nav/routePlan'
 
 const MIN_WALL = 0.6
 const MIN_PLATFORM = 0.5
@@ -91,14 +92,20 @@ export function Ground() {
       case 'select':
         w.select(null)
         return
-      case 'goal':
+      case 'goal': {
         e.stopPropagation()
         if (w.selectedActorId) {
           const result = worldActions.setActorGoal(w.selectedActorId, raw)
           useEditor.getState().set({ actorMessage: result.ok ? 'Actor destination set.' : result.error })
-        } else w.setGoal(raw)
-        finishPlacement(null)
+          finishPlacement(null)
+          return
+        }
+        // Multi-waypoint route: stay on Add Waypoint so users can click several stops, then Play.
+        const result = addWaypoint(raw)
+        if (!result.ok) useEditor.getState().set({ actorMessage: result.error })
+        else useEditor.getState().set({ actorMessage: `Waypoint ${result.index + 1} added. Add more, then Play.` })
         return
+      }
       case 'robot':
         e.stopPropagation()
         w.placeRobot(raw)

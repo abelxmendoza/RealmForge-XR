@@ -34,7 +34,7 @@ const TOOLS: { id: Tool; label: string }[] = [
   { id: 'select', label: 'Select' },
   { id: 'wall', label: 'Wall' },
   { id: 'building', label: 'Building' },
-  { id: 'goal', label: 'Set Destination' },
+  { id: 'goal', label: 'Add Waypoint' },
   { id: 'robot', label: 'Place Robot' },
   { id: 'platform', label: 'Road / Platform' },
   { id: 'decor', label: 'Decoration' },

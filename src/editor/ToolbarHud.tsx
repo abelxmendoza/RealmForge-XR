@@ -10,6 +10,16 @@ import { enterARWithFallback, useXRSessionMeta } from '../xr/session'
 import { usePlacement } from '../xr/placement'
 import { useWorld } from '../world/store'
 import { useNav } from '../nav/navigation'
+import {
+  clearRoute,
+  pauseRoute,
+  playRoute,
+  removeLastWaypoint,
+  routeStatusLabel,
+  skipToNextWaypoint,
+  stopRoute,
+  useRoutePlan,
+} from '../nav/routePlan'
 import { blockRoute } from './demo'
 import { openWorldLibrary } from './WorldLibrary'
 import { deleteSelected, duplicateSelected } from './Obstacles'
@@ -35,6 +45,7 @@ import { xrStore } from '../xr/xrStore'
 const STATUS_TEXT = {
   idle: 'No goal set',
   moving: 'Robot moving',
+  paused: 'Route paused',
   arrived: 'Arrived',
   'no-path': 'No route to goal',
 } as const
@@ -58,6 +69,8 @@ export function ToolbarHud() {
   const selectedId = useWorld((s) => s.selectedId)
   const status = useNav((s) => s.status)
   const replans = useNav((s) => s.replanCount)
+  const route = useRoutePlan()
+  const [routeMsg, setRouteMsg] = useState<string | null>(null)
   const snap = useEditor((s) => s.snap)
   const placement = usePlacement((s) => s.status)
   const xrError = useXRSessionMeta((s) => s.lastError)
@@ -311,11 +324,92 @@ export function ToolbarHud() {
         )}
 
         {section === 'plan' && (
-          <div className="row hud-section-actions">
-            <button type="button" title="Slide a wall across the robot path to demo replanning (B)" onClick={blockRoute}>
-              Block Path
-            </button>
-            <p className="hud-inline-hint">Set a destination, then watch the robot find a path. Block Path tests replanning.</p>
+          <div className="hud-sim">
+            <div className="row hud-section-actions">
+              {route.playState === 'playing' ? (
+                <button
+                  type="button"
+                  title="Pause the robot on its current path"
+                  onClick={() => {
+                    const r = pauseRoute()
+                    setRouteMsg(r.ok ? 'Paused.' : r.error)
+                  }}
+                >
+                  Pause
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="primary"
+                  disabled={!route.waypoints.length}
+                  title={tooltip('Play the waypoint route', !route.waypoints.length ? 'Add waypoints first' : undefined)}
+                  onClick={() => {
+                    const r = playRoute()
+                    setRouteMsg(r.ok ? 'Playing route.' : r.error)
+                  }}
+                >
+                  {route.playState === 'paused' ? 'Resume' : 'Play'}
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={route.playState !== 'playing' && route.playState !== 'paused'}
+                title={tooltip('Stop and return to the first waypoint', route.playState === 'idle' || route.playState === 'done' ? 'Route is not running' : undefined)}
+                onClick={() => {
+                  stopRoute()
+                  setRouteMsg('Stopped.')
+                }}
+              >
+                Stop
+              </button>
+              <button
+                type="button"
+                disabled={route.playState !== 'playing' && route.playState !== 'paused'}
+                title={tooltip('Skip to the next waypoint', route.playState === 'idle' || route.playState === 'done' ? 'Play the route first' : undefined)}
+                onClick={() => {
+                  const r = skipToNextWaypoint()
+                  setRouteMsg(r.ok ? 'Skipped to next stop.' : r.error)
+                }}
+              >
+                Next Stop
+              </button>
+              <button
+                type="button"
+                disabled={!route.waypoints.length || route.playState === 'playing' || route.playState === 'paused'}
+                title={tooltip('Remove the last waypoint', !route.waypoints.length ? 'No waypoints' : route.playState === 'playing' || route.playState === 'paused' ? 'Stop the route first' : undefined)}
+                onClick={() => {
+                  const r = removeLastWaypoint()
+                  setRouteMsg(r.ok ? 'Removed last waypoint.' : r.error)
+                }}
+              >
+                Remove Last
+              </button>
+              <button
+                type="button"
+                className="ghost"
+                disabled={!route.waypoints.length}
+                title={tooltip('Clear all waypoints', !route.waypoints.length ? 'No waypoints' : undefined)}
+                onClick={() => {
+                  clearRoute()
+                  setRouteMsg('Route cleared.')
+                }}
+              >
+                Clear Route
+              </button>
+              <button type="button" title="Slide a wall across the robot path to demo replanning (B)" onClick={blockRoute}>
+                Block Path
+              </button>
+            </div>
+            <div className="hud-sim-status">
+              <strong>{routeStatusLabel(route)}</strong>
+              <span>
+                Robot: {STATUS_TEXT[status]} · replans {replans}
+              </span>
+              {routeMsg ? <span>{routeMsg}</span> : null}
+            </div>
+            <p className="hud-inline-hint">
+              Use Add Waypoint and click several points on the ground, then Play. Drag objects anytime — placement returns to Select.
+            </p>
           </div>
         )}
 

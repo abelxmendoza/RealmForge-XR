@@ -1,42 +1,12 @@
-import { create } from 'zustand'
 import { useWorld } from '../world/store'
 import { navObstacles, type Vec2 } from '../world/types'
 import { planPath } from './astar'
-import { buildGrid, pathIsClear, type Grid } from './grid'
+import { buildGrid, pathIsClear } from './grid'
+import { getRoutePlan, onNavArrived } from './routePlan'
+import { robotRuntime, useNav, type NavStatus } from './navState'
 
-export type NavStatus = 'idle' | 'moving' | 'arrived' | 'no-path'
-
-export interface NavState {
-  grid: Grid
-  /** Remaining route, first point = where the robot was when it was planned. */
-  path: Vec2[]
-  status: NavStatus
-  replanCount: number
-  /** The route that was invalidated by the last edit; drawn briefly in red. */
-  blockedPath: Vec2[] | null
-  /** performance.now() of the last replan caused by a blocked route. */
-  blockedAt: number
-}
-
-/**
- * Live robot pose. Mutated every frame by <Robot>, so it lives outside React state.
- * Navigation reads it when it replans so the new route starts where the robot actually is.
- */
-export const robotRuntime = {
-  pos: [...useWorld.getState().robotStart] as Vec2,
-  heading: 0,
-  /** Index of the waypoint in `path` the robot is walking toward. */
-  target: 1,
-}
-
-export const useNav = create<NavState>(() => ({
-  grid: buildGrid(navObstacles(useWorld.getState().objects)),
-  path: [],
-  status: 'idle',
-  replanCount: 0,
-  blockedPath: null,
-  blockedAt: 0,
-}))
+export type { NavStatus, NavState } from './navState'
+export { robotRuntime, useNav } from './navState'
 
 /** Points the robot still has to walk: its position, then the waypoints ahead of it. */
 export function remainingRoute(): Vec2[] {
@@ -56,23 +26,30 @@ function replan(reason: 'geometry' | 'goal' | 'robot') {
   }
 
   const before = remainingRoute()
-  const wasActive = nav.status === 'moving' && before.length > 1
+  const wasActive = (nav.status === 'moving' || nav.status === 'paused') && before.length > 1
   const blocked = reason === 'geometry' && wasActive && !pathIsClear(grid, before)
 
   const path = planPath(grid, robotRuntime.pos, goal)
   robotRuntime.target = 1
+  const route = getRoutePlan()
+  let status: NavStatus
+  if (!path) status = 'no-path'
+  else if (path.length <= 1) status = 'arrived'
+  else if (route.playState === 'paused') status = 'paused'
+  else status = 'moving'
   useNav.setState({
     grid,
     path: path ?? [],
-    status: path ? (path.length > 1 ? 'moving' : 'arrived') : 'no-path',
+    status,
     replanCount: nav.replanCount + 1,
     ...(blocked ? { blockedPath: before, blockedAt: performance.now() } : {}),
   })
 }
 
-/** Called by <Robot> when it reaches the last waypoint. */
+/** Called by <Robot> when it reaches the last path point for the current goal. */
 export function markArrived() {
   useNav.setState({ status: 'arrived' })
+  onNavArrived()
 }
 
 let started = false
