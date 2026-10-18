@@ -20,13 +20,8 @@ import { HAPTIC, pulse } from '../xr/haptics'
 import { usePlacement } from '../xr/placement'
 import { useEnvironment } from '../world/environment'
 import { propFromCatalog } from '../world/eventCatalog'
-<<<<<<< HEAD
-import { restLocalY, settleObject } from '../xr/realSurfaces'
-import { addWaypoint } from '../nav/routePlan'
-=======
 import { addWaypoint } from '../nav/routePlan'
 import { restLocalY, settleObject } from '../xr/realSurfaces'
->>>>>>> origin/main
 
 const MIN_WALL = 0.6
 const MIN_PLATFORM = 0.5
@@ -173,11 +168,7 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
         finishPlacement(null)
         return
       }
-<<<<<<< HEAD
-      // Robot multi-waypoint: stay on Add Waypoint so users can click several stops, then Play.
-=======
       // Robot multi-waypoint route: stay on Add Waypoint so users can click several stops, then Play.
->>>>>>> origin/main
       const result = addWaypoint(raw)
       if (!result.ok) useEditor.getState().set({ actorMessage: result.error })
       else useEditor.getState().set({ actorMessage: `Waypoint ${result.index + 1} added. Add more, then Play.` })
@@ -270,10 +261,6 @@ export function Ground() {
   useEditor((s) => s.snap)
   useWorld((s) => s.objects)
   const size = WORLD.half * 2
-<<<<<<< HEAD
-  const eventGhost = tool === 'event' && hover ? eventPreview(hover) : null
-  const preview = tool === 'asset' && hover ? worldActions.previewCatalogAsset(hover) : eventGhost ? { object: eventGhost, valid: true } : null
-=======
   const actorPreview = tool === 'actor' && hover ? worldActions.previewActor(hover) : null
   const eventGhost = tool === 'event' && hover ? eventPreview(hover) : null
   const preview =
@@ -291,7 +278,6 @@ export function Ground() {
               },
             }
           : null
->>>>>>> origin/main
   const ok = !!preview && preview.valid && !placementError
   return (
     <>
