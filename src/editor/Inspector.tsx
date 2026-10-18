@@ -65,18 +65,17 @@ export function Inspector() {
     )
   }
 
+  const context = resolveInspectorContext({
+    section,
+    tool,
+    hasObject: Boolean(selected),
+    hasActor: Boolean(selectedActorId),
+  })
+
   return (
-    <div
-      className="inspector"
-      data-context={resolveInspectorContext({
-        section,
-        tool,
-        hasObject: Boolean(selected),
-        hasActor: Boolean(selectedActorId),
-      })}
-    >
+    <div className="inspector" data-context={context}>
       <header className="inspector-chrome">
-        <h2 className="inspector-title">{panelHeading(section, tool, selected, selectedActorId)}</h2>
+        <h2 className="inspector-title">{panelHeading(context, tool)}</h2>
         <button
           type="button"
           className="ghost inspector-toggle"
@@ -89,13 +88,13 @@ export function Inspector() {
       </header>
 
       <div className="inspector-body">
-        {section === 'simulate' ? (
+        {context === 'simulate' ? (
           <SimulationPanel />
-        ) : section === 'save' ? (
+        ) : context === 'save' ? (
           <WorldsPanel />
-        ) : selected ? (
+        ) : context === 'object' && selected ? (
           <ObjectPanel o={selected} />
-        ) : selectedActorId ? (
+        ) : context === 'actor' ? (
           <ActorPanel />
         ) : (
           <ToolContextPanel tool={tool} />
@@ -111,16 +110,11 @@ export function Inspector() {
   )
 }
 
-function panelHeading(
-  section: string,
-  tool: Tool,
-  selected: WorldObject | null,
-  selectedActorId: string | null,
-): string {
-  if (section === 'simulate') return 'Simulation'
-  if (section === 'save') return 'Saved worlds'
-  if (selected) return 'Selected object'
-  if (selectedActorId) return 'Selected actor'
+function panelHeading(context: string, tool: Tool): string {
+  if (context === 'simulate') return 'Simulation'
+  if (context === 'save') return 'Saved worlds'
+  if (context === 'object') return 'Selected object'
+  if (context === 'actor' && tool !== 'actor') return 'Selected actor'
   return TOOL_PANEL_HEADINGS[tool] ?? 'Inspector'
 }
 
