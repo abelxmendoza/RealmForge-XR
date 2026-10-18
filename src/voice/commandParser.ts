@@ -2,6 +2,7 @@ import type { EnvironmentId } from '../world/environment'
 import type { Tool } from '../world/store'
 import type { ParseResult, VoiceCommand } from './types'
 import { parseObjectCommand } from './objectCommands'
+import { parseOpenSaved, parseWorldCommand } from './worldCommands'
 
 /** Normalize spoken text for keyword matching. */
 export function normalizeTranscript(raw: string): string {
@@ -51,6 +52,10 @@ const TOOL_RULES: { phrases: string[]; tool: Tool }[] = [
 export function parseVoiceCommand(transcript: string): ParseResult {
   const t = normalizeTranscript(transcript)
   if (!t) return { ok: false, reason: 'empty', transcript }
+
+  // New world, open a saved world, save as a name, resume the last session.
+  const worldCommand = parseWorldCommand(t, matchEnvironment)
+  if (worldCommand) return { ok: true, command: worldCommand }
 
   // Environment load / switch
   if (
@@ -103,6 +108,10 @@ export function parseVoiceCommand(transcript: string): ParseResult {
   for (const r of rules) {
     if (r.test(t)) return { ok: true, command: r.command }
   }
+
+  // "open harbor" with no environment by that name: try the saved worlds.
+  const openSaved = parseOpenSaved(t)
+  if (openSaved) return { ok: true, command: openSaved }
 
   // Make, place, move, rotate, resize and copy objects ("add three trees near the robot").
   const objectCommand = parseObjectCommand(t)

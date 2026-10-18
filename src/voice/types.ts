@@ -1,6 +1,7 @@
 import type { EnvironmentId } from '../world/environment'
 import type { Tool } from '../world/store'
 import type { AnchorName, Direction, Placement, SpawnSpec } from '../world/spawn'
+import type { TemplateId } from '../world/library'
 
 /** Deterministic voice intents — executed only after validation. */
 export type VoiceCommand =
@@ -13,6 +14,17 @@ export type VoiceCommand =
   | { type: 'CLEAR_SELECTION' }
   | { type: 'RESET_WORLD' }
   | { type: 'START_NAVIGATION' }
+  /** "start a new Mars world called harbor": creates it and saves it to the library */
+  | { type: 'NEW_WORLD'; template: TemplateId; name?: string }
+  /** "open my harbor world": best match among saved worlds */
+  | { type: 'OPEN_SAVED_WORLD'; query: string }
+  /** "resume": bring back the auto-saved last session */
+  | { type: 'RESUME_SESSION' }
+  /**
+   * Leave the editor for the landing page.
+   * `force: true` skips the unsaved-changes confirm — escape hatch for stuck UI ("go home now").
+   */
+  | { type: 'GO_HOME'; force?: boolean }
   /** "add three trees near the robot" */
   | { type: 'SPAWN_OBJECTS'; spec: SpawnSpec; label: string; count: number; placement: Placement }
   /** "move it 10 meters north", "move them to the goal" ("it" = selection, "them" = last batch) */

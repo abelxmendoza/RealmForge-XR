@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { create } from 'zustand'
+import { useWorld } from '../world/store'
 import { DEFAULT_APPEARANCE, getEnvironment } from '../world/environment'
 import {
   getThumbnail,
@@ -10,6 +11,7 @@ import {
   type TemplateId,
 } from '../world/library'
 import { downloadWorld, listSavedWorlds, useWorldLibrary } from '../world/persistence'
+import { resumeAutosave, useAutosave } from '../world/autosave'
 import { confirmReplace, getConfirmation, requestConfirmation } from '../world/confirmation'
 import {
   isLibraryMenuBusy,
@@ -109,6 +111,8 @@ function Palette() {
             ✕
           </button>
         </header>
+
+        <ResumeSession busy={busy} onDone={(msg) => apply({ kind: 'ok', message: msg }, true)} onError={(msg) => apply({ kind: 'error', message: msg })} />
 
         <section>
           <h3>Start a new world</h3>
@@ -292,4 +296,36 @@ function relativeTime(iso: string) {
   if (s < 3600) return `${Math.round(s / 60)} min ago`
   if (s < 86400) return `${Math.round(s / 3600)} h ago`
   return new Date(iso).toLocaleDateString()
+}
+
+/** "Resume where you left off": the auto-saved last session, when there is one to bring back. */
+function ResumeSession({ busy, onDone, onError }: { busy: boolean; onDone: (msg: string) => void; onError: (msg: string) => void }) {
+  const info = useAutosave((s) => s.info)
+  const activeName = useWorldLibrary((s) => s.activeName)
+  const objectCount = useWorldLibrary(() => Object.keys(useWorld.getState().objects).length)
+  // Hide it when that session is what's open right now.
+  if (!info || (info.name === activeName && info.objectCount === objectCount)) return null
+  const when = new Date(info.savedAt)
+  return (
+    <section className="resume">
+      <h3>Resume where you left off</h3>
+      <div className="library-row">
+        <button
+          className="primary"
+          disabled={busy}
+          onClick={async () => {
+            const r = await resumeAutosave({ confirmReplace })
+            if (r.ok) onDone(`Resumed "${info.name}".`)
+            else if (!r.cancelled) onError(r.error)
+          }}
+        >
+          Resume “{info.name}”
+        </button>
+        <span className="hint">
+          {info.objectCount} objects · auto-saved {Number.isNaN(when.getTime()) ? '' : when.toLocaleString()}
+          {info.unsaved ? ' · includes changes you had not saved' : ''}
+        </span>
+      </div>
+    </section>
+  )
 }

@@ -59,6 +59,9 @@ export class VoiceController {
   private lastFinalKey: string | null = null
   private lastFinalAt = 0
   private processing = false
+  /** Final pieces of the current spoken command (AssemblyAI may split one sentence into several turns). */
+  private utterance: string[] = []
+  private finishTimer: ReturnType<typeof setTimeout> | null = null
   private removeMockHandler: (() => void) | null = null
 
   constructor(opts: VoiceControllerOptions = {}) {
@@ -140,6 +143,8 @@ export class VoiceController {
 
     this.lastError = null
     this.pendingConfirmation = null
+    this.utterance = []
+    this.clearFinishTimer()
 
     if (this.provider === 'mock') {
       this.isListening = true
@@ -152,7 +157,7 @@ export class VoiceController {
         tokenUrl: this.tokenUrl,
         signal: this.abortStart.signal,
         onTranscript: (r) => {
-          if (generation === this.generation) void this.handleTranscript(r)
+          if (generation === this.generation) this.collect(r)
         },
         onError: (message) => {
           this.lastError = message
@@ -194,16 +199,57 @@ export class VoiceController {
   }
 
   async stopListening(): Promise<void> {
+    this.clearFinishTimer()
     if (!this.session) {
       ++this.generation
       this.abortStart?.abort()
     }
     if (this.session) {
+      // Draining the session can deliver the last piece of the sentence.
       await this.session.stop()
       this.session = null
     }
     this.isListening = false
     this.emit()
+    await this.flushUtterance()
+  }
+
+  /**
+   * Live speech: gather the final pieces of one command, show them as they arrive, and run the
+   * whole sentence once the speaker pauses (or when they tap stop). One tap = one command.
+   */
+  private collect(result: TranscriptResult): void {
+    if (!this.enabled) return
+    const text = result.text.trim()
+    if (!text) return
+    if (!result.isFinal) {
+      this.clearFinishTimer()
+      this.lastPartial = [...this.utterance, text].join(' ')
+      this.emit()
+      return
+    }
+    this.utterance.push(text)
+    this.lastPartial = this.utterance.join(' ')
+    this.emit()
+    this.clearFinishTimer()
+    this.finishTimer = setTimeout(() => {
+      this.finishTimer = null
+      void this.stopListening()
+    }, VoiceController.FINISH_AFTER_MS)
+  }
+
+  /** Pause after the last final piece before the command runs. */
+  static FINISH_AFTER_MS = 700
+
+  private clearFinishTimer() {
+    if (this.finishTimer) clearTimeout(this.finishTimer)
+    this.finishTimer = null
+  }
+
+  private async flushUtterance(): Promise<void> {
+    const text = this.utterance.join(' ').replace(/\.\s+/g, ' ').trim()
+    this.utterance = []
+    if (text) await this.handleTranscript({ text, isFinal: true })
   }
 
   /**

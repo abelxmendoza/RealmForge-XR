@@ -10,7 +10,6 @@ import { beginDrag } from '../editor/drag'
 import { useEditor } from '../editor/settings'
 import { snapPoint } from '../world/snap'
 import { worldActions } from '../world/actions'
-import { applyGroundHover, applyGroundTool } from '../editor/Ground'
 import { actorRuntimeRevision, getActorRuntime, subscribeActorRuntime, tickActors } from './runtime'
 import { ActorModel } from './ActorModels'
 import type { Actor } from './types'
@@ -38,9 +37,9 @@ function ActorObject({ actor }: { actor: Actor }) {
     group.current.rotation.y = runtime?.heading ?? actor.rotationY
   })
   const onDown = (event: ThreeEvent<PointerEvent>) => {
-    // Placement tools: a press on a person lands on the ground under them (you can place right where they stand).
-    if (useWorld.getState().tool !== 'select') return applyGroundTool(event)
     event.stopPropagation()
+    const world = useWorld.getState()
+    world.setTool('select')
     worldActions.selectActor(actor.id)
     const point = groundPoint(event)
     if (!point) return
@@ -55,7 +54,11 @@ function ActorObject({ actor }: { actor: Actor }) {
   }
   const onGrab = (state: HandleState<{ size: Actor['size'] }>) => {
     const world = useWorld.getState()
-    if (state.first) { world.selectActor(actor.id); world.setDragging(true) }
+    if (state.first) {
+      world.setTool('select')
+      world.selectActor(actor.id)
+      world.setDragging(true)
+    }
     const memo = state.memo ?? { size: [...actor.size] as Actor['size'] }
     const result = worldActions.updateActor(actor.id, {
       position: [state.current.position.x, state.current.position.z],
@@ -67,8 +70,8 @@ function ActorObject({ actor }: { actor: Actor }) {
     return memo
   }
   return <group ref={group} position={[actor.position[0], 0, actor.position[1]]} rotation={[0, actor.rotationY, 0]}>
-    <group onPointerDown={onDown} onPointerMove={(e) => { if (useWorld.getState().tool !== 'select') applyGroundHover(e) }}>
-      <Handle targetRef={group} filter={(event) => event.pointerType === 'grab' && useWorld.getState().tool === 'select'} translate={{ y: false }} rotate="y" scale={{ uniform: true }} apply={(state) => onGrab(state as HandleState<{ size: Actor['size'] }>)}>
+    <group onPointerDown={onDown}>
+      <Handle targetRef={group} filter={(event) => event.pointerType === 'grab'} translate={{ y: false }} rotate="y" scale={{ uniform: true }} apply={(state) => onGrab(state as HandleState<{ size: Actor['size'] }>)}>
         <ActorModel actor={actor} />
       </Handle>
     </group>

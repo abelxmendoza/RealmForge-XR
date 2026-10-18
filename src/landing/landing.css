@@ -136,7 +136,7 @@ body { margin: 0; background: #0c1018; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .rf-landing *, .rf-landing *::before, .rf-landing *::after { animation: none !important; transition: none !important; } }
 
 /* RealmForge logo (replaces the outline mark). */
-.rf-brand-logo { width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0; object-fit: cover; box-shadow: 0 0 16px rgba(224, 120, 69, 0.35); }
-.rf-footer .rf-brand-logo { width: 25px; height: 25px; border-radius: 6px; }
-.rf-final-logo { width: 120px; height: 120px; border-radius: 24px; object-fit: cover; display: block; margin-inline: auto; box-shadow: 0 0 60px rgba(224, 120, 69, 0.35); }
-@media (max-width: 760px) { .rf-brand-logo { width: 28px; height: 28px; } .rf-final-logo { width: 92px; height: 92px; } }
+.rf-brand-logo { width: 52px; height: 52px; border-radius: 11px; flex-shrink: 0; object-fit: cover; box-shadow: 0 0 16px rgba(224, 120, 69, 0.35); }
+.rf-footer .rf-brand-logo { width: 34px; height: 34px; border-radius: 8px; }
+.rf-final-logo { width: 168px; height: 168px; border-radius: 32px; object-fit: cover; display: block; margin-inline: auto; box-shadow: 0 0 60px rgba(224, 120, 69, 0.35); }
+@media (max-width: 760px) { .rf-brand-logo { width: 40px; height: 40px; border-radius: 9px; } .rf-final-logo { width: 128px; height: 128px; border-radius: 26px; } }

@@ -170,7 +170,17 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  align-items: center;
   margin-left: auto;
+}
+.hud-session .hud-vr-alt {
+  min-width: 0;
+  padding-inline: 8px;
+  font-size: 11px;
+  opacity: 0.72;
+}
+.hud-session .hud-vr-alt:hover {
+  opacity: 1;
 }
 
 .hud-panel {
@@ -195,6 +205,69 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
   gap: 6px;
+}
+
+.hud-nav {
+  padding: 8px;
+}
+
+.hud-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.hud-tab {
+  flex: 1 1 auto;
+  min-width: 72px;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+.hud-section-actions {
+  margin-top: 8px;
+}
+
+.hud-inline-hint {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--rf-muted);
+  line-height: 1.35;
+  max-width: 100%;
+}
+
+.hud-sim {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hud-sim-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 12px;
+  color: var(--rf-muted);
+  padding: 6px 8px;
+  border-radius: var(--rf-radius-sm);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--rf-line);
+}
+
+.hud-sim-status strong {
+  color: var(--rf-text);
+}
+
+.hud button.danger {
+  border-color: rgba(239, 107, 124, 0.45);
+  color: #ffb4bf;
+}
+
+.hud button.danger:hover:not(:disabled) {
+  background: rgba(239, 107, 124, 0.16);
+  border-color: rgba(239, 107, 124, 0.7);
+  color: #ffd0d7;
 }
 
 .hud button,
@@ -247,30 +320,17 @@ dialog button.primary:hover:not(:disabled) {
 
 .hud .tool-btn {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  align-items: center;
+  justify-content: flex-start;
   text-align: left;
-  min-height: 46px;
-  padding: 7px 10px;
-}
-
-.hud .tool-key {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--rf-copper);
-  opacity: 0.9;
-}
-
-.hud button.on .tool-key {
-  color: rgba(26, 16, 12, 0.7);
+  min-height: 40px;
+  padding: 8px 12px;
 }
 
 .hud .tool-label {
-  font-size: 12px;
-  line-height: 1.2;
+  font-size: 12.5px;
+  line-height: 1.25;
+  font-weight: 600;
 }
 
 .hud .field {
@@ -1513,3 +1573,15 @@ dialog.controls-guide::backdrop {
 .start footer button { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--rf-line, #4a5568); background: rgba(255, 255, 255, 0.04); font-size: 13px; }
 .start footer button.link { border: 0; background: none; opacity: 0.7; text-decoration: underline; }
 .start-error { margin: 0 auto 0 0; color: #ffb4b4; font-size: 13px; }
+
+/* Worlds library: resume the auto-saved session. */
+.library section.resume { border: 1px solid var(--rf-ember, #e07845); border-radius: 10px; padding: 10px 12px; background: rgba(224, 120, 69, 0.08); }
+.library section.resume button.primary { background: linear-gradient(180deg, var(--rf-ember-hot, #ff9a5c), var(--rf-ember, #e07845)); color: #1a100c; border-color: transparent; font-weight: 600; }
+
+/* Voice dock: one mic button + optional typed command. */
+.voice-mic .voice-row { display: flex; gap: 6px; pointer-events: auto; }
+.voice-mic .voice-type { pointer-events: auto; border-radius: 999px; padding: 8px 12px; border: 1px solid var(--rf-line, #4a5568); background: var(--rf-panel, #141a26); color: var(--rf-text, #eee); font-size: 12px; cursor: pointer; }
+.voice-mic .voice-typed { pointer-events: auto; display: flex; gap: 6px; }
+.voice-mic .voice-typed input { width: 280px; padding: 7px 10px; border-radius: 999px; border: 1px solid var(--rf-line, #4a5568); background: var(--rf-panel, #141a26); color: var(--rf-text, #eee); font-size: 13px; }
+.voice-mic .voice-typed button { border-radius: 999px; padding: 7px 14px; border: 0; background: var(--rf-ember, #e07845); color: #1a100c; font-weight: 600; cursor: pointer; }
+.voice-mic .heard.ok { color: #9ff0c9; }

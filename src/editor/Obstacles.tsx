@@ -120,6 +120,8 @@ function Obstacle({ o }: { o: WorldObject }) {
     const world = useWorld.getState()
     const memo = state.memo ?? { base: world.objects[o.id] ?? o }
     if (state.first) {
+      // Grabbing always selects for edit, even if a place tool was armed.
+      world.setTool('select')
       world.select(o.id)
       world.setDragging(true)
       setHolding(true)
@@ -153,14 +155,14 @@ function Obstacle({ o }: { o: WorldObject }) {
   }
 
   const onDown = (e: ThreeEvent<PointerEvent>) => {
-    // Read the tool at press time; a value captured at render can be stale right after switching.
-    if (useWorld.getState().tool !== 'select') {
-      // Walkable surfaces (slabs, roads, plazas) cover the ground: placement tools land on the ground below.
-      if (!blocksNavigation(o)) applyGroundTool(e)
-      return
-    }
-    const { select, updateObject } = useWorld.getState()
-    select(o.id)
+    // Walkable surfaces (slabs, roads, plazas) cover the ground: placement tools land on the ground below
+    // (otherwise nothing could be placed on a warehouse floor slab).
+    if (useWorld.getState().tool !== 'select' && !blocksNavigation(o)) return applyGroundTool(e)
+    // Prefer select/move over spawning: a press on an existing object never places a new one.
+    e.stopPropagation()
+    const world = useWorld.getState()
+    world.setTool('select')
+    world.select(o.id)
     const start = groundPoint(e)
     if (!start) return
     const offset: Vec2 = [o.position[0] - start[0], o.position[2] - start[1]]
@@ -169,7 +171,7 @@ function Obstacle({ o }: { o: WorldObject }) {
         const cur = useWorld.getState().objects[o.id] ?? o
         let at: Vec2 = [p[0] + offset[0], p[1] + offset[1]]
         if (useEditor.getState().snap) at = snapFootprint(at, cur.size[0], cur.size[2], cur.rotationY)
-        updateObject(o.id, { position: [clampToWorld(at[0]), o.position[1], clampToWorld(at[1])] })
+        useWorld.getState().updateObject(o.id, { position: [clampToWorld(at[0]), o.position[1], clampToWorld(at[1])] })
       },
     })
   }
@@ -235,7 +237,7 @@ function Obstacle({ o }: { o: WorldObject }) {
       >
         <GrabHandle
           targetRef={groupRef}
-          filter={(e) => e.pointerType === 'grab' && useWorld.getState().tool === 'select'}
+          filter={(e) => e.pointerType === 'grab'}
           translate={{ y: false }}
           rotate="y"
           scale={{ uniform: true }}

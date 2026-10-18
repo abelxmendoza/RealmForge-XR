@@ -12,6 +12,7 @@ import { deleteSelected, duplicateSelected } from './Obstacles'
 import { useEditor } from './settings'
 import { blockRoute } from './demo'
 import { getSharedVoiceController, type VoiceController } from '../voice'
+import { VOICE_OPTIONS } from '../voice/sharedConfirm'
 
 type Panel =
   | { kind: 'menu'; x: number; y: number }
@@ -30,12 +31,12 @@ type Item =
   | { kind: 'sep' }
 
 const TOOLS: { id: Tool; label: string }[] = [
-  { id: 'select', label: 'Select / move' },
-  { id: 'wall', label: 'Draw wall' },
+  { id: 'select', label: 'Select' },
+  { id: 'wall', label: 'Wall' },
   { id: 'building', label: 'Building' },
-  { id: 'goal', label: 'Set destination' },
-  { id: 'robot', label: 'Place robot' },
-  { id: 'platform', label: 'Platform / road' },
+  { id: 'goal', label: 'Set Destination' },
+  { id: 'robot', label: 'Place Robot' },
+  { id: 'platform', label: 'Road / Platform' },
   { id: 'decor', label: 'Decoration' },
 ]
 
@@ -72,11 +73,8 @@ export function DesktopContextMenu() {
   useEffect(() => useWorldLibrary.subscribe((s) => setDirty(s.dirty)), [])
 
   useEffect(() => {
-    const voice = getSharedVoiceController({
-      provider: 'mock',
-      fallbackToMock: true,
-      confirm: async (req) => window.confirm(req.message),
-    })
+    // Same live controller as the voice button (never create it in mock mode here).
+    const voice = getSharedVoiceController(VOICE_OPTIONS)
     voiceRef.current = voice
     return voice.subscribe((s) => setListening(s.isListening))
   }, [])
@@ -129,32 +127,6 @@ export function DesktopContextMenu() {
 
 
   const items: Item[] = [
-    {
-      kind: 'action',
-      id: 'voice-type',
-      label: 'Type a command…',
-      run: () => {
-        ignoreOutside.current = true
-        setVoiceText('')
-        setPanel({ kind: 'voice' })
-        // Allow outside-dismiss again after the opening gesture finishes.
-        window.setTimeout(() => {
-          ignoreOutside.current = false
-        }, 0)
-      },
-    },
-    {
-      kind: 'action',
-      id: 'voice-toggle',
-      label: listening ? 'Stop voice listening' : 'Start voice listening',
-      run: async () => {
-        const voice = voiceRef.current
-        if (!voice) return
-        if (listening) await voice.stopListening()
-        else await voice.startListening()
-      },
-    },
-    { kind: 'sep' },
     ...TOOLS.map(
       (t): Item => ({
         kind: 'action',
@@ -223,14 +195,14 @@ export function DesktopContextMenu() {
     {
       kind: 'action',
       id: 'snap',
-      label: snap ? 'Snap grid ✓' : 'Snap grid',
+      label: snap ? 'Align to Grid ✓' : 'Align to Grid',
       shortcut: 'G',
       run: () => useEditor.getState().set({ snap: !useEditor.getState().snap }),
     },
     {
       kind: 'action',
       id: 'block',
-      label: 'Block route (demo)',
+      label: 'Block Path',
       shortcut: 'B',
       run: () => blockRoute(),
     },

@@ -95,6 +95,7 @@ export function placeAssetAt(point: Vec2): boolean {
   if (result.ok) {
     settleObject(result.id)
     pulse('active', HAPTIC.place)
+    finishPlacement(result.id)
   }
   return result.ok
 }
@@ -118,8 +119,8 @@ export function placeEventAt(point: Vec2): boolean {
   const w = useWorld.getState()
   const id = w.addObject(data)
   settleObject(id)
-  w.select(id)
   pulse('active', HAPTIC.place)
+  finishPlacement(id)
   return true
 }
 
@@ -150,15 +151,21 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
         const result = worldActions.setActorGoal(w.selectedActorId, raw)
         useEditor.getState().set({ actorMessage: result.ok ? 'Actor destination set.' : result.error })
       } else w.setGoal(raw)
+      finishPlacement(null)
       return
     case 'robot':
       e.stopPropagation()
       w.placeRobot(raw)
+      finishPlacement(null)
       return
     case 'actor': {
       e.stopPropagation()
       const result = worldActions.placeActor(raw)
       useEditor.getState().set({ actorMessage: result.ok ? 'Actor placed. Select it to customize or choose its destination.' : result.error })
+      if (result.ok) {
+        if ('id' in result && result.id) useWorld.getState().selectActor(result.id)
+        finishPlacement(null)
+      }
       return
     }
     case 'asset': {
@@ -176,7 +183,7 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
       e.stopPropagation()
       const id = w.addObject(objectForTool(tool, placePoint(raw)))
       settleObject(id)
-      w.select(id)
+      finishPlacement(id)
       return
     }
     case 'wall':
@@ -204,7 +211,7 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
             if (plat.size[0] < MIN_PLATFORM || plat.size[2] < MIN_PLATFORM) return
             id = store.addObject({ kind: 'platform', ...plat, material: s.platformMaterial })
           }
-          store.select(id)
+          finishPlacement(id)
         },
       })
     }
@@ -212,6 +219,14 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
 }
 
 /** The map's ground. Clicking it applies the current tool; with the asset tool a ghost previews placement. */
+/** After a successful place, return to Select so the next click can pick/move instead of spawning again. */
+function finishPlacement(id?: string | null) {
+  const w = useWorld.getState()
+  if (id) w.select(id)
+  w.setTool('select')
+}
+
+/** The map's ground. Empty-ground clicks apply the current place tool; object presses select/move instead. */
 export function Ground() {
   const tool = useWorld((s) => s.tool)
   const draft = useGroundUI((s) => s.draft)

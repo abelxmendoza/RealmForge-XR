@@ -2,12 +2,11 @@ import { listTemplates } from '../world/library'
 import { ACTOR_CATALOG, ACTOR_KINDS } from '../actors/types'
 import { actorRuntimeRevision, subscribeActorRuntime, getActorRuntime } from '../actors/runtime'
 import { requestConfirmation } from '../world/confirmation'
-
 import { getAsset } from '../world/assets'
 import { libraryAssets, useAssetLibrary } from '../world/assetLibrary'
+import { EVENT_CATALOG } from '../world/eventCatalog'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { PanelMoveBar } from './PanelMoveBar'
 import { useXR } from '@react-three/xr'
 import * as THREE from 'three'
 import { worldActions } from '../world/actions'
@@ -19,22 +18,31 @@ import { BUILDING_STYLE_IDS, WALL_MATERIALS, PLATFORM_MATERIALS, TREE_STYLES } f
 import { useEditor } from '../editor/settings'
 import { useNav } from '../nav/navigation'
 import { togglePlaceCity, toggleRays, toggleSurface } from '../editor/xrInput'
-import { SCALE_IDS, SCALE_PRESETS } from '../scene/worldRoot'
+import { PanelMoveBar } from './PanelMoveBar'
+import { paletteAnchor, setPaletteHidden, summonPalette, usePaletteUI } from './paletteUI'
+import { HAPTIC, pulse } from './haptics'
 import { toggleMocap, useMocap } from '../mocap/store'
 import { scanRoom } from './roomTracker'
 import { toggleRealSurfaces } from './realSurfaces'
+import { toggleOcclusion } from './occlusion'
 import { readSpatial, useSpatial } from './spatialSave'
-import { EVENT_CATALOG } from '../world/eventCatalog'
 import { blockRoute } from '../editor/demo'
 import { usePlacement } from './placement'
 import { createPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteSave, savePaletteWorld } from './paletteActions'
 import { FORGE } from '../theme/forge'
-import { paletteAnchor, setPaletteHidden, summonPalette, usePaletteUI } from './paletteUI'
-import { HAPTIC, pulse } from './haptics'
 import { BrandLogo3D } from './BrandLogo3D'
 import { useGuide } from '../guide/guideStore'
 import { useVoiceCommands } from '../voice/useVoiceCommands'
 import { VOICE_OPTIONS } from '../voice/sharedConfirm'
+import { TOOLBAR_SECTIONS, SCALE_SHORT, type ToolbarSection } from '../editor/toolbar'
+import { SCALE_IDS } from '../scene/worldRoot'
+import {
+  pauseAttendeeSimulation,
+  resetAttendeeSimulation,
+  resumeAttendeeSimulation,
+  startAttendeeSimulation,
+  useAttendee,
+} from '../sim/attendee'
 
 /** Actual Three.js controls: visible to both eyes and interactive with XR pointers. */
 export function ControlPalette() {
@@ -43,24 +51,24 @@ export function ControlPalette() {
 }
 
 type Button = { label: string; run: () => unknown; active?: boolean; disabled?: boolean }
+type Page = ToolbarSection | 'assets' | 'events' | 'room' | 'actors' | 'actor-settings' | 'brush' | 'saved' | 'styles'
+
 function PaletteContent() {
-  useAssetLibrary((s) => s.version)
   const root = useRef<THREE.Group>(null)
   const gl = useThree((s) => s.gl)
-  const [page, setPage] = useState('Tools')
-  // Shown / hidden and page requests are shared with the wrist menu (xr/paletteUI.ts).
+  const [page, setPage] = useState<Page>('build')
+  // Collapsed / closed and recenter requests are shared with the wrist Menu (xr/paletteUI.ts).
   const hidden = usePaletteUI((s) => s.hidden)
   const closed = usePaletteUI((s) => s.closed)
   const setHidden = setPaletteHidden
-  const pageRequest = usePaletteUI((s) => s.request)
   const recenter = usePaletteUI((s) => s.recenter)
+  useAssetLibrary((s) => s.version)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('Point and trigger / pinch to choose. Open Guide anytime.')
   const guideOpen = useGuide((s) => s.open)
   const openGuide = useGuide((s) => s.openGuide)
   const closeGuide = useGuide((s) => s.closeGuide)
   const voice = useVoiceCommands(VOICE_OPTIONS)
-  // Show what voice heard and did on the palette's message line.
   useEffect(() => {
     if (voice.lastError) setMessage(`Voice: ${voice.lastError}`)
     else if (voice.lastResult && 'message' in voice.lastResult) setMessage(`Voice: ${voice.lastResult.message}`)
@@ -78,6 +86,7 @@ function PaletteContent() {
   const actors = useWorld((s) => s.actors)
   const selectedActorId = useWorld((s) => s.selectedActorId)
   const actor = selectedActorId ? actors[selectedActorId] : undefined
+  const attendee = useAttendee()
   useSyncExternalStore(subscribeActorRuntime, actorRuntimeRevision, actorRuntimeRevision)
   const cycleActor = () => {
     const ids = [null, ...Object.keys(actors)]
@@ -102,10 +111,8 @@ function PaletteContent() {
   useEffect(() => subscribeHistory(setHistory), [])
   // A confirmation always shows: reopen the palette in front of you if it was closed.
   useEffect(() => { if (!request) return; if (usePaletteUI.getState().closed) summonPalette(); else setHidden(false) }, [request])
-  useEffect(() => { const p = usePaletteUI.getState().page; if (pageRequest && p) setPage(p) }, [pageRequest])
   useEffect(() => { if (recenter) positioned.current = false }, [recenter])
   useEffect(() => { worldActions.listSavedWorlds() }, [])
-  // Place once in tracking space, independent of the tabletop and its scale.
   useFrame(() => {
     if (!root.current) return
     if (positioned.current) {
@@ -138,49 +145,175 @@ function PaletteContent() {
     finally { setBusy(false) }
   }
 
+  const primaryTab =
+    page === 'assets' || page === 'events' || page === 'actors' || page === 'actor-settings' || page === 'brush'
+      ? 'build'
+      : page === 'saved'
+        ? 'save'
+        : page === 'styles' || page === 'room'
+          ? 'view'
+          : (page as ToolbarSection)
+
   let buttons: Button[] = []
-  if (page === 'Tools') {
-    buttons = ([['select', 'Select / move'], ['building', 'Building'], ['wall', 'Wall'], ['platform', 'Road / platform'], ['decor', 'Decoration'], ['robot', 'Place robot'], ['goal', 'Set destination']] as const)
-      .map(([id, label]) => ({ label, active: tool === id, run: () => worldActions.setTool(id) }))
-    buttons.push({ label: snap ? 'Snap: on' : 'Snap: off', active: snap, run: () => useEditor.getState().set({ snap: !snap }) },
-      { label: 'Block robot route', run: blockRoute },
-      { label: 'Place world (AR)', disabled: !inAR, run: () => usePlacement.getState().startChoosing() })
-  } else if (page === 'View') {
-    // Moved here from the wrist menu (which keeps only quick toggles).
-    buttons = SCALE_IDS.map((id) => ({ label: SCALE_PRESETS[id].label, active: editor.worldScale === id, run: () => useEditor.getState().set({ worldScale: id }) }))
+  if (page === 'build') {
+    buttons = ([
+      ['building', 'Building'],
+      ['wall', 'Wall'],
+      ['platform', 'Road / Platform'],
+      ['decor', 'Decoration'],
+    ] as const).map(([id, label]) => ({ label, active: tool === id, run: () => worldActions.setTool(id) }))
     buttons.push(
-      { label: editor.surface === 'real' ? 'Ground: real (grid)' : 'Ground: virtual', active: editor.surface === 'real', run: toggleSurface },
-      { label: editor.realSurfaces ? 'Real surfaces: on' : 'Real surfaces: off', active: editor.realSurfaces, run: toggleRealSurfaces },
-      { label: editor.gestures ? 'Gestures: on' : 'Gestures: off', active: editor.gestures, run: () => useEditor.getState().set({ gestures: !editor.gestures }) },
-      { label: mocap.enabled ? `Mocap: ${mocap.status}` : 'Mocap: off', active: mocap.enabled && mocap.status === 'live', run: toggleMocap },
-      { label: placing ? 'Cancel placing' : 'Place world on surface', active: placing, disabled: !inAR, run: togglePlaceCity },
-      { label: 'Scan room (Space Setup)', disabled: !inAR, run: () => (scanRoom() ? undefined : { ok: false, error: 'Scan room is not available here. Use Settings > Physical Space > Space Setup.' }) })
-  } else if (page === 'Worlds') {
+      { label: snap ? 'Align to Grid · On' : 'Align to Grid', active: snap, run: () => useEditor.getState().set({ snap: !snap }) },
+      { label: 'Object catalog…', run: () => { setAssetPage(0); setPage('assets') } },
+      { label: 'Event objects…', run: () => { setEventPage(0); setPage('events') } },
+      { label: 'Actors…', run: () => setPage('actors') },
+      { label: 'Materials…', run: () => setPage('brush') },
+    )
+  } else if (page === 'edit') {
+    buttons = ([
+      ['rotate-left', 'Rotate left'],
+      ['rotate-right', 'Rotate right'],
+      ['grow', 'Wider'],
+      ['shrink', 'Narrower'],
+      ['raise', 'Taller'],
+      ['lower', 'Shorter'],
+      ['style', selected?.assetId ? 'Cycle color' : 'Material / style'],
+      ['roof', 'Toggle roof'],
+      ['duplicate', 'Duplicate'],
+    ] as const).map(([action, label]) => ({
+      label,
+      disabled: !selected || (action === 'roof' && !!selected.assetId),
+      run: () => editPaletteSelection(action),
+    }))
+    buttons.unshift({ label: 'Select', active: tool === 'select', run: () => worldActions.setTool('select') })
+    buttons.push({ label: 'Delete', disabled: !selected, run: deletePaletteSelection })
+  } else if (page === 'plan') {
+    buttons = ([
+      ['goal', 'Set Destination'],
+      ['robot', 'Place Robot'],
+    ] as const).map(([id, label]) => ({ label, active: tool === id, run: () => worldActions.setTool(id) }))
+    buttons.push({ label: 'Block Path', run: blockRoute })
+    const destinations = Object.values(objects).filter((object) => object.destinationRole)
+    const offset = Math.min(destinationPage, Math.max(0, Math.ceil(destinations.length / 4) - 1))
+    buttons.push(
+      ...destinations.slice(offset * 4, offset * 4 + 4).map((object, i) => ({
+        label: `Go: ${getAsset(object.assetId || '')?.name || object.destinationRole} ${offset * 4 + i + 1}`,
+        run: () => worldActions.sendRobotToDestination(object.id),
+      })),
+    )
+    if (destinations.length > 4) {
+      buttons.push(
+        { label: 'Earlier destinations', disabled: offset === 0, run: () => setDestinationPage(offset - 1) },
+        { label: 'More destinations', disabled: (offset + 1) * 4 >= destinations.length, run: () => setDestinationPage(offset + 1) },
+      )
+    }
+  } else if (page === 'simulate') {
+    const canReset = attendee.running || attendee.phase !== 'idle'
+    if (!attendee.running || attendee.phase === 'done') {
+      buttons.push({
+        label: 'Start',
+        run: () => {
+          resetAttendeeSimulation()
+          startAttendeeSimulation()
+        },
+      })
+    } else if (attendee.paused) {
+      buttons.push({ label: 'Resume', run: () => resumeAttendeeSimulation() })
+    } else {
+      buttons.push({ label: 'Pause', run: () => pauseAttendeeSimulation() })
+    }
+    buttons.push(
+      { label: 'Reset Simulation', disabled: !canReset, run: () => resetAttendeeSimulation() },
+      { label: `Robot: ${status}`, run: () => undefined, disabled: true },
+      { label: `Attendee: ${attendee.phase}`, run: () => undefined, disabled: true },
+    )
+  } else if (page === 'view') {
+    buttons = [
+      { label: editor.rays ? 'See Through · On' : 'See Through Objects', active: editor.rays, run: toggleRays },
+      {
+        label: editor.surface === 'real' ? 'Floor: Real' : 'Floor: Virtual',
+        active: editor.surface === 'real',
+        run: toggleSurface,
+      },
+      { label: snap ? 'Align to Grid · On' : 'Align to Grid', active: snap, run: () => useEditor.getState().set({ snap: !snap }) },
+      { label: placing ? 'Cancel placing' : 'Place world (AR)', active: placing, disabled: !inAR, run: togglePlaceCity },
+      ...SCALE_IDS.map((id) => ({
+        label: SCALE_SHORT[id],
+        active: editor.worldScale === id,
+        run: () => useEditor.getState().set({ worldScale: id }),
+      })),
+      { label: 'Advanced: styles…', run: () => setPage('styles') },
+      { label: 'Real room…', run: () => setPage('room') },
+    ]
+  } else if (page === 'room') {
+    // Mixed reality: your real room (Space Setup), plus gestures and motion capture.
+    buttons = [
+      { label: editor.occlusion ? 'Hide behind real · On' : 'Hide behind real', active: editor.occlusion, run: toggleOcclusion },
+      { label: editor.realSurfaces ? 'Real surfaces · On' : 'Real surfaces', active: editor.realSurfaces, run: toggleRealSurfaces },
+      { label: 'Scan room (Space Setup)', disabled: !inAR, run: () => (scanRoom() ? undefined : { ok: false, error: 'Scan room is not available here. Use Settings > Physical Space > Space Setup.' }) },
+      { label: editor.gestures ? 'Hand gestures · On' : 'Hand gestures', active: editor.gestures, run: () => useEditor.getState().set({ gestures: !editor.gestures }) },
+      { label: mocap.enabled ? `Motion capture: ${mocap.status}` : 'Motion capture', active: mocap.enabled && mocap.status === 'live', run: toggleMocap },
+      { label: 'Back to View', run: () => setPage('view') },
+    ]
+  } else if (page === 'save') {
     buttons = listTemplates().map((template) => ({ label: template.name, run: () => createPaletteWorld(template.id) }))
-    buttons.push({ label: 'Save world', run: savePaletteWorld },
+    buttons.push(
+      { label: 'Save World', run: savePaletteWorld },
       { label: 'Save as new', run: () => worldActions.saveWorld(activeName) },
-      { label: 'Browse saved worlds', run: () => { worldActions.listSavedWorlds(); setSavePage(0); setPage('Saved') } })
-  } else if (page === 'Assets') {
-    const offset = Math.min(assetPage, Math.ceil(libraryAssets().length / 6) - 1)
-    buttons = libraryAssets().slice(offset * 6, offset * 6 + 6).map((asset) => ({ label: asset.name, active: tool === 'asset' && editor.assetId === asset.id, run: () => { worldActions.selectCatalogAsset(asset.id); setMessage('Aim at ground: green places, red is blocked.') } }))
-    buttons.push({ label: 'Rotate −90°', run: () => worldActions.rotateCatalogAsset(-1) }, { label: 'Rotate +90°', run: () => worldActions.rotateCatalogAsset(1) },
-      { label: 'Previous objects', disabled: offset === 0, run: () => setAssetPage(offset - 1) }, { label: 'More objects', disabled: (offset + 1) * 6 >= libraryAssets().length, run: () => setAssetPage(offset + 1) })
-  } else if (page === 'Events') {
+      { label: 'Load World…', run: () => { worldActions.listSavedWorlds(); setSavePage(0); setPage('saved') } },
+    )
+  } else if (page === 'events') {
     // Event / venue objects (chairs, tables, booths, stages, signs…) from the universal event catalog.
     const offset = Math.min(eventPage, Math.ceil(EVENT_CATALOG.length / 6) - 1)
-    buttons = EVENT_CATALOG.slice(offset * 6, offset * 6 + 6).map((item) => ({ label: item.label, active: tool === 'event' && editor.eventCatalogId === item.id, run: () => { useEditor.getState().set({ eventCatalogId: item.id }); worldActions.setTool('event'); setMessage('Aim at the floor and pinch / pull the trigger to place.') } }))
-    buttons.push({ label: 'Rotate −90°', run: () => worldActions.rotateCatalogAsset(-1) }, { label: 'Rotate +90°', run: () => worldActions.rotateCatalogAsset(1) },
-      { label: 'Previous objects', disabled: offset === 0, run: () => setEventPage(offset - 1) }, { label: 'More objects', disabled: (offset + 1) * 6 >= EVENT_CATALOG.length, run: () => setEventPage(offset + 1) })
-  } else if (page === 'Actors') {
-    buttons = ACTOR_KINDS.map((kind) => ({ label: 'Place ' + ACTOR_CATALOG[kind].name, active: tool === 'actor' && editor.actorKind === kind, run: () => worldActions.selectActorKind(kind) }))
+    buttons = EVENT_CATALOG.slice(offset * 6, offset * 6 + 6).map((item) => ({
+      label: item.label,
+      active: tool === 'event' && editor.eventCatalogId === item.id,
+      run: () => {
+        useEditor.getState().set({ eventCatalogId: item.id })
+        worldActions.setTool('event')
+        setMessage('Aim at the floor and pinch / pull the trigger to place.')
+      },
+    }))
     buttons.push(
-      { label: 'Next actor / original robot', run: cycleActor },
-      { label: 'Actor settings', disabled: !actor, run: () => setPage('Actor settings') },
+      { label: 'Rotate −90°', run: () => worldActions.rotateCatalogAsset(-1) },
+      { label: 'Rotate +90°', run: () => worldActions.rotateCatalogAsset(1) },
+      { label: 'Previous objects', disabled: offset === 0, run: () => setEventPage(offset - 1) },
+      { label: 'More objects', disabled: (offset + 1) * 6 >= EVENT_CATALOG.length, run: () => setEventPage(offset + 1) },
+      { label: 'Back to Build', run: () => setPage('build') },
+    )
+  } else if (page === 'assets') {
+    const offset = Math.min(assetPage, Math.ceil(libraryAssets().length / 6) - 1)
+    buttons = libraryAssets().slice(offset * 6, offset * 6 + 6).map((asset) => ({
+      label: asset.name,
+      active: tool === 'asset' && editor.assetId === asset.id,
+      run: () => {
+        worldActions.selectCatalogAsset(asset.id)
+        setMessage('Aim at ground: green places, red is blocked.')
+      },
+    }))
+    buttons.push(
+      { label: 'Rotate −90°', run: () => worldActions.rotateCatalogAsset(-1) },
+      { label: 'Rotate +90°', run: () => worldActions.rotateCatalogAsset(1) },
+      { label: 'Previous objects', disabled: offset === 0, run: () => setAssetPage(offset - 1) },
+      { label: 'More objects', disabled: (offset + 1) * 6 >= libraryAssets().length, run: () => setAssetPage(offset + 1) },
+      { label: 'Back to Build', run: () => setPage('build') },
+    )
+  } else if (page === 'actors') {
+    buttons = ACTOR_KINDS.map((kind) => ({
+      label: 'Place ' + ACTOR_CATALOG[kind].name,
+      active: tool === 'actor' && editor.actorKind === kind,
+      run: () => worldActions.selectActorKind(kind),
+    }))
+    buttons.push(
+      { label: 'Next actor / robot', run: cycleActor },
+      { label: 'Actor settings…', disabled: !actor, run: () => setPage('actor-settings') },
       { label: 'Set actor destination', disabled: !actor, run: () => worldActions.setTool('goal') },
       { label: 'Stop actor', disabled: !actor, run: () => actor && worldActions.setActorGoal(actor.id, null) },
       { label: 'Duplicate actor', disabled: !actor, run: () => actor && worldActions.duplicateActor(actor.id) },
-      { label: 'Delete actor', disabled: !actor, run: deleteActor })
-  } else if (page === 'Actor settings') {
+      { label: 'Delete actor', disabled: !actor, run: deleteActor },
+      { label: 'Back to Build', run: () => setPage('build') },
+    )
+  } else if (page === 'actor-settings') {
     const colors = ['#ffb86b', '#65cdd0', '#a7bd72', '#b98de0', '#ed7185', '#eeeeee']
     buttons = [
       { label: 'Next actor', run: cycleActor },
@@ -189,13 +322,9 @@ function PaletteContent() {
       ...[0.9, 1.1].map((scale) => ({ label: scale < 1 ? 'Smaller' : 'Larger', disabled: !actor, run: () => actor && worldActions.updateActor(actor.id, { size: actor.size.map((v) => Math.max(0.3, Math.min(8, v * scale))) as [number, number, number] }) })),
       { label: 'Duplicate actor', disabled: !actor, run: () => actor && worldActions.duplicateActor(actor.id) },
       { label: 'Delete actor', disabled: !actor, run: deleteActor },
-      { label: 'Back to actors', run: () => setPage('Actors') }]
-  } else if (page === 'Routes') {
-    const destinations = Object.values(objects).filter((object) => object.destinationRole)
-    const offset = Math.min(destinationPage, Math.max(0, Math.ceil(destinations.length / 6) - 1))
-    buttons = destinations.slice(offset * 6, offset * 6 + 6).map((object, i) => ({ label: `Go: ${getAsset(object.assetId || '')?.name || object.destinationRole} ${offset * 6 + i + 1}`, run: () => worldActions.sendRobotToDestination(object.id) }))
-    buttons.push({ label: 'Previous markers', disabled: offset === 0, run: () => setDestinationPage(offset - 1) }, { label: 'More markers', disabled: (offset + 1) * 6 >= destinations.length, run: () => setDestinationPage(offset + 1) })
-  } else if (page === 'Brush') {
+      { label: 'Back to actors', run: () => setPage('actors') },
+    ]
+  } else if (page === 'brush' || page === 'styles') {
     const next = <T extends string,>(values: readonly T[], value: T): T => values[(values.indexOf(value) + 1) % values.length]
     buttons = [
       { label: `Building: ${editor.buildingStyle}`, run: () => editor.set({ buildingStyle: next(BUILDING_STYLE_IDS, editor.buildingStyle) }) },
@@ -204,23 +333,23 @@ function PaletteContent() {
       { label: `Roof: ${editor.roof}`, run: () => editor.set({ roof: editor.roof === 'flat' ? 'pitched' : 'flat' }) },
       { label: `Decoration: ${editor.decor}`, run: () => editor.set({ decor: next(['tree', 'streetlight', 'crate'] as const, editor.decor) }) },
       { label: `Tree: ${editor.treeStyle}`, run: () => editor.set({ treeStyle: next(TREE_STYLES, editor.treeStyle) }) },
+      { label: page === 'styles' ? 'Back to View' : 'Back to Build', run: () => setPage(page === 'styles' ? 'view' : 'build') },
     ]
-  } else if (page === 'Saved') {
+  } else if (page === 'saved') {
     const offset = Math.min(savePage, Math.max(0, Math.ceil(saves.length / 6) - 1))
     buttons = saves.slice(offset * 6, offset * 6 + 6).map((save) => ({ label: readSpatial(save.id) ? `${save.name} (anchored)` : save.name, run: () => loadPaletteSave(save.id) }))
-    buttons.push({ label: 'Previous saves', disabled: offset === 0, run: () => setSavePage(offset - 1) },
-      { label: 'Next saves', disabled: (offset + 1) * 6 >= saves.length, run: () => setSavePage(offset + 1) })
-  } else {
-    buttons = ([['rotate-left', 'Rotate -15°'], ['rotate-right', 'Rotate +15°'], ['grow', 'Wider / deeper'], ['shrink', 'Narrower'], ['raise', 'Taller'], ['lower', 'Shorter'], ['style', 'Material / style'], ['roof', 'Toggle roof'], ['duplicate', 'Duplicate']] as const)
-      .map(([action, label]) => ({ label: action === 'style' && selected?.assetId ? 'Cycle color' : label, disabled: !selected || action === 'roof' && !!selected.assetId, run: () => editPaletteSelection(action) }))
-    buttons.push({ label: 'Delete selected', disabled: !selected, run: deletePaletteSelection })
+    buttons.push(
+      { label: 'Previous saves', disabled: offset === 0, run: () => setSavePage(offset - 1) },
+      { label: 'Next saves', disabled: (offset + 1) * 6 >= saves.length, run: () => setSavePage(offset + 1) },
+      { label: 'Back to Save', run: () => setPage('save') },
+    )
   }
 
   return <group ref={root} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
     {!closed && <>
     <PanelMoveBar target={root} y={0.45} width={0.65} />
     <Tile
-      text={voice.isListening ? `Listening… ${voice.lastPartial ? `"${voice.lastPartial}" · ` : ''}tap to run` : 'Voice command: tap to talk'}
+      text={voice.isListening ? (voice.lastPartial ? `"${voice.lastPartial}" · pause to run` : 'Listening… speak now') : 'Voice command: tap and speak'}
       y={0.39}
       width={0.65}
       height={0.065}
@@ -231,19 +360,40 @@ function PaletteContent() {
     <Tile text={hidden ? 'Show controls' : 'RealmForge controls'} y={0.32} width={0.65} height={0.065} onClick={() => { if (!request) setHidden(!hidden) }} />
     {!hidden && <>
       <Tile text={`${actor ? getActorRuntime(actor.id)?.status || 'idle' : status} · ${actor ? actor.name : selected ? (getAsset(selected.assetId || '')?.name || selected.kind) : 'no selection'}`} x={-0.11} y={0.267} height={0.035} width={0.43} />
-      <Tile text={editor.rays ? 'Rays: on' : 'Rays: off'} x={0.22} y={0.267} height={0.035} width={0.21} active={editor.rays} onClick={toggleRays} />
+      <Tile text={editor.rays ? 'See-through on' : 'See-through'} x={0.22} y={0.267} height={0.035} width={0.21} active={editor.rays} onClick={toggleRays} />
       {request ? <>
         <Tile text={request.message} y={0.08} height={0.29} width={0.65} />
         <Tile text="Cancel" x={-0.165} y={-0.12} width={0.31} onClick={() => resolveConfirmation(request.id, false)} />
         <Tile text="Confirm" x={0.165} y={-0.12} width={0.31} active onClick={() => resolveConfirmation(request.id, true)} />
       </> : <>
-        {['Tools', 'View', 'Worlds', 'Edit', 'Brush', 'Assets', 'Events', 'Routes', 'Actors'].map((tab, i) => <Tile key={tab} text={tab} x={(i - 4) * 0.0725} y={0.21} width={0.069} active={page === tab || tab === 'Actors' && page === 'Actor settings' || tab === 'Worlds' && page === 'Saved'} onClick={() => setPage(tab)} />)}
-        {buttons.map((button, i) => <Tile key={page + button.label} text={button.label} x={i % 2 ? 0.165 : -0.165} y={0.135 - Math.floor(i / 2) * 0.07} width={0.31} disabled={busy || button.disabled} active={button.active} onClick={() => void run(button)} />)}
+        {TOOLBAR_SECTIONS.map((tab, i) => (
+          <Tile
+            key={tab.id}
+            text={tab.label.split(' ')[0]}
+            x={(i - 2.5) * 0.108}
+            y={0.21}
+            width={0.102}
+            active={primaryTab === tab.id}
+            onClick={() => setPage(tab.id)}
+          />
+        ))}
+        {buttons.map((button, i) => (
+          <Tile
+            key={page + button.label + i}
+            text={button.label}
+            x={i % 2 ? 0.165 : -0.165}
+            y={0.135 - Math.floor(i / 2) * 0.07}
+            width={0.31}
+            disabled={busy || button.disabled}
+            active={button.active}
+            onClick={() => void run(button)}
+          />
+        ))}
         <Tile text="Undo" x={-0.24} y={-0.235} width={0.15} disabled={busy || !history.canUndo} onClick={() => worldActions.undo()} />
         <Tile text="Redo" x={-0.08} y={-0.235} width={0.15} disabled={busy || !history.canRedo} onClick={() => worldActions.redo()} />
         <Tile text={guideOpen ? 'Close guide' : 'Guide'} x={0.08} y={-0.235} width={0.15} active={guideOpen} onClick={() => (guideOpen ? closeGuide() : openGuide('start'))} />
         <Tile text="Recenter" x={0.24} y={-0.235} width={0.15} onClick={() => { positioned.current = false }} />
-        <Tile text={busy ? 'Working…' : page === 'Assets' ? `${getAsset(editor.assetId)?.name} · ${Math.round(editor.assetRotation * 180 / Math.PI)}° · Aim at clear ground.` : page === 'Worlds' && spatial !== 'idle' ? `Saved spot in this room: ${spatial}. ${message}` : message} y={-0.31} width={0.65} height={0.065} />
+        <Tile text={busy ? 'Working…' : page === 'assets' ? `${getAsset(editor.assetId)?.name} · ${Math.round(editor.assetRotation * 180 / Math.PI)}° · Aim at clear ground.` : (page === 'save' || page === 'saved') && spatial !== 'idle' ? `Saved spot in this room: ${spatial}. ${message}` : message} y={-0.31} width={0.65} height={0.065} />
       </>}
     </>}
     </>}
@@ -261,7 +411,6 @@ function Tile({ text, x = 0, y, width, height = 0.06, active = false, disabled =
     const context = canvas.getContext('2d')!
     context.fillStyle = disabled ? FORGE.panelDisabled : active ? FORGE.emberActive : hover && onClick ? FORGE.hover : FORGE.panelMuted
     context.fillRect(0, 0, canvas.width, canvas.height)
-    // Ember accent bar — matches desktop brand mark in immersive space.
     context.fillStyle = active ? FORGE.emberHot : FORGE.emberDeep
     context.fillRect(0, 0, canvas.width, Math.max(6, Math.round(canvas.height * 0.06)))
     context.strokeStyle = active ? FORGE.emberHot : FORGE.lineSoft

@@ -12,6 +12,11 @@ import { getEnvironment } from '../world/environment'
 import { emitVoiceEvent } from './events'
 import { duplicateObjects, moveObjects, resizeObjects, rotateObjects, spawnObjects, targetIds } from '../world/spawn'
 import type { ConfirmationRequest, ConfirmHandler, VoiceCommand } from './types'
+import { createWorld, nextWorldName, openWorld } from '../world/library'
+import { listSavedWorlds, useWorldLibrary } from '../world/persistence'
+import { resumeAutosave } from '../world/autosave'
+import { leaveEditor } from '../editor/leaveEditor'
+import { matchSavedWorld } from './worldCommands'
 
 export type ExecuteResult =
   | { status: 'executed'; command: VoiceCommand; message: string }
@@ -252,6 +257,55 @@ export async function executeVoiceCommand(
         // Re-apply goal to force a replan if nav was idle.
         worldActions.setGoal([goal[0], goal[1]])
         const message = 'Navigation started'
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        return { status: 'executed', command, message }
+      }
+
+      case 'GO_HOME': {
+        const dirty = useWorldLibrary.getState().dirty
+        if (dirty && !command.force) {
+          const gate = await resolveConfirm(
+            command,
+            'Leave the editor? Unsaved changes may be lost. Say "go home now" to leave without confirming.',
+            opts.confirm,
+          )
+          if (gate.status !== 'confirmed') return gate
+        }
+        const message = command.force ? 'Leaving for home (forced)' : 'Leaving for home'
+        emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+        leaveEditor()
+        return { status: 'executed', command, message }
+      }
+
+      case 'NEW_WORLD':
+      case 'OPEN_SAVED_WORLD':
+      case 'RESUME_SESSION': {
+        const confirmReplace = asConfirmReplace(opts.confirm, command)
+        let result: { ok: true } | { ok: false; error: string; cancelled?: boolean }
+        let message: string
+        if (command.type === 'NEW_WORLD') {
+          const base = command.template === 'blank' ? 'My world' : `My ${getEnvironment(command.template)?.name ?? 'world'}`
+          const name = command.name ?? nextWorldName(base)
+          result = await createWorld(name, command.template, confirmReplace ? { confirmReplace } : {})
+          message = `Started new world "${name}"`
+        } else if (command.type === 'OPEN_SAVED_WORLD') {
+          const match = matchSavedWorld(command.query, listSavedWorlds())
+          if (!match) {
+            const msg = `No saved world matches "${command.query}"`
+            emitVoiceEvent({ type: 'VOICE_COMMAND_REJECTED', command, message: msg })
+            return { status: 'rejected', command, message: msg }
+          }
+          result = await openWorld(match.id, confirmReplace ? { confirmReplace } : {})
+          message = `Opened "${match.name}"`
+        } else {
+          result = await resumeAutosave(confirmReplace ? { confirmReplace } : {})
+          message = 'Resumed your last session'
+        }
+        if (!result.ok) {
+          const status = result.cancelled ? 'rejected' : 'failed'
+          emitVoiceEvent({ type: result.cancelled ? 'VOICE_COMMAND_REJECTED' : 'VOICE_COMMAND_FAILED', command, message: result.error })
+          return { status, command, message: result.error }
+        }
         emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
         return { status: 'executed', command, message }
       }
