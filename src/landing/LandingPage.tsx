@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { editorHref, LANDING_TEMPLATES, LANDING_VENUES, LANDING_WORLDS, type LandingWorldId } from './entry'
 import { WorldDiorama } from './WorldDiorama'
 import { manualInstallHint, promptInstall, useInstallState } from './install'
+import { ReplayReel } from './ReplayReel'
 
 const GITHUB = 'https://github.com/abelxmendoza/RealmForge-XR'
 
@@ -51,6 +52,41 @@ function TemplateCard({
   )
 }
 
+function InstallButton({ className, hintClassName }: { className: string; hintClassName?: string }) {
+  const state = useInstallState()
+  const [hint, setHint] = useState<string | null>(null)
+
+  if (state === 'installed') {
+    return (
+      <span className={`${className} rf-install-done`} role="status">
+        App installed ✓
+      </span>
+    )
+  }
+
+  const onClick = async () => {
+    if (state === 'available') {
+      setHint(null)
+      await promptInstall()
+    } else {
+      setHint(manualInstallHint())
+    }
+  }
+
+  return (
+    <span className="rf-install">
+      <button type="button" className={className} onClick={() => void onClick()}>
+        Install app <span aria-hidden="true">↓</span>
+      </button>
+      {hintClassName && (
+        <span className={hintClassName} aria-live="polite">
+          {hint}
+        </span>
+      )}
+    </span>
+  )
+}
+
 function enterLabel(id: LandingWorldId) {
   if (id === 'empty-event-venue') return 'Enter Empty Space'
   if (id === 'job-fair') return 'Enter the venue'
@@ -70,6 +106,7 @@ export default function LandingPage() {
         <div className="rf-shell rf-nav">
           <Brand />
           <nav aria-label="Main navigation">
+            <a href="#replays">Watch replays</a>
             <a href="#worlds">The worlds</a>
             <a href="#events">Events & venues</a>
             <a href="#possibilities">The possibilities</a>
@@ -165,6 +202,29 @@ export default function LandingPage() {
             </span>
           </div>
         </div>
+
+        <section id="replays" className="rf-shell rf-replays" aria-labelledby="replays-heading">
+          <div className="rf-section-heading">
+            <div>
+              <p className="rf-eyebrow">WATCH IT IN ACTION</p>
+              <h2 id="replays-heading">
+                See a session
+                <br />
+                before you start one.
+              </h2>
+            </div>
+            <p>
+              Short replays of the real editor, on desktop and in VR.
+              <br />
+              Pick one, or let them play through.
+            </p>
+          </div>
+          <ReplayReel />
+          <p className="rf-replay-note">
+            Simulated replays: each one is a scripted session in the live editor, captured automatically. The VR replay
+            runs in an emulated Meta Quest 3 headset, not on physical hardware.
+          </p>
+        </section>
 
         <section id="events" className="rf-shell rf-events" aria-labelledby="events-heading">
           <div className="rf-section-heading">
