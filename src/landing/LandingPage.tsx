@@ -51,6 +51,41 @@ function TemplateCard({
   )
 }
 
+function InstallButton({ className, hintClassName }: { className: string; hintClassName?: string }) {
+  const state = useInstallState()
+  const [hint, setHint] = useState<string | null>(null)
+
+  if (state === 'installed') {
+    return (
+      <span className={`${className} rf-install-done`} role="status">
+        App installed ✓
+      </span>
+    )
+  }
+
+  const onClick = async () => {
+    if (state === 'available') {
+      setHint(null)
+      await promptInstall()
+    } else {
+      setHint(manualInstallHint())
+    }
+  }
+
+  return (
+    <span className="rf-install">
+      <button type="button" className={className} onClick={() => void onClick()}>
+        Install app <span aria-hidden="true">↓</span>
+      </button>
+      {hintClassName && (
+        <span className={hintClassName} aria-live="polite">
+          {hint}
+        </span>
+      )}
+    </span>
+  )
+}
+
 function enterLabel(id: LandingWorldId) {
   if (id === 'empty-event-venue') return 'Enter Empty Space'
   if (id === 'job-fair') return 'Enter the venue'
