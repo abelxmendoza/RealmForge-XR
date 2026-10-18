@@ -63,7 +63,6 @@ export function Obstacles() {
 
 function Obstacle({ o }: { o: WorldObject }) {
   const selected = useWorld((s) => s.selectedId === o.id)
-  const tool = useWorld((s) => s.tool)
   const [w, h, d] = o.size
   const groupRef = useRef<THREE.Group>(null)
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
@@ -77,6 +76,8 @@ function Obstacle({ o }: { o: WorldObject }) {
     const world = useWorld.getState()
     const memo = state.memo ?? { base: world.objects[o.id] ?? o }
     if (state.first) {
+      // Grabbing always means move, even if a place tool was armed.
+      world.setTool('select')
       world.select(o.id)
       world.setDragging(true)
     }
@@ -95,9 +96,11 @@ function Obstacle({ o }: { o: WorldObject }) {
   }
 
   const onDown = (e: ThreeEvent<PointerEvent>) => {
-    if (tool !== 'select') return
-    const { select, updateObject } = useWorld.getState()
-    select(o.id)
+    // Prefer select/move over spawning: a press on an existing object never places a new one.
+    e.stopPropagation()
+    const world = useWorld.getState()
+    world.setTool('select')
+    world.select(o.id)
     const start = groundPoint(e)
     if (!start) return
     const offset: Vec2 = [o.position[0] - start[0], o.position[2] - start[1]]
@@ -106,7 +109,7 @@ function Obstacle({ o }: { o: WorldObject }) {
         const cur = useWorld.getState().objects[o.id] ?? o
         let at: Vec2 = [p[0] + offset[0], p[1] + offset[1]]
         if (useEditor.getState().snap) at = snapFootprint(at, cur.size[0], cur.size[2], cur.rotationY)
-        updateObject(o.id, { position: [clampToWorld(at[0]), o.position[1], clampToWorld(at[1])] })
+        useWorld.getState().updateObject(o.id, { position: [clampToWorld(at[0]), o.position[1], clampToWorld(at[1])] })
       },
     })
   }
@@ -163,7 +166,7 @@ function Obstacle({ o }: { o: WorldObject }) {
       <group onPointerDown={onDown}>
         <GrabHandle
           targetRef={groupRef}
-          filter={(e) => e.pointerType === 'grab' && useWorld.getState().tool === 'select'}
+          filter={(e) => e.pointerType === 'grab'}
           translate={{ y: false }}
           rotate="y"
           scale={{ uniform: true }}
