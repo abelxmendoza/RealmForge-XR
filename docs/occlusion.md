@@ -24,3 +24,9 @@ button (row 1). The wrist status line shows what is doing the hiding: `occlusion
 - Room occlusion is static. If furniture moves, run Space Setup again.
 - At tabletop scale, the table you pinned the world on is a Space Setup "table". It is drawn as a blocker,
   but objects sit on top of it, so they stay visible.
+
+## Menus and rays are never hidden
+
+The wrist menu, Control Palette, guide panel and pointer rays always draw on top, through real walls,
+furniture, your hands and virtual objects. So you can always reach **Occl.** to turn occlusion off.
+(`src/xr/UILayer.tsx`: these draw last, right after the depth buffer is cleared.)

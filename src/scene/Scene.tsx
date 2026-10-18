@@ -2,6 +2,7 @@ import { WarehouseInterior } from './WarehouseInterior'
 import { Actors } from '../actors/Actors'
 import { ControlPalette } from '../xr/ControlPalette'
 import { ControlsGuidePanel } from '../xr/ControlsGuidePanel'
+import { UILayer } from '../xr/UILayer'
 import { useEffect } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from '@react-three/drei'
@@ -70,7 +71,6 @@ export function Scene() {
       {inXR && <Occlusion />}
       {inXR && <RoomTracker />}
       {inXR && <SpatialSync />}
-      {inXR && <WristMenu />}
       {inXR && <GestureController />}
       {/* Smartsuit skeleton at 1:1 in your room (Rokoko's origin = where the XR session started). */}
       {mocapOn && !mocapInMap && <MocapSkeleton />}
@@ -88,9 +88,13 @@ export function Scene() {
         />
       )}
 
-      {/* In-VR Control Palette (assets, routes, saves, worlds) and the controls guide. */}
-      <ControlPalette />
-      <ControlsGuidePanel />
+      {/* XR menus: wrist menu, Control Palette and controls guide. Always drawn on top (never hidden by
+          occlusion, walls or virtual objects) so the toggles stay reachable. */}
+      <UILayer>
+        {inXR && <WristMenu />}
+        <ControlPalette />
+        <ControlsGuidePanel />
+      </UILayer>
 
       {/*
         WorldPlacement ("Place city"): identity until you pin the world to a detected table/floor plane,

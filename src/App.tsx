@@ -23,6 +23,7 @@ import { importWorld, quickSave, useWorldLibrary } from './world/persistence'
 import { redo, undo, subscribeHistory } from './world/history'
 import { bindRays, toggleRays, toggleSurface } from './editor/xrInput'
 import { toggleOcclusion } from './xr/occlusion'
+import { UI_RAY_POINTER } from './xr/UILayer'
 import { toggleRealSurfaces } from './xr/realSurfaces'
 import { toggleMocap, useMocap } from './mocap/store'
 import { SCALE_IDS, SCALE_PRESETS, type ScaleId } from './scene/worldRoot'
@@ -34,8 +35,8 @@ import { SCALE_IDS, SCALE_PRESETS, type ScaleId } from './scene/worldRoot'
  */
 export const xrStore = createXRStore({
   offerSession: false,
-  hand: { rayPointer: useEditor.getState().rays },
-  controller: { rayPointer: useEditor.getState().rays },
+  hand: { rayPointer: useEditor.getState().rays ? UI_RAY_POINTER : false },
+  controller: { rayPointer: useEditor.getState().rays ? UI_RAY_POINTER : false },
 })
 bindRays(xrStore)
 

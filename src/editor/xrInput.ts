@@ -1,6 +1,7 @@
 import type { XRStore } from '@react-three/xr'
 import { useEditor } from './settings'
 import { usePlacement } from '../xr/placement'
+import { UI_RAY_POINTER } from '../xr/UILayer'
 
 /**
  * XR pointers follow the editor's `rays` setting. Grab and touch pointers always stay on, so you can
@@ -9,8 +10,9 @@ import { usePlacement } from '../xr/placement'
  */
 export function bindRays(store: XRStore) {
   const apply = (on: boolean) => {
-    store.setHand({ rayPointer: on })
-    store.setController({ rayPointer: on })
+    // Rays draw in the on-top UI layer, so occlusion never hides the ray you aim at a menu with.
+    store.setHand({ rayPointer: on ? UI_RAY_POINTER : false })
+    store.setController({ rayPointer: on ? UI_RAY_POINTER : false })
   }
   apply(useEditor.getState().rays)
   let pending: ReturnType<typeof setTimeout> | null = null
