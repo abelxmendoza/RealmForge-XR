@@ -20,6 +20,7 @@ export function Robot() {
     const pos = robotRuntime.pos
 
     let moving = false
+    // 'paused' keeps the path but freezes the robot (multi-waypoint Play / Pause).
     if (status === 'moving' && robotRuntime.target < path.length) {
       let budget = WORLD.robotSpeed * dt
       while (budget > 0 && robotRuntime.target < path.length) {

@@ -13,3 +13,15 @@ export {
   useAttendee,
   listSimulationDestinations,
 } from './attendee'
+
+export {
+  addWaypoint,
+  removeLastWaypoint,
+  clearRoute,
+  playRoute,
+  pauseRoute,
+  stopRoute,
+  skipToNextWaypoint,
+  useRoutePlan,
+  routeStatusLabel,
+} from '../nav/routePlan'

@@ -17,6 +17,16 @@ import { useEditor } from '../editor/settings'
 import { useNav } from '../nav/navigation'
 import { toggleRays, toggleSurface } from '../editor/xrInput'
 import { blockRoute } from '../editor/demo'
+import {
+  clearRoute,
+  pauseRoute,
+  playRoute,
+  removeLastWaypoint,
+  routeStatusLabel,
+  skipToNextWaypoint,
+  stopRoute,
+  useRoutePlan,
+} from '../nav/routePlan'
 import { usePlacement } from './placement'
 import { createPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteSave, savePaletteWorld } from './paletteActions'
 import { FORGE } from '../theme/forge'
@@ -84,6 +94,7 @@ function PaletteContent() {
   const snap = editor.snap
   const inAR = useXR((s) => s.mode === 'immersive-ar')
   const status = useNav((s) => s.status)
+  const route = useRoutePlan()
   const saves = useWorldLibrary((s) => s.worlds)
   const activeName = useWorldLibrary((s) => s.activeName)
   const positioned = useRef(false)
@@ -156,10 +167,38 @@ function PaletteContent() {
     buttons.push({ label: 'Delete', disabled: !selected, run: deletePaletteSelection })
   } else if (page === 'plan') {
     buttons = ([
-      ['goal', 'Set Destination'],
+      ['goal', 'Add Waypoint'],
       ['robot', 'Place Robot'],
     ] as const).map(([id, label]) => ({ label, active: tool === id, run: () => worldActions.setTool(id) }))
-    buttons.push({ label: 'Block Path', run: blockRoute })
+    if (route.playState === 'playing') {
+      buttons.push({ label: 'Pause', run: () => pauseRoute() })
+    } else {
+      buttons.push({
+        label: route.playState === 'paused' ? 'Resume' : 'Play Route',
+        disabled: !route.waypoints.length,
+        run: () => playRoute(),
+      })
+    }
+    buttons.push(
+      {
+        label: 'Stop',
+        disabled: route.playState !== 'playing' && route.playState !== 'paused',
+        run: () => stopRoute(),
+      },
+      {
+        label: 'Next Stop',
+        disabled: route.playState !== 'playing' && route.playState !== 'paused',
+        run: () => skipToNextWaypoint(),
+      },
+      {
+        label: 'Remove Last',
+        disabled: !route.waypoints.length || route.playState === 'playing' || route.playState === 'paused',
+        run: () => removeLastWaypoint(),
+      },
+      { label: 'Clear Route', disabled: !route.waypoints.length, run: () => clearRoute() },
+      { label: routeStatusLabel(route), disabled: true, run: () => undefined },
+      { label: 'Block Path', run: blockRoute },
+    )
     const destinations = Object.values(objects).filter((object) => object.destinationRole)
     const offset = Math.min(destinationPage, Math.max(0, Math.ceil(destinations.length / 4) - 1))
     buttons.push(

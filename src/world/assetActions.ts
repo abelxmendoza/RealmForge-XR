@@ -6,6 +6,7 @@ import { buildGrid, isBlocked, worldToCell } from '../nav/grid'
 import { navObstacles, type Vec2 } from './types'
 import { planPath } from '../nav/astar'
 import { robotRuntime, startNavigation } from '../nav/navigation'
+import { setImmediateDestination } from '../nav/routePlan'
 import { isAssetId } from './assetTypes'
 
 export function selectCatalogAsset(id: string): boolean {
@@ -49,6 +50,6 @@ export function sendRobotToDestination(id: string): { ok: true } | { ok: false; 
   if (isBlocked(grid, ...cell)) return { ok: false, error: 'Destination is obstructed. Move the marker or obstacle.' }
   startNavigation()
   if (!planPath(grid, robotRuntime.pos, goal)) return { ok: false, error: 'No route to this destination.' }
-  world.setGoal(goal)
+  setImmediateDestination(goal)
   return { ok: true }
 }

@@ -13,6 +13,7 @@ export { selectCatalogAsset, rotateCatalogAsset, previewCatalogAsset, placeCatal
  */
 
 import { createWorld, duplicateWorld, listTemplates, nextWorldName } from './library'
+import { clearRoute, setImmediateDestination } from '../nav/routePlan'
 import { useWorld, type Tool, type WorldSnapshot } from './store'
 import type { Vec2, WorldObject } from './types'
 import {
@@ -119,13 +120,21 @@ export function duplicateObject(id: string): string | null {
 
 /** Low-level world replace — caller must have already confirmed if needed. */
 export function applyWorldSnapshot(world: WorldSnapshot): void {
+  clearRoute()
   useWorld.getState().loadWorld(world)
+  // Restore a single preset goal as an immediate destination when the snapshot includes one.
+  if (world.goal) setImmediateDestination(world.goal)
 }
 
 // ---------- Robot ----------
 
 export function setGoal(point: Vec2 | null): void {
-  useWorld.getState().setGoal(point)
+  // Voice / destinations: immediate single-stop route. Plan Routes "Add Waypoint" uses addWaypoint instead.
+  if (!point) {
+    clearRoute()
+    return
+  }
+  setImmediateDestination(point)
 }
 
 export function placeRobot(point: Vec2): void {

@@ -21,7 +21,7 @@ export const TOOLBAR_TOOLS: { id: Tool; label: string; key: string; section: Too
   { id: 'select', label: 'Select', key: '1', section: 'edit', tooltip: 'Select objects (1). Drag a selected object to move it.' },
   { id: 'wall', label: 'Wall', key: '2', section: 'build', tooltip: 'Draw a wall on empty ground (2). Returns to Select after one wall.' },
   { id: 'building', label: 'Building', key: '3', section: 'build', tooltip: 'Place one building on empty ground (3), then returns to Select.' },
-  { id: 'goal', label: 'Set Destination', key: '4', section: 'plan', tooltip: 'Click empty ground to set the robot goal (4), then returns to Select.' },
+  { id: 'goal', label: 'Add Waypoint', key: '4', section: 'plan', tooltip: 'Click empty ground to add a route stop (4). Add several, then Play.' },
   { id: 'robot', label: 'Place Robot', key: '5', section: 'plan', tooltip: 'Click empty ground to place the robot (5), then returns to Select.' },
   { id: 'platform', label: 'Road / Platform', key: '6', section: 'build', tooltip: 'Drag a platform on empty ground (6). Returns to Select after one.' },
   { id: 'decor', label: 'Decoration', key: '7', section: 'build', tooltip: 'Place one decoration on empty ground (7), then returns to Select.' },
