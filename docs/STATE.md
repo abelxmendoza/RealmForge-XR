@@ -57,9 +57,10 @@ Replans when `geometryVersion` or goal/robot placement changes (see nav module).
 | Item | Current |
 | --- | --- |
 | Store | `createXRStore({ offerSession: false, planeDetection, anchors, meshDetection, hitTest, handTracking, depthSensing: false })` |
-| Enter AR | `enterARWithFallback()` — `AR_ATTEMPTS` then `WebXRManager.setSession` |
+| Enter AR | `enterARWithFallback()` — `AR_ATTEMPTS` then prefers `unbounded` reference space, else `local-floor` |
 | Enter VR | `xrStore.enterVR()` |
-| Meta | `useXRSessionMeta`: `attempt`, `features`, `blend`, `lastError`, `entering` |
+| Floor | `FloorTracker` (`src/xr/floor.ts`) snaps room+ scales to detected floor / local-floor; tabletop stays at `TABLE_HEIGHT` |
+| Meta | `useXRSessionMeta`: `attempt`, `features`, `blend`, `referenceSpace`, `visibility`, `lastError`, `entering` |
 
 ### Guide (`src/guide/guideStore.ts`)
 
@@ -88,10 +89,17 @@ Owned by Emiliano’s page; **not** wired to Zustand.
 
 ## Schema notes (`WorldObject`)
 
-See `src/world/types.ts`. Kinds: `wall` | `building` | `platform` | `tree` | `streetlight` | `crate`.
+See `src/world/types.ts`. Kinds: `wall` | `building` | `platform` | `tree` | `streetlight` | `crate` | `prop`.
+Optional: `catalogId`, `simulationRole`, `capacity`, `serviceDuration`, `solid`, `assetId`, `destinationRole`.
 Nav helpers: `blocksNavigation`, `navObstacles`. Breaking kind/field changes must bump a note here and add/adjust `world.test.ts`.
 
 ## State change log
+
+### 2026-10-17 (stabilize)
+
+- Ported Quest grab + floor/`unbounded` fixes from Gesture without merging the full gesture stack.
+- XR palette Event tool; crate click placement sets `solid`.
+- `WORLD_ROOT.floorY` added for FloorTracker.
 
 ### 2026-10-17 (cleanup)
 

@@ -13,6 +13,7 @@ import { getHistoryState, subscribeHistory } from '../world/history'
 import { getConfirmation, resolveConfirmation, subscribeConfirmation } from '../world/confirmation'
 import { useWorldLibrary } from '../world/persistence'
 import { BUILDING_STYLE_IDS, WALL_MATERIALS, PLATFORM_MATERIALS, TREE_STYLES } from '../world/catalog'
+import { listEventCatalog } from '../world/eventCatalog'
 import { useEditor } from '../editor/settings'
 import { useNav } from '../nav/navigation'
 import { toggleRays } from '../editor/xrInput'
@@ -107,7 +108,7 @@ function PaletteContent() {
 
   let buttons: Button[] = []
   if (page === 'Tools') {
-    buttons = ([['select', 'Select / move'], ['building', 'Building'], ['wall', 'Wall'], ['platform', 'Road / platform'], ['decor', 'Decoration'], ['robot', 'Place robot'], ['goal', 'Set destination']] as const)
+    buttons = ([['select', 'Select / move'], ['building', 'Building'], ['wall', 'Wall'], ['platform', 'Road / platform'], ['decor', 'Decoration'], ['event', 'Event object'], ['robot', 'Place robot'], ['goal', 'Set destination']] as const)
       .map(([id, label]) => ({ label, active: tool === id, run: () => worldActions.setTool(id) }))
     buttons.push({ label: snap ? 'Snap: on' : 'Snap: off', active: snap, run: () => useEditor.getState().set({ snap: !snap }) },
       { label: 'Block robot route', run: blockRoute },
@@ -148,6 +149,9 @@ function PaletteContent() {
     buttons.push({ label: 'Previous markers', disabled: offset === 0, run: () => setDestinationPage(offset - 1) }, { label: 'More markers', disabled: (offset + 1) * 6 >= destinations.length, run: () => setDestinationPage(offset + 1) })
   } else if (page === 'Brush') {
     const next = <T extends string,>(values: readonly T[], value: T): T => values[(values.indexOf(value) + 1) % values.length]
+    const eventEntries = listEventCatalog()
+    const eventIds = eventEntries.map((e) => e.id)
+    const eventLabel = eventEntries.find((e) => e.id === editor.eventCatalogId)?.label ?? editor.eventCatalogId
     buttons = [
       { label: `Building: ${editor.buildingStyle}`, run: () => editor.set({ buildingStyle: next(BUILDING_STYLE_IDS, editor.buildingStyle) }) },
       { label: `Wall: ${editor.wallMaterial}`, run: () => editor.set({ wallMaterial: next(WALL_MATERIALS, editor.wallMaterial) }) },
@@ -155,6 +159,14 @@ function PaletteContent() {
       { label: `Roof: ${editor.roof}`, run: () => editor.set({ roof: editor.roof === 'flat' ? 'pitched' : 'flat' }) },
       { label: `Decoration: ${editor.decor}`, run: () => editor.set({ decor: next(['tree', 'streetlight', 'crate'] as const, editor.decor) }) },
       { label: `Tree: ${editor.treeStyle}`, run: () => editor.set({ treeStyle: next(TREE_STYLES, editor.treeStyle) }) },
+      {
+        label: `Event: ${eventLabel}`,
+        run: () => {
+          if (!eventIds.length) return
+          editor.set({ eventCatalogId: next(eventIds, editor.eventCatalogId) })
+          worldActions.setTool('event')
+        },
+      },
     ]
   } else if (page === 'Saved') {
     const offset = Math.min(savePage, Math.max(0, Math.ceil(saves.length / 6) - 1))

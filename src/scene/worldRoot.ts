@@ -25,6 +25,8 @@ export const TABLE_HEIGHT = 0.8
 export const WORLD_ROOT = {
   position: new THREE.Vector3(0, TABLE_HEIGHT, -1.1),
   scale: SCALE_PRESETS.tabletop.ratio,
+  /** Height of the real floor in the XR reference space (see xr/floor.ts); 0 outside XR. */
+  floorY: 0,
 }
 
 export const worldRootRef: { current: THREE.Group | null } = { current: null }

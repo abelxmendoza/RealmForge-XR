@@ -12,6 +12,7 @@ describe('AR_ATTEMPTS', () => {
     const minimal = AR_ATTEMPTS[2].init.optionalFeatures ?? []
     expect(noDepth).toContain('plane-detection')
     expect(noDepth).toContain('anchors')
+    expect(noDepth).toContain('unbounded')
     expect(noDepth).not.toContain('depth-sensing')
     expect(minimal).toEqual(['local-floor'])
   })
@@ -19,6 +20,7 @@ describe('AR_ATTEMPTS', () => {
   it('asks for depth only on the first attempt', () => {
     const full = AR_ATTEMPTS[0].init.optionalFeatures ?? []
     expect(full).toContain('depth-sensing')
+    expect(full).toContain('unbounded')
     expect(AR_ATTEMPTS[0].init.depthSensing).toBeTruthy()
   })
 })
