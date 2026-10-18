@@ -62,7 +62,17 @@ export function ControlPalette() {
 }
 
 type Button = { label: string; run: () => unknown; active?: boolean; disabled?: boolean }
-type Page = ToolbarSection | 'assets' | 'events' | 'room' | 'actors' | 'actor-settings' | 'brush' | 'saved' | 'styles'
+/**
+ * In VR, editing a selection keeps its own tab: the desktop folds it into Build, but the in-headset
+ * Edit page has more actions than fit on the Build page.
+ */
+const VR_TABS: { id: ToolbarSection | 'edit'; label: string }[] = [
+  TOOLBAR_SECTIONS[0]!,
+  { id: 'edit', label: 'Edit' },
+  ...TOOLBAR_SECTIONS.slice(1),
+]
+
+type Page = ToolbarSection | 'edit' | 'assets' | 'events' | 'room' | 'actors' | 'actor-settings' | 'brush' | 'saved' | 'styles'
 
 function PaletteContent() {
   const root = useRef<THREE.Group>(null)
@@ -164,7 +174,7 @@ function PaletteContent() {
         ? 'save'
         : page === 'styles' || page === 'room'
           ? 'view'
-          : (page as ToolbarSection)
+          : (page as ToolbarSection | 'edit')
 
   let buttons: Button[] = []
   if (page === 'build') {
@@ -414,7 +424,7 @@ function PaletteContent() {
         <Tile text="Cancel" x={-0.165} y={-0.12} width={0.31} onClick={() => resolveConfirmation(request.id, false)} />
         <Tile text="Confirm" x={0.165} y={-0.12} width={0.31} active onClick={() => resolveConfirmation(request.id, true)} />
       </> : <>
-        {TOOLBAR_SECTIONS.map((tab, i) => (
+        {VR_TABS.map((tab, i) => (
           <Tile
             key={tab.id}
             text={tab.label.split(' ')[0]}

@@ -1,5 +1,6 @@
 /**
- * Desktop HUD: six primary sections (Build / Edit / Plan Routes / Simulate / View / Save).
+ * Editor HUD: the three-step loop (Build / Routes / Test) as primary tabs, then View and Save.
+ * On phones the menu opens as a bottom sheet so the world stays visible above it.
  * Preserves existing actions and keyboard shortcuts; shortcuts appear in tooltips only.
  */
 import { useEffect, useRef, useState } from 'react'
@@ -69,7 +70,7 @@ const isCompact = () => typeof window !== 'undefined' && window.matchMedia?.(COM
 
 /** Robot status for the pill: says what to do next when idle, and only counts replans once there are some. */
 function robotStatusLine(status: keyof typeof STATUS_TEXT, replans: number) {
-  const text = status === 'idle' ? `${STATUS_TEXT.idle} · Plan Routes → Add Waypoint` : STATUS_TEXT[status]
+  const text = status === 'idle' ? `${STATUS_TEXT.idle} · Routes → Add Waypoint` : STATUS_TEXT[status]
   return replans > 0 ? `${text} · replans ${replans}` : text
 }
 
@@ -134,7 +135,6 @@ export function ToolbarHud() {
   }, [tool])
 
   const statusTone = status === 'moving' || mocap.status === 'live' ? 'live' : status === 'no-path' || mocap.status === 'error' ? 'warn' : ''
-  const noSelection = !selectedId ? 'Select an object first' : undefined
   const sectionTools = TOOLBAR_TOOLS.filter((t) => t.section === section)
 
   const onDelete = async () => {
@@ -282,7 +282,7 @@ export function ToolbarHud() {
               key={s.id}
               type="button"
               role="tab"
-              className={`hud-tab${section === s.id ? ' on' : ''}`}
+              className={`hud-tab${s.primary ? '' : ' secondary'}${section === s.id ? ' on' : ''}`}
               aria-selected={section === s.id}
               title={s.hint}
               onClick={() => setSection(s.id)}
@@ -337,60 +337,32 @@ export function ToolbarHud() {
           </div>
         )}
 
-        {section === 'edit' && (
-          <div className="row hud-section-actions">
-            <p className="hud-inline-hint">
-              {selectedId ? 'Drag the selection to move it. Then rotate, resize, or remove.' : 'Select an object first — then drag to move, or use the actions below.'}
-            </p>
-            <button
-              type="button"
-              disabled={!selectedId}
-              title={tooltip('Rotate left 15° (R with Shift)', noSelection)}
-              onClick={() => editPaletteSelection('rotate-left')}
-            >
-              Rotate left
-            </button>
-            <button
-              type="button"
-              disabled={!selectedId}
-              title={tooltip('Rotate right 15° (R)', noSelection)}
-              onClick={() => editPaletteSelection('rotate-right')}
-            >
-              Rotate right
-            </button>
-            <button
-              type="button"
-              disabled={!selectedId}
-              title={tooltip('Make taller (])', noSelection)}
-              onClick={() => editPaletteSelection('raise')}
-            >
-              Taller
-            </button>
-            <button
-              type="button"
-              disabled={!selectedId}
-              title={tooltip('Make shorter ([)', noSelection)}
-              onClick={() => editPaletteSelection('lower')}
-            >
-              Shorter
-            </button>
-            <button
-              type="button"
-              disabled={!selectedId}
-              title={tooltip('Duplicate selected object (D)', noSelection)}
-              onClick={duplicateSelected}
-            >
-              Duplicate
-            </button>
-            <button
-              type="button"
-              className="danger"
-              disabled={!selectedId}
-              title={tooltip('Delete selected object (Delete)', noSelection)}
-              onClick={() => void onDelete()}
-            >
-              Delete
-            </button>
+        {section === 'build' && (
+          <div className="row hud-section-actions hud-edit-actions" aria-label="Edit">
+            {selectedId ? (
+              <>
+                <button type="button" title="Rotate left 15° (R with Shift)" onClick={() => editPaletteSelection('rotate-left')}>
+                  Rotate left
+                </button>
+                <button type="button" title="Rotate right 15° (R)" onClick={() => editPaletteSelection('rotate-right')}>
+                  Rotate right
+                </button>
+                <button type="button" title="Make taller (])" onClick={() => editPaletteSelection('raise')}>
+                  Taller
+                </button>
+                <button type="button" title="Make shorter ([)" onClick={() => editPaletteSelection('lower')}>
+                  Shorter
+                </button>
+                <button type="button" title="Duplicate selected object (D)" onClick={duplicateSelected}>
+                  Duplicate
+                </button>
+                <button type="button" className="danger" title="Delete selected object (Delete)" onClick={() => void onDelete()}>
+                  Delete
+                </button>
+              </>
+            ) : (
+              <p className="hud-inline-hint">Tap an object to move, rotate, or remove it.</p>
+            )}
             <button
               type="button"
               disabled={!hist.canUndo}

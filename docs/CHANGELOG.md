@@ -8,6 +8,8 @@ Dates are UTC.
 
 ### Changed
 
+- Editor tabs follow the three-step loop: **Build · Routes · Test** first, then smaller **View** and **Save**. The Edit tab is folded into Build (Select is there; edit actions appear when something is selected; Undo / Redo always). The VR control panel keeps its own Edit tab.
+- Phones in portrait: the open menu is a bottom sheet with the tabs nearest the thumb, so the world stays visible above it.
 - Editor HUD adapts to the device: **Enter XR** only shows where the browser supports AR or VR (VR-only headsets get VR instead of an error), **Place world** only with AR, and devices without a headset get **Open on Quest** (copies the editor link).
 - Robot status says what to do next ("No destination yet · Plan Routes → Add Waypoint") and only counts replans once there are some.
 - Wall and Road / Platform stay armed after each one, like the other Build tools; **Done placing** or 1 returns to Select.

@@ -116,7 +116,7 @@ export function Inspector() {
       </div>
 
       {sim.running && section !== 'simulate' && (
-        <p className="inspector-sim-pill" role="status" title="Open Simulate in the menu for full controls">
+        <p className="inspector-sim-pill" role="status" title="Open Test in the menu for full controls">
           {simStatusLabel(sim)}
         </p>
       )}
@@ -187,7 +187,7 @@ function SelectEmptyPanel() {
   return (
     <section>
       <p className="hint">
-        Tap an object in the world to edit it, or pick a Build or Plan Routes tool from the menu to place something new.
+        Tap an object in the world to edit it, or pick a Build or Routes tool from the menu to place something new.
       </p>
       {hasMouse() && <p className="hint">Tip: right-click the scene for quick world actions.</p>}
     </section>

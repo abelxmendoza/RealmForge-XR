@@ -2,9 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { TOOLBAR_SECTIONS, TOOLBAR_TOOLS, toolByKey, SCALE_LABELS } from './toolbar'
 
 describe('toolbar information architecture', () => {
-  it('exposes exactly six primary sections', () => {
-    expect(TOOLBAR_SECTIONS.map((s) => s.id)).toEqual(['build', 'edit', 'plan', 'simulate', 'view', 'save'])
+  it('leads with the three-step loop (Build, Routes, Test), then View and Save', () => {
+    expect(TOOLBAR_SECTIONS.map((s) => s.id)).toEqual(['build', 'plan', 'simulate', 'view', 'save'])
+    expect(TOOLBAR_SECTIONS.filter((s) => s.primary).map((s) => s.label)).toEqual(['Build', 'Routes', 'Test'])
     expect(TOOLBAR_SECTIONS.every((s) => s.label.length > 0 && s.hint.length > 0)).toBe(true)
+  })
+
+  it('puts Select in Build, so editing a selection never needs its own tab', () => {
+    expect(TOOLBAR_TOOLS.find((t) => t.id === 'select')?.section).toBe('build')
   })
 
   it('keeps digit shortcuts 1–0 for placement tools and F for Flow', () => {
