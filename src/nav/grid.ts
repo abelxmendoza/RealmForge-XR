@@ -1,4 +1,5 @@
 import { GRID_SIZE, WORLD, type Vec2, type WorldObject } from '../world/types'
+import { staticBlockers } from './blockers'
 
 /** Occupancy grid over the map. cells[j * size + i] = 1 when blocked. i follows x, j follows z. */
 export interface Grid {
@@ -27,11 +28,12 @@ export const isBlocked = (g: Grid, i: number, j: number) => !inBounds(g, i, j) |
 
 /**
  * Rasterise obstacle footprints (rotated rectangles) into a grid, inflated by `inflate`
- * so the robot's centre can treat free cells as safe.
+ * so the robot's centre can treat free cells as safe. Static blockers (an imported scan's
+ * walls) are added too unless `blockers` says otherwise.
  */
 export function buildGrid(
   objects: Iterable<WorldObject>,
-  opts: { size?: number; cell?: number; half?: number; inflate?: number } = {},
+  opts: { size?: number; cell?: number; half?: number; inflate?: number; blockers?: Float32Array } = {},
 ): Grid {
   const size = opts.size ?? GRID_SIZE
   const cell = opts.cell ?? WORLD.cell
@@ -63,7 +65,30 @@ export function buildGrid(
       }
     }
   }
+  markPoints(grid, opts.blockers ?? staticBlockers(), inflate)
   return grid
+}
+
+/** Block the cell holding each x,z point plus every cell whose centre lies within `inflate` of it. */
+function markPoints(grid: Grid, pts: Float32Array, inflate: number) {
+  const { size, cell, half, cells } = grid
+  const r2 = inflate * inflate
+  for (let k = 0; k + 1 < pts.length; k += 2) {
+    const x = pts[k]
+    const z = pts[k + 1]
+    const [ci, cj] = worldToCell(grid, [x, z])
+    if (Math.abs(x) <= half && Math.abs(z) <= half) cells[cj * size + ci] = 1
+    if (inflate <= 0) continue
+    const [i0, j0] = worldToCell(grid, [x - inflate, z - inflate])
+    const [i1, j1] = worldToCell(grid, [x + inflate, z + inflate])
+    for (let j = j0; j <= j1; j++) {
+      const dz = -half + (j + 0.5) * cell - z
+      for (let i = i0; i <= i1; i++) {
+        const dx = -half + (i + 0.5) * cell - x
+        if (dx * dx + dz * dz <= r2) cells[j * size + i] = 1
+      }
+    }
+  }
 }
 
 /** Nearest free cell by breadth-first search, or null if the grid is full. */

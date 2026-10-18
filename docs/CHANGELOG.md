@@ -12,6 +12,7 @@ Dates are UTC.
 - Portable `.rfproperty` bundles include original mesh assets for cross-device viewing; imports preserve saved worlds' files through remapped IDs.
 - Backward-compatible single-scan loading, per-section runtime status/dirty tracking, aggregate import limits, and hidden-section GPU cleanup.
 - XR Property scans pages with an explicit exit to browser file controls and pagination for long control lists.
+- Scan walls block movement: surfaces 0.15–1.8 m above the main floor in each scan section are sampled every 10 cm and fed into the shared navigation grid, so the robot, attendees, actors and planned routes go around real walls, columns and furniture. Per-section **Walls block** switch (web and XR, saved with the world); hidden sections still block, upper floors don't. Red tiles show the blocked area while the scan panel is open.
 
 ### Changed
 
