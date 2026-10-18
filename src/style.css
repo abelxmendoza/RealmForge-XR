@@ -1964,6 +1964,11 @@ dialog.controls-guide::backdrop {
   margin-top: 4px;
 }
 
+.scan-howto ul {
+  margin: 4px 0 0;
+  padding-left: 16px;
+}
+
 .scan-howto strong {
   color: var(--rf-text);
 }

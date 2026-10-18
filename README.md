@@ -264,11 +264,12 @@ Build → **Property scans** assembles up to 24 named GLB mesh sections (250 MB 
 
 RealmForge doesn't capture scans itself. Use the free [Scaniverse](https://scaniverse.com) app (iPhone or Android):
 
-1. Start a new scan and choose **Mesh**, not Splat. RealmForge needs a mesh.
-2. Scan one room or area at a time. Move slowly and include a doorway that the next room shares.
-3. Let it process, then **Share → Export Model → GLB**.
-4. Send the `.glb` to the computer or headset running RealmForge (AirDrop, Google Drive, email, or USB).
-5. In the editor: **Build → Property scans → Add scans (.glb)**. Line rooms up at the shared doorway, then use **Measure scale** with a distance you know, like a door width.
+1. Scan one room or area at a time. Move slowly and include a doorway that the next room shares.
+2. Get a **mesh** as a **GLB** file (not a splat):
+   - **Classic** experience: choose **Mesh** when you start, let it process, then **Share → Export Model → GLB**.
+   - **New** experience: capture into a Site, generate a Mesh asset, then download its GLB from Scaniverse Web.
+3. Send the `.glb` to the computer or headset running RealmForge (AirDrop, Google Drive, email, or USB).
+4. In the editor: **Build → Property scans → Add scans (.glb)**. In the headset, open **Property scans → Files / names (exit XR)** first, since file picking happens in the browser. Line rooms up at the shared doorway, then use **Measure scale** with a distance you know, like a door width.
 
 The same steps are in the scan panel and in the in-app **Guide** (Scans tab), on web and in the headset.
 

@@ -43,11 +43,15 @@ export function ScanPanel() {
       <summary>How to scan with Scaniverse</summary>
       <ol>
         <li>Install <a href="https://scaniverse.com" target="_blank" rel="noopener noreferrer">Scaniverse</a> (free on iPhone and Android).</li>
-        <li>Start a new scan and choose <strong>Mesh</strong>, not Splat. RealmForge needs a mesh.</li>
         <li>Scan one room or area at a time. Move slowly and include a doorway that the next room shares.</li>
-        <li>Let it process, then <strong>Share → Export Model → GLB</strong>.</li>
+        <li>Get a <strong>mesh</strong> as a <strong>GLB</strong> file (not a splat):
+          <ul>
+            <li><strong>Classic</strong> experience: choose <strong>Mesh</strong> when you start, let it process, then <strong>Share → Export Model → GLB</strong>.</li>
+            <li><strong>New</strong> experience: capture into a Site, generate a Mesh asset, then download its GLB from Scaniverse Web.</li>
+          </ul>
+        </li>
         <li>Send the .glb to this device (AirDrop, Google Drive, email, or USB).</li>
-        <li>Press <strong>Add scans (.glb)</strong> below, line rooms up at the shared doorway, then use <strong>Measure scale</strong> with a distance you know, like a door width.</li>
+        <li>Press <strong>Add scans (.glb)</strong> below, line rooms up at the shared doorway, then use <strong>Measure scale</strong> with a distance you know, like a door width. In the headset, open <strong>Files / names (exit XR)</strong> first.</li>
       </ol>
     </details>
     <p className="hint">Scans are visual references. Trace solid walls for navigation. Raised floors are viewable, but agents currently navigate one flat ground plane.</p>
