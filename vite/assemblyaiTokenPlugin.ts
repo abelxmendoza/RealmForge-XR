@@ -11,7 +11,7 @@
  */
 
 import type { Plugin } from 'vite'
-import { handleAssemblyAiTokenRequest } from '../tools/assemblyai-token'
+import { handleAssemblyAiTokenRequest } from '../tools/assemblyai-token.ts'
 
 export function assemblyaiTokenPlugin(): Plugin {
   return {

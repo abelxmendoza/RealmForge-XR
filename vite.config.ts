@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import basicSsl from '@vitejs/plugin-basic-ssl'
-import { assemblyaiTokenPlugin } from './vite/assemblyaiTokenPlugin'
-import { clientLog } from './tools/client-log'
+import { assemblyaiTokenPlugin } from './vite/assemblyaiTokenPlugin.ts'
+import { clientLog } from './tools/client-log.ts'
 
 // HTTPS + host:true so the Quest browser can open the dev server over LAN (WebXR needs a secure context).
 // assemblyaiTokenPlugin: GET /api/assemblyai/token (server-side ASSEMBLYAI_API_KEY only).
