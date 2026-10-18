@@ -8,10 +8,28 @@ Dates are UTC.
 
 ### Added
 
+- Each new XR session starts with the palette open at your side.
+- Headset panels that look like the desktop HUD: one renderer (`src/xr/panel/`) paints the palette, guide, wrist menu and error fallback with the HUD's CSS values; the palette has the HUD's six tabs, sub-pages with ‹ Back, Home, Exit VR, Collapse and Close.
+- Always a way back in VR: palette ‹ Back, wrist Menu / Hide all / ‹ Back / Home / Exit VR, and voice “go back”, “hide / show the menu”, “hide everything”, “open the object catalog”, “exit VR”.
+- Voice route stops: “add a waypoint at the goal / near the robot / 10 meters north of the robot / here”, “remove the last waypoint”, “clear the waypoints”, “start / pause / stop the route”, “next stop”.
+- Controllers: Y pins the wrist menu open (Y again hides it).
+- `npm run test:xr`: the built app in a simulated Quest 3 (Meta's IWER emulator) — enters VR, presses buttons with a controller ray, checks state, console and screenshots.
+- Error boundary per XR menu (Try again / Exit VR / Reload); Enter VR failures show in the HUD.
+
 - Easier delete: press B / Y while holding an object with a controller to delete it; every delete (red cube, wrist menu, keys, voice, B / Y) gives a distinct double buzz.
 - Voice delete understands “delete it”, “remove that”, “get rid of them”, “trash this” and a bare “delete”; “them” deletes what the last command made. No confirm dialog: one undo restores it.
 
 ### Fixed
+
+- The headset froze when anything asked to confirm (load or replace a world, overwrite a save, leave with unsaved changes) or when the guide was opened: the desktop modal dialog made the page inert and swallowed every XR press. Desktop modals no longer open during XR.
+- The world could go blank in the headset on a bad network: a CDN font load suspended React and hid every object. Fonts and controller models now ship with the app; menus and the world load separately.
+- Two copies of three.js shipped (drei's stats-gl); deduped.
+- With controllers the wrist menu popped up during a normal grip and covered the palette.
+- The palette was out of reach with rays off; rays now always reach menus (the Rays setting covers the world only).
+- Palette presses could fire twice when a page changed under the ray or finger (“couldn't go back”).
+- Two world menus each had their own busy flag (a save could run during a load); one shared guard now.
+- Palette Taller / Shorter used 0.25 m steps; now 0.5 m like the keyboard and height snapping.
+- Removed dead or replaced code from the merge: EnvironmentsMenu, StartChooser, environmentMenuController, PanelMoveBar, BrandLogo3D and unused palette helpers (see `docs/merge-audit.md`).
 
 - Deleting a framed group is one undo step (was one per object).
 - Landing page builds again: restored the `InstallButton` component lost in the PR #31 merge.

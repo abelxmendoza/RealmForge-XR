@@ -67,3 +67,11 @@ Pair each entry with CHANGELOG (user-facing) and STATE (runtime) updates when st
 - **Why:** Deleting in the headset took a poke on a small red cube or a voice phrase plus a confirm tap.
 - **Verified:** `npm test` (418) + `npm run build` green; B / Y and buzz still need a Quest check
 - **Follow-ups:** Headset check of B / Y delete mid-grab
+
+### 2026-10-18 — VR panels like the web HUD, ways back, merge audit
+
+- **Who:** Abel via Claude Code
+- **Did:** New XR panel renderer (`src/xr/panel/`) with the HUD's styling; palette, guide, wrist menu rebuilt on it; palette page history shared with wrist and voice; voice for back / panels / pages / exit VR / route stops; error boundaries; offline-safe controller models and fonts; three.js dedupe; merge duplicates fixed or listed in `docs/merge-audit.md`; IWER e2e suite (`npm run test:xr`).
+- **Why:** In the headset the UI didn't match the web app, presses bounced, there was no reliable way back or to hide panels, and the scene could go blank offline.
+- **Verified:** `npm test`, `npm run build`, `npm run test:xr` (simulated Quest 3); not yet on a physical headset
+- **Follow-ups:** Quest pass for text size, hand pokes, Y-to-pin; decide on the two route systems and two world-library UIs (merge-audit.md)

@@ -1,18 +1,24 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useXR } from '@react-three/xr'
 import * as THREE from 'three'
-import { FORGE } from '../theme/forge'
-import { BrandLogo3D } from './BrandLogo3D'
-import { GUIDE_SECTIONS, getGuideSection, nextGuideSection, prevGuideSection } from '../guide/controlsGuide'
+import { GUIDE_SECTIONS, getGuideSection, nextGuideSection, prevGuideSection, type GuideSectionId } from '../guide/controlsGuide'
 import { useGuide } from '../guide/guideStore'
-import { PanelMoveBar } from './PanelMoveBar'
-import { usePaletteUI } from './paletteUI'
+import type { PanelSpec } from './panel/layout'
+import { XRPanel } from './panel/XRPanel'
+import { paletteAnchor, usePaletteUI } from './paletteUI'
+import { faceYaw } from './panel/faceYaw'
+import { METERS_PER_PX } from './panel/constants'
+import { PALETTE_WIDTH } from './paletteModel'
+
+const GUIDE_WIDTH_PX = 520
+/** Palette centre to guide centre: half of each panel plus a 6 cm gap. */
+const GUIDE_GAP_M = ((PALETTE_WIDTH + GUIDE_WIDTH_PX) / 2) * METERS_PER_PX + 0.06
 
 /**
- * Immersive user guide — same sections as the desktop modal.
- * Placed in tracking space (independent of world scale). Open via wrist "Guide"
- * or the control palette; Close returns to building.
+ * Immersive user guide: the same sections as the desktop modal, styled like the HUD. Open it from the wrist,
+ * the palette or by voice ("open the guide"); Collapse folds it to its title bar, Close (or "hide the guide")
+ * puts it away. It stays where you move it until Recenter.
  */
 export function ControlsGuidePanel() {
   const session = useXR((s) => s.session)
@@ -21,149 +27,112 @@ export function ControlsGuidePanel() {
   return <GuideContent />
 }
 
+/** The guide panel's content (pure, so it is unit-tested). */
+export function guideSpec(sectionId: GuideSectionId, collapsed: boolean): PanelSpec {
+  const section = getGuideSection(sectionId)
+  const title: PanelSpec['cards'][number] = {
+    type: 'card',
+    tone: 'brand',
+    blocks: [
+      { type: 'row', items: [{ type: 'handle', id: 'move', label: 'Move: grab here, or point and pull' }] },
+      {
+        type: 'row',
+        items: [
+          { type: 'logo', size: 22 },
+          { type: 'text', text: 'User & controls guide', font: 'display', size: 17, weight: 800, flex: 1 },
+          { type: 'button', id: 'collapse', label: collapsed ? 'Expand' : 'Collapse', width: 'auto' },
+          { type: 'button', id: 'close', label: 'Close', width: 'auto' },
+        ],
+      },
+    ],
+  }
+  if (collapsed) return { width: GUIDE_WIDTH_PX, cards: [title] }
+  return {
+    width: GUIDE_WIDTH_PX,
+    cards: [
+      title,
+      {
+        type: 'card',
+        padding: 8,
+        blocks: [
+          {
+            type: 'row',
+            gap: 4,
+            items: GUIDE_SECTIONS.map((s) => ({ type: 'button' as const, id: `section:${s.id}`, label: s.tab, variant: s.id === sectionId ? ('on' as const) : ('tab' as const) })),
+          },
+        ],
+      },
+      {
+        type: 'card',
+        gap: 6,
+        blocks: [
+          { type: 'row', items: [{ type: 'text', text: section.title, size: 14, weight: 600, color: 'copper', flex: 1 }] },
+          ...section.lines.map((line) => ({ type: 'row' as const, items: [{ type: 'text' as const, text: line, size: 13, flex: 1 }] })),
+        ],
+      },
+      {
+        type: 'card',
+        padding: 8,
+        blocks: [
+          {
+            type: 'row',
+            items: [
+              { type: 'button', id: 'prev', label: '‹ Prev' },
+              { type: 'button', id: 'next', label: 'Next ›', variant: 'primary' },
+              { type: 'button', id: 'recenter', label: 'Recenter' },
+            ],
+          },
+        ],
+      },
+    ],
+  }
+}
+
 function GuideContent() {
   const root = useRef<THREE.Group>(null)
   const gl = useThree((s) => s.gl)
   const sectionId = useGuide((s) => s.section)
-  const setSection = useGuide((s) => s.setSection)
-  const closeGuide = useGuide((s) => s.closeGuide)
-  const section = getGuideSection(sectionId)
+  const [collapsed, setCollapsed] = useState(false)
   const positioned = useRef(false)
-  const vectors = useMemo(
-    () => ({
-      position: new THREE.Vector3(),
-      direction: new THREE.Vector3(),
-      yaw: new THREE.Quaternion(),
-      euler: new THREE.Euler(0, 0, 0, 'YXZ'),
-    }),
-    [],
-  )
+  const v = useMemo(() => ({ position: new THREE.Vector3(), direction: new THREE.Vector3(), yaw: new THREE.Quaternion(), euler: new THREE.Euler(0, 0, 0, 'YXZ') }), [])
 
-  // Placed in front of the user when opened (mount); after that it stays where you moved it until
-  // Recenter, so switching sections no longer snaps it back.
-
+  // Placed in front of you when opened; after that it stays where you moved it until Recenter.
   useFrame(() => {
     if (!root.current || positioned.current) return
     const camera = gl.xr.getCamera()
-    camera.getWorldPosition(vectors.position)
-    camera.getWorldQuaternion(vectors.yaw)
-    vectors.euler.setFromQuaternion(vectors.yaw, 'YXZ')
-    vectors.yaw.setFromEuler(new THREE.Euler(0, vectors.euler.y, 0))
-    // Slightly right of center, comfortable reading distance.
-    // Beside the palette when it was just summoned in front of you, so they don't overlap.
+    camera.getWorldPosition(v.position)
+    camera.getWorldQuaternion(v.yaw)
+    v.euler.setFromQuaternion(v.yaw, 'YXZ')
+    v.yaw.setFromEuler(new THREE.Euler(0, v.euler.y, 0))
     const palette = usePaletteUI.getState()
-    vectors.direction.set(!palette.closed && palette.spot === 'front' ? 0.45 : 0.15, -0.05, -1.15).applyQuaternion(vectors.yaw)
-    root.current.position.copy(vectors.position).add(vectors.direction)
-    root.current.quaternion.copy(vectors.yaw)
+    if (!palette.closed && paletteAnchor.placed) {
+      // Right beside the palette, facing the same way, so the two never overlap wherever you're looking.
+      const p = paletteAnchor.position
+      const yaw = faceYaw([p.x, p.z], [v.position.x, v.position.z])
+      const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw))
+      root.current.position.copy(p).addScaledVector(right, GUIDE_GAP_M)
+      root.current.rotation.set(0, yaw, 0)
+    } else {
+      v.direction.set(0.15, 0.22, -0.9).applyQuaternion(v.yaw)
+      root.current.position.copy(v.position).add(v.direction)
+      root.current.quaternion.copy(v.yaw)
+    }
     positioned.current = true
   })
 
+  const onPress = (id: string) => {
+    const g = useGuide.getState()
+    if (id === 'collapse') setCollapsed((c) => !c)
+    else if (id === 'close') g.closeGuide()
+    else if (id === 'prev') g.setSection(prevGuideSection(sectionId))
+    else if (id === 'next') g.setSection(nextGuideSection(sectionId))
+    else if (id === 'recenter') positioned.current = false
+    else if (id.startsWith('section:')) g.setSection(id.slice('section:'.length) as GuideSectionId)
+  }
+
   return (
-    <group ref={root} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
-      <PanelMoveBar target={root} y={0.395} width={0.72} />
-      <GuideTile text="User & controls guide" y={0.34} width={0.72} height={0.055} accent />
-      <BrandLogo3D position={[-0.33, 0.34, 0.002]} size={0.048} />
-      <GuideTile text={section.title} y={0.28} width={0.72} height={0.045} />
-      {GUIDE_SECTIONS.map((s, i) => (
-        <GuideTile
-          key={s.id}
-          text={s.tab}
-          x={(i - (GUIDE_SECTIONS.length - 1) / 2) * (0.72 / GUIDE_SECTIONS.length)}
-          y={0.22}
-          width={0.72 / GUIDE_SECTIONS.length - 0.008}
-          height={0.038}
-          active={s.id === sectionId}
-          onClick={() => setSection(s.id)}
-        />
-      ))}
-      <GuideTile text={section.lines.join('\n')} y={0.0} width={0.72} height={0.36} align="left" />
-      <GuideTile text="← Prev" x={-0.24} y={-0.24} width={0.2} onClick={() => setSection(prevGuideSection(sectionId))} />
-      <GuideTile text="Next →" x={0.0} y={-0.24} width={0.2} active onClick={() => setSection(nextGuideSection(sectionId))} />
-      <GuideTile text="Close guide" x={0.24} y={-0.24} width={0.2} onClick={closeGuide} />
-      <GuideTile text="Recenter" y={-0.3} width={0.72} height={0.04} onClick={() => { positioned.current = false }} />
+    <group ref={root}>
+      <XRPanel name="guide" spec={guideSpec(sectionId, collapsed)} onPress={onPress} moveTarget={root} />
     </group>
-  )
-}
-
-function GuideTile({
-  text,
-  x = 0,
-  y,
-  width,
-  height = 0.055,
-  active = false,
-  accent = false,
-  align = 'center',
-  onClick,
-}: {
-  text: string
-  x?: number
-  y: number
-  width: number
-  height?: number
-  active?: boolean
-  accent?: boolean
-  align?: 'center' | 'left'
-  onClick?: () => void
-}) {
-  const [hover, setHover] = useState(false)
-  const texture = useMemo(() => {
-    const canvas = document.createElement('canvas')
-    canvas.width = 1024
-    canvas.height = Math.max(128, Math.round(1024 * (height / width)))
-    const ctx = canvas.getContext('2d')!
-    ctx.fillStyle = active || accent ? FORGE.emberActive : hover && onClick ? FORGE.hover : FORGE.panelMuted
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    ctx.fillStyle = active || accent ? FORGE.emberHot : FORGE.emberDeep
-    ctx.fillRect(0, 0, canvas.width, Math.max(6, Math.round(canvas.height * 0.05)))
-    ctx.strokeStyle = active || accent ? FORGE.emberHot : FORGE.lineSoft
-    ctx.lineWidth = 5
-    ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4)
-    ctx.fillStyle = FORGE.text
-    const base = Math.round(1024 * (align === 'left' ? 0.014 : 0.016) / width)
-    ctx.font = `600 ${base}px "Sora", "Segoe UI", sans-serif`
-    ctx.textAlign = align === 'left' ? 'left' : 'center'
-    ctx.textBaseline = 'middle'
-    const paragraphs = text.split('\n')
-    const lines: string[] = []
-    const maxW = align === 'left' ? 920 : 940
-    for (const paragraph of paragraphs) {
-      const words = paragraph.split(/\s+/)
-      let line = ''
-      for (const word of words) {
-        const candidate = line ? `${line} ${word}` : word
-        if (line && ctx.measureText(candidate).width > maxW) {
-          lines.push(line)
-          line = word
-        } else line = candidate
-      }
-      if (line) lines.push(line)
-    }
-    const startY = canvas.height / 2 - ((lines.length - 1) * base * 1.35) / 2
-    const xPos = align === 'left' ? 52 : 512
-    lines.forEach((value, i) => {
-      ctx.fillText(value, xPos, startY + i * base * 1.35, maxW)
-    })
-    const map = new THREE.CanvasTexture(canvas)
-    map.colorSpace = THREE.SRGBColorSpace
-    return map
-  }, [text, height, width, active, accent, hover, onClick != null, align])
-
-  useEffect(() => () => texture.dispose(), [texture])
-
-  return (
-    <mesh
-      position={[x, y, 0]}
-      onPointerOver={() => setHover(true)}
-      onPointerOut={() => setHover(false)}
-      onPointerDown={(e) => {
-        e.stopPropagation()
-        onClick?.()
-      }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <planeGeometry args={[width, height]} />
-      <meshBasicMaterial map={texture} toneMapped={false} side={THREE.DoubleSide} />
-    </mesh>
   )
 }

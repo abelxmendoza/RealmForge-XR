@@ -12,7 +12,13 @@ import {
 } from '../world/actions'
 import { getEnvironment } from '../world/environment'
 import { emitVoiceEvent } from './events'
-import { duplicateObjects, moveObjects, resizeObjects, rotateObjects, spawnObjects, targetIds } from '../world/spawn'
+import { anchorPoint, duplicateObjects, moveObjects, resizeObjects, rotateObjects, spawnObjects, targetIds } from '../world/spawn'
+import { useWorld } from '../world/store'
+import type { Vec2 } from '../world/types'
+import { addWaypoint, clearRoute, pauseRoute, playRoute, removeLastWaypoint, routeStatusLabel, skipToNextWaypoint, stopRoute, useRoutePlan } from '../nav/routePlan'
+import { useGuide } from '../guide/guideStore'
+import { PAGE_TITLE, backPage, closePalette, currentPage, openPalettePage, setPaletteHidden, summonPalette, usePaletteUI } from '../xr/paletteUI'
+import { exitXR } from '../xr/session'
 import type { ConfirmationRequest, ConfirmHandler, VoiceCommand } from './types'
 import { createWorld, nextWorldName, openWorld } from '../world/library'
 import { listSavedWorlds, useWorldLibrary } from '../world/persistence'
@@ -90,6 +96,16 @@ function asConfirmReplace(confirm: ConfirmHandler | undefined, command: VoiceCom
     emitVoiceEvent({ type: 'VOICE_CONFIRMATION_REQUIRED', request })
     return confirm(request)
   }
+}
+
+function done(command: VoiceCommand, message: string): ExecuteResult {
+  emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
+  return { status: 'executed', command, message }
+}
+
+function reject(command: VoiceCommand, message: string): ExecuteResult {
+  emitVoiceEvent({ type: 'VOICE_COMMAND_REJECTED', command, message })
+  return { status: 'rejected', command, message }
 }
 
 /**
@@ -483,6 +499,100 @@ export async function executeVoiceCommand(
         const message = 'One-way zone added at pointer'
         emitVoiceEvent({ type: 'VOICE_COMMAND_EXECUTED', command, message })
         return { status: 'executed', command, message }
+      }
+
+      case 'UI_BACK': {
+        if (usePaletteUI.getState().closed) {
+          summonPalette()
+          return done(command, 'Menu opened')
+        }
+        return backPage() ? done(command, `Back to ${PAGE_TITLE[currentPage()]}`) : reject(command, 'Already on a top page — say “open the build page” or pick a tab')
+      }
+
+      case 'UI_PANEL': {
+        const { panel, action } = command
+        if (panel === 'all') {
+          if (action === 'hide' || action === 'collapse') {
+            closePalette()
+            useGuide.getState().closeGuide()
+            return done(command, 'All panels hidden — say “show the menu” to bring it back')
+          }
+          summonPalette()
+          return done(command, 'Menu shown')
+        }
+        if (panel === 'guide') {
+          if (action === 'hide' || action === 'collapse') useGuide.getState().closeGuide()
+          else useGuide.getState().openGuide()
+          return done(command, action === 'hide' || action === 'collapse' ? 'Guide closed' : 'Guide opened')
+        }
+        if (action === 'hide') closePalette()
+        else if (action === 'collapse') setPaletteHidden(true)
+        else summonPalette()
+        return done(command, action === 'hide' ? 'Menu hidden — say “show the menu” to bring it back' : action === 'collapse' ? 'Menu collapsed' : 'Menu shown')
+      }
+
+      case 'UI_OPEN_PAGE': {
+        openPalettePage(command.page)
+        return done(command, `${PAGE_TITLE[command.page]} opened`)
+      }
+
+      case 'EXIT_XR': {
+        return (await exitXR()) ? done(command, 'Left VR') : reject(command, 'Not in VR or AR right now')
+      }
+
+      case 'ROUTE_ADD_WAYPOINT': {
+        // "here" while drafting a Flow route adds to that draft, as before.
+        if (command.here && useFlow.getState().draft) {
+          const at = flowActions.spatialTarget()
+          if (!at) return reject(command, 'Point at the ground first, then say "add waypoint here"')
+          flowActions.addWaypoint(at)
+          return done(command, `Flow waypoint added (${useFlow.getState().draft?.waypoints.length ?? 1})`)
+        }
+        let point: Vec2 | null
+        if (command.here) {
+          const selected = worldActions.getSelectedId()
+          const o = selected ? useWorld.getState().objects[selected] : null
+          point = flowActions.spatialTarget() ?? (o ? [o.position[0], o.position[2]] : null)
+          if (!point) return reject(command, 'Point at the ground first, or say where: "add a waypoint at the goal"')
+        } else {
+          if (command.to === 'goal' && !worldActions.getGoal()) return reject(command, 'There is no goal yet — say "add a waypoint near the robot" instead')
+          if (command.to === 'selected' && !worldActions.getSelectedId()) return reject(command, 'Nothing is selected')
+          point = anchorPoint({ anchor: command.to, direction: command.direction, distance: command.distance })
+        }
+        const r = addWaypoint(point)
+        if (!r.ok) return reject(command, r.error)
+        return done(command, `Waypoint ${r.index + 1} added — say "start the route" to drive it`)
+      }
+
+      case 'ROUTE_REMOVE_LAST': {
+        const r = removeLastWaypoint()
+        return r.ok ? done(command, `Removed the last waypoint (${useRoutePlan.getState().waypoints.length} left)`) : reject(command, r.error)
+      }
+
+      case 'ROUTE_CLEAR': {
+        if (!useRoutePlan.getState().waypoints.length) return reject(command, 'There are no waypoints to clear')
+        clearRoute()
+        return done(command, 'Waypoints cleared')
+      }
+
+      case 'ROUTE_PLAY': {
+        const r = playRoute()
+        return r.ok ? done(command, routeStatusLabel()) : reject(command, r.error)
+      }
+
+      case 'ROUTE_PAUSE': {
+        const r = pauseRoute()
+        return r.ok ? done(command, 'Route paused — say "resume the route" to continue') : reject(command, r.error)
+      }
+
+      case 'ROUTE_STOP': {
+        stopRoute()
+        return done(command, 'Route stopped')
+      }
+
+      case 'ROUTE_NEXT': {
+        const r = skipToNextWaypoint()
+        return r.ok ? done(command, routeStatusLabel()) : reject(command, r.error)
       }
 
       default: {

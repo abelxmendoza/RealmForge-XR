@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { faceYaw } from './PanelMoveBar'
+import { faceYaw } from './faceYaw'
 
 describe('panel facing', () => {
   it('turns the panel front (+z) toward the head', () => {

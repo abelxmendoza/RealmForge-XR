@@ -141,6 +141,38 @@ Parsed by `src/voice/objectCommands.ts`, executed through `src/world/spawn.ts` (
 
 Destructive commands without a connected `ConfirmHandler` return `needs_confirmation` and **do not** mutate the world. Core voice logic never calls `window.confirm()`.
 
+### Getting around in the headset
+
+Parsed by `src/voice/uiCommands.ts` before the other rules. They work on desktop too (they drive the same palette
+state), but are meant for VR, where they are the hands-free way back.
+
+| Spoken example | Command | Action |
+| --- | --- | --- |
+| “Go back” / “Previous page” | `UI_BACK` | Palette back one page (opens the palette if it was closed) |
+| “Hide the menu” / “Show the menu” / “Bring the controls back” | `UI_PANEL` (menu) | Close / summon the Control Palette |
+| “Collapse the palette” / “Expand the panel” | `UI_PANEL` (menu) | Fold it to its title bar / unfold it |
+| “Open the guide” / “Close the help” | `UI_PANEL` (guide) | The controls guide |
+| “Hide everything” / “Hide all” / “Show all the windows” | `UI_PANEL` (all) | Every floating panel at once |
+| “Open the object catalog” / “Go to the build page” / “Open the view tab” | `UI_OPEN_PAGE` | Jump to a palette page (short names need “page” or “tab”) |
+| “Exit VR” / “Leave AR” / “Take me out of VR” | `EXIT_XR` | End the immersive session, back to the desktop editor |
+
+“Go back home” and “go home” still mean `GO_HOME` (leave the editor).
+
+### Robot route stops
+
+The robot's route (`src/nav/routePlan.ts`, the palette's Plan Routes page). Places use the same words as making
+objects: the goal, the robot, the center, “it” / “selected”, plus “N meters north / south / east / west / left / right”.
+
+| Spoken example | Command | Action |
+| --- | --- | --- |
+| “Add a waypoint at the goal” / “Place a stop near the robot” | `ROUTE_ADD_WAYPOINT` | Stop at a named place |
+| “Add a waypoint 10 meters north of the robot” | `ROUTE_ADD_WAYPOINT` | Offset from a place |
+| “Add a waypoint” / “Add waypoint here” | `ROUTE_ADD_WAYPOINT` (`here`) | Where you point (else the selected object). While you're drafting a Flow route, it goes to that draft instead |
+| “Remove the last waypoint” / “Undo waypoint” | `ROUTE_REMOVE_LAST` | |
+| “Clear the waypoints” | `ROUTE_CLEAR` | (“clear the selected route” still clears a Flow route) |
+| “Start the route” / “Play route” / “Resume the route” | `ROUTE_PLAY` | Drive the stops in order (“start a route” still starts a Flow draft) |
+| “Pause the route” / “Stop the route” / “Next stop” | `ROUTE_PAUSE` / `ROUTE_STOP` / `ROUTE_NEXT` | |
+
 ## Microphone requirements
 
 - Secure context (HTTPS / localhost) — already required for WebXR.

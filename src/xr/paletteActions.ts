@@ -22,9 +22,6 @@ async function guardPaletteSave(label: string, run: () => Promise<SaveResult>): 
   }
 }
 
-export async function loadPaletteEnvironment(id: string) {
-  return guardPaletteReplace('Environment load', () => worldActions.loadEnvironment(id, { confirmReplace }))
-}
 export async function loadPaletteSave(id: string) {
   return guardPaletteReplace('Load save', () => worldActions.loadSavedWorld(id, { confirmReplace }))
 }
@@ -36,19 +33,6 @@ export async function savePaletteWorld() {
 /** Start a new world (auto-named "My world N") and save it to the library straight away. */
 export async function createPaletteWorld(template: TemplateId = 'blank') {
   return guardPaletteSave('Create world', () => createWorld(nextWorldName(), template, { confirmReplace }))
-}
-export async function blankPaletteWorld() {
-  return guardPaletteReplace('Blank world', () =>
-    replaceWorld({ name: 'Blank world', objects: [], robotEnabled: false, robotStart: [0, 5], goal: null }, { confirmReplace }),
-  )
-}
-export async function deletePaletteSelection() {
-  const id = worldActions.getSelectedId()
-  if (!id) return
-  if (await requestConfirmation({ type: 'DELETE', message: 'Delete the selected object?' })) {
-    // Resolve against the original object, never a selection changed during confirmation.
-    worldActions.deleteObject(id)
-  }
 }
 export function editPaletteSelection(action: 'rotate-left' | 'rotate-right' | 'grow' | 'shrink' | 'raise' | 'lower' | 'style' | 'roof' | 'duplicate') {
   const id = worldActions.getSelectedId()
@@ -65,7 +49,8 @@ export function editPaletteSelection(action: 'rotate-left' | 'rotate-right' | 'g
     return
   }
   const size = [...object.size] as typeof object.size
-  if (action === 'raise' || action === 'lower') size[1] = Math.max(0.3, size[1] + (action === 'raise' ? 0.25 : -0.25))
+  // 0.5 m, like the keyboard's [ ] and height snapping, so palette edits stay on the snap grid.
+  if (action === 'raise' || action === 'lower') size[1] = Math.max(0.3, size[1] + (action === 'raise' ? 0.5 : -0.5))
   else { const step = action === 'grow' ? 0.5 : -0.5; size[0] = Math.max(0.5, size[0] + step); size[2] = Math.max(0.5, size[2] + step) }
   worldActions.updateObject(object.id, { size })
 }

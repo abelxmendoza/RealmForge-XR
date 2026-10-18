@@ -2,7 +2,8 @@ import type { EnvironmentId } from '../world/environment'
 import type { Tool } from '../world/store'
 import type { ParseResult, VoiceCommand } from './types'
 import { parseObjectCommand } from './objectCommands'
-import { parseOpenSaved, parseWorldCommand } from './worldCommands'
+import { parseGoHome, parseOpenSaved, parseWorldCommand } from './worldCommands'
+import { parseRouteCommand, parseUiCommand } from './uiCommands'
 
 /** Normalize spoken text for keyword matching. */
 export function normalizeTranscript(raw: string): string {
@@ -72,6 +73,13 @@ export function parseDelete(t: string): VoiceCommand | null {
 export function parseVoiceCommand(transcript: string): ParseResult {
   const t = normalizeTranscript(transcript)
   if (!t) return { ok: false, reason: 'empty', transcript }
+
+  // Headset navigation and the robot's route come first: "go back home" is home, but "go back",
+  // "resume the route" and "show the menu" must not fall through to the world / Flow rules below.
+  const home = parseGoHome(t)
+  if (home) return { ok: true, command: home }
+  const ui = parseUiCommand(t) ?? parseRouteCommand(t)
+  if (ui) return { ok: true, command: ui }
 
   // New world, open a saved world, save as a name, resume the last session.
   const worldCommand = parseWorldCommand(t, matchEnvironment)

@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { SORA_WOFF } from '../theme/fonts'
 import { useFrame } from '@react-three/fiber'
 import { Line, Text } from '@react-three/drei'
 import type * as THREE from 'three'
@@ -57,7 +58,7 @@ export function Route() {
               <ringGeometry args={[0.28, 0.48, 24]} />
               <meshBasicMaterial color={done ? '#6c8a9b' : active ? (status === 'no-path' ? '#ef476f' : '#06d6a0') : '#ffd166'} />
             </mesh>
-            <Text position={[0, 0.55, 0]} fontSize={0.45} color="#fff" anchorX="center" anchorY="middle" outlineWidth={0.03} outlineColor="#111" raycast={noHit}>
+            <Text font={SORA_WOFF} position={[0, 0.55, 0]} fontSize={0.45} color="#fff" anchorX="center" anchorY="middle" outlineWidth={0.03} outlineColor="#111" raycast={noHit}>
               {String(i + 1)}
             </Text>
           </group>

@@ -1,13 +1,23 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { getConfirmation, resolveConfirmation, subscribeConfirmation } from '../world/confirmation'
+import { useInXRSession } from '../xr/xrStore'
 
+/**
+ * The desktop confirmation. Not shown during an XR session: a modal <dialog> makes the rest of the page inert,
+ * which also swallowed every XR pointer press, so the palette's own Confirm / Cancel could never be pressed and
+ * the headset was stuck. The VR palette shows the same request; if you leave XR with one pending, this opens.
+ */
 export function ConfirmationDialog() {
   const request = useSyncExternalStore(subscribeConfirmation, getConfirmation, getConfirmation)
+  const inXR = useInXRSession()
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => {
-    if (request) dialog.current?.showModal()
-    else dialog.current?.close()
-  }, [request])
+    const d = dialog.current
+    if (!d) return
+    if (request && !inXR) {
+      if (!d.open) d.showModal()
+    } else if (d.open) d.close()
+  }, [request, inXR])
   const destructive = request?.type === 'DELETE' || /reset|replace|overwrite|delete|leave/i.test(request?.message ?? '')
   return (
     <dialog

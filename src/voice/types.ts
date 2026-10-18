@@ -2,6 +2,7 @@ import type { EnvironmentId } from '../world/environment'
 import type { Tool } from '../world/store'
 import type { AnchorName, Direction, Placement, SpawnSpec } from '../world/spawn'
 import type { TemplateId } from '../world/library'
+import type { PalettePage } from '../xr/paletteUI'
 
 /** Deterministic voice intents — executed only after validation. */
 export type VoiceCommand =
@@ -47,6 +48,19 @@ export type VoiceCommand =
   | { type: 'FLOW_CLEAR_ROUTE' }
   | { type: 'FLOW_AVOID_AREA' }
   | { type: 'FLOW_MAKE_ONE_WAY' }
+  /** Headset navigation (uiCommands.ts): palette back a page, panels, pages, leave XR. */
+  | { type: 'UI_BACK' }
+  | { type: 'UI_PANEL'; panel: 'menu' | 'guide' | 'all'; action: 'show' | 'hide' | 'collapse' | 'expand' }
+  | { type: 'UI_OPEN_PAGE'; page: PalettePage }
+  | { type: 'EXIT_XR' }
+  /** The robot's route stops (nav/routePlan.ts). `here` = where you point (else the selection). */
+  | { type: 'ROUTE_ADD_WAYPOINT'; to?: Exclude<AnchorName, 'auto'>; direction?: Direction; distance?: number; here?: boolean }
+  | { type: 'ROUTE_REMOVE_LAST' }
+  | { type: 'ROUTE_CLEAR' }
+  | { type: 'ROUTE_PLAY' }
+  | { type: 'ROUTE_PAUSE' }
+  | { type: 'ROUTE_STOP' }
+  | { type: 'ROUTE_NEXT' }
 
 export type ParseResult =
   | { ok: true; command: VoiceCommand }

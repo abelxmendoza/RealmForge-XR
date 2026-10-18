@@ -12,7 +12,8 @@ MOLTEN Hackathon, Worldbuild track. Runs in the Meta Quest browser (WebXR) and o
 ```bash
 npm install
 npm run dev        # https://localhost:5173 (and your LAN IP, for the Quest)
-npm test           # grid + A* unit tests
+npm test           # unit tests (navigation, voice, XR panel layouts, palette)
+npm run test:xr    # the app in a simulated Quest 3 (Meta's IWER emulator): enters VR and presses buttons
 npm run build
 ```
 
@@ -42,6 +43,8 @@ We document as we build. Update these in the same change when behavior or state 
 | [docs/BUILD_LOG.md](docs/BUILD_LOG.md) | Append-only work diary |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | User/demo-facing changes |
 | [docs/STATE.md](docs/STATE.md) | Runtime & data state (store, XR, placement) |
+| [docs/vr-control-palette.md](docs/vr-control-palette.md) | The headset panels: how they match the HUD, the ways back, testing |
+| [docs/merge-audit.md](docs/merge-audit.md) | Duplicates from the branch merge: what was fixed, what's left to decide |
 
 ## Controls
 
@@ -65,7 +68,7 @@ Every control is a pointer event, so mouse, controller rays and hand rays behave
 | B / Y while holding (XR) | Deletes the object in your controller's grip. |
 | Voice “delete it” / “get rid of them” | Deletes the selection (or the last batch) at once; “undo” brings it back. |
 | D, M, T, G | Duplicate, cycle material/style, toggle flat/pitched roof, toggle grid snapping. |
-| X, V | Toggle XR rays; toggle Real / Virtual ground. |
+| X, V | Toggle rays in the world (menus always take rays); toggle Real / Virtual ground. |
 | ? / **Guide** | Open the user & controls guide (same content in VR from wrist or control panel). |
 
 A selected object shows drag handles (yellow sphere resizes, blue sphere rotates) and press
@@ -110,17 +113,31 @@ The app asks for WebXR `unbounded` tracking so you can walk past the play-area b
 ground on your real floor (a detected floor plane, or the floor-level reference space). Design notes,
 tuning and limits are in [docs/gestures.md](docs/gestures.md).
 
+### Getting around in the headset
+
+The headset panels look like the desktop HUD (same tabs, buttons and labels; see
+[docs/vr-control-palette.md](docs/vr-control-palette.md)). There is always a way back:
+
+| Want to… | Palette | Wrist menu | Voice |
+| --- | --- | --- | --- |
+| Go back a page | ‹ Back | ‹ Back | "go back" |
+| Get the menu back | — | Menu | "show the menu" |
+| Clear your view | Close / Collapse | Hide all | "hide the menu", "hide everything" |
+| Leave the headset | Exit VR | Exit VR | "exit VR" |
+| Back to the landing page | ← Home | Home | "go home" |
+
 ### Wrist menu (XR)
 
-Turn your **left palm toward your face** (or tilt the top of the left controller toward you) and a small
-panel appears above your wrist. Poke it with your right index finger:
+Hands: turn your **left palm toward your face**. Controllers: press **Y** to pin it open (Y again hides it), or raise
+the left controller and turn its top toward your face. A panel appears above your wrist with Menu, Hide all, Guide,
+‹ Back, Home, Mic, Recenter, Select and Exit VR. Poke it with your right index finger, or point a ray. It also has:
 
-- **Rays on/off**: pointer rays for distant objects (same as X). Grabbing and poking keep working either way
-- **Snap on/off**: same as G
-- **Real / Virtual**: the surface the world stands on (same as V)
-- **1:60 · 1:20 · 1:4 · 1:1**: world scale presets (below)
-- **Recenter**: puts the world back in front of you at the current scale
-- **Mocap**: connects the Smartsuit Pro skeleton ([docs/smartsuit.md](docs/smartsuit.md))
+- **Rays**: rays also edit the world (same as X). Menus always take rays; grabbing and poking work either way
+- **Snap**: same as G
+- **Occl. / Surf.**: occlusion and real surfaces (below)
+- **Copy / Delete / Clear**: when you've framed a group with both hands
+
+World scale (1:60 → 1:1), Real / Virtual ground and motion capture are on the palette's **View** page.
 
 ## Life size and world scale
 

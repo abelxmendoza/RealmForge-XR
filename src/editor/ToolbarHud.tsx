@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { BRAND } from '../theme/brand'
 import { worldActions } from '../world/actions'
 import { confirmReplace, requestConfirmation } from '../world/confirmation'
-import { enterARWithFallback, useXRSessionMeta } from '../xr/session'
+import { enterARWithFallback, enterVRSafely, useXRSessionMeta } from '../xr/session'
 import { usePlacement } from '../xr/placement'
 import { useWorld, type Tool } from '../world/store'
 import { useNav } from '../nav/navigation'
@@ -192,7 +192,7 @@ export function ToolbarHud() {
             type="button"
             className="ghost hud-vr-alt"
             title="VR only — no camera passthrough. Prefer Enter XR on Quest."
-            onClick={() => void xrStore.enterVR()}
+            onClick={() => void enterVRSafely(() => xrStore.enterVR())}
           >
             VR
           </button>

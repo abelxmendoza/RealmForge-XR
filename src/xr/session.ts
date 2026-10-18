@@ -143,3 +143,44 @@ export async function enterARWithFallback(): Promise<EnterARResult> {
   console.warn('[RealmForge] Could not start AR:\n' + joined)
   return { ok: false, errors }
 }
+
+/**
+ * Leave the headset view and return to the desktop editor (palette "Exit VR", wrist "Exit", "exit VR").
+ * Returns false when no session is running. A session that refuses to end is reported, never thrown.
+ */
+export async function exitXR(): Promise<boolean> {
+  const session = webXrManager?.getSession()
+  if (!session) return false
+  try {
+    await session.end()
+    return true
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    useXRSessionMeta.getState().setError(`Couldn't exit XR: ${message}`)
+    console.error('[RealmForge] Exit XR failed', error)
+    return false
+  }
+}
+
+/**
+ * The HUD's VR button: enter immersive-vr through the XR store, reporting a refusal (no headset, the
+ * browser blocked it, the session failed to start) in the HUD instead of an unhandled promise rejection.
+ */
+export async function enterVRSafely(enter: () => Promise<unknown>): Promise<boolean> {
+  const meta = useXRSessionMeta.getState()
+  if (typeof navigator === 'undefined' || navigator.xr == null) {
+    meta.setError('WebXR not available — open in the Quest Browser (https or localhost).')
+    return false
+  }
+  meta.setEntering(true)
+  try {
+    await enter()
+    meta.setEntering(false)
+    return true
+  } catch (error) {
+    const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+    meta.setError(`Couldn't enter VR — ${message}`)
+    console.error('[RealmForge] Enter VR failed', error)
+    return false
+  }
+}

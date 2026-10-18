@@ -11,6 +11,9 @@ import { clientLog } from './tools/client-log.ts'
 // proxy /mocap: Smartsuit bridge (optional; does not block the core demo).
 export default defineConfig({
   plugins: [react(), basicSsl(), assemblyaiTokenPlugin(), clientLog()],
+  // drei's stats-gl pins its own three@0.170: without this, two copies of three ship and three warns
+  // "Multiple instances of Three.js being imported" (objects from one fail instanceof checks in the other).
+  resolve: { dedupe: ['three'] },
   server: {
     host: true,
     allowedHosts: ['.trycloudflare.com'],
