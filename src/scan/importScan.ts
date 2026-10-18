@@ -12,6 +12,8 @@ export const MAX_SCAN_BYTES = 250 * 1024 * 1024
 export const LARGE_SCAN_BYTES = 60 * 1024 * 1024
 /** Triangles sampled for floor and wall detection; the full model is still drawn. */
 const SAMPLE_TRIANGLES = 300_000
+/** Triangles used to work out where the scan blocks movement (all of them, up to this many). */
+export const COLLISION_TRIANGLES = 2_000_000
 
 /** Default ceiling cut, like an architect's floor-plan section. */
 export const DEFAULT_CUT = 2.2
@@ -45,8 +47,8 @@ async function parse(buffer: ArrayBuffer): Promise<THREE.Object3D> {
   }
 }
 
-/** Every triangle of the model in its own coordinates (a sample for very large scans). */
-export function extractTriangles(root: THREE.Object3D): Float32Array {
+/** Every triangle of the model in its own coordinates (an even sample when there are more than `limit`). */
+export function extractTriangles(root: THREE.Object3D, limit = SAMPLE_TRIANGLES): Float32Array {
   root.updateMatrixWorld(true)
   const meshes: THREE.Mesh[] = []
   let total = 0
@@ -57,7 +59,7 @@ export function extractTriangles(root: THREE.Object3D): Float32Array {
     const g = m.geometry
     total += (g.index ? g.index.count : g.attributes.position.count) / 3
   })
-  const step = Math.max(1, Math.ceil(total / SAMPLE_TRIANGLES))
+  const step = Math.max(1, Math.ceil(total / limit))
   const out = new Float32Array(Math.ceil(total / step) * 9 + 9)
   const v = new THREE.Vector3()
   let w = 0
@@ -132,6 +134,7 @@ async function readScan(file: File, { relink, targetId }: { relink: boolean; tar
           opacity: 0.85,
           visible: true,
           cutHeight: DEFAULT_CUT,
+          blocks: true,
         }
   try {
     await putScanBlob(scan.id, blob)

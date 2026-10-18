@@ -13,6 +13,7 @@ import { installLineRaycastGuard } from '../scene/lineRaycastGuard'
 import type { LandingWorldId } from '../landing/entry'
 import { loadAssetManifest } from '../world/assetManifest'
 import { openWorldLibrary } from './WorldLibrary'
+import { installScanNavigation } from '../scan/navSync'
 import '../style.css'
 
 /** Runs once before mounting the editor; a landing selection initializes a fresh scene. */
@@ -33,6 +34,7 @@ export async function initializeEditor(world?: LandingWorldId) {
   startNavigation()
   startActors()
   startFlow()
+  installScanNavigation()
   installHistory()
   installDirtyTracking()
   installAutosave()

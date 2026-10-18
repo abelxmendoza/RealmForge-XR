@@ -206,6 +206,7 @@ function parseScan(v: unknown, warnings: string[]): ScanSettings | undefined {
     finite(s.opacity) &&
     typeof s.visible === 'boolean' &&
     (s.cutHeight === null || s.cutHeight === undefined || finite(s.cutHeight)) &&
+    (s.blocks === undefined || typeof s.blocks === 'boolean') &&
     a && finite(a.floorY) && finiteVec(a.center, 2) && finiteVec(a.footprint, 2) && finite(a.wallAngle) && finiteVec(a.size, 3) && finite(a.triangles)
   if (!ok) {
     warnings.push('Ignored invalid scan settings.')
@@ -230,6 +231,7 @@ function parseScan(v: unknown, warnings: string[]): ScanSettings | undefined {
     visible: s.visible!,
     cutHeight: finite(s.cutHeight) ? Math.min(60, Math.max(0.1, s.cutHeight)) : null,
     ...(typeof s.level === 'string' ? { level: s.level.trim().slice(0, 60) } : {}),
+    ...(typeof s.blocks === 'boolean' ? { blocks: s.blocks } : {}),
   }
 }
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))

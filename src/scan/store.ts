@@ -18,6 +18,8 @@ export interface ScanSettings {
   cutHeight: number | null
   /** Optional user label, e.g. Ground floor, Upstairs, or Outdoors. */
   level?: string
+  /** Walls and furniture at ground level block the robot, attendees and routes (default on). */
+  blocks?: boolean
 }
 
 export const MAX_PROPERTY_SCANS = 24
@@ -39,11 +41,13 @@ interface ScanState {
   modelVersion: number
   /** Changes on world replacement; asynchronous imports must not land in another world. */
   generation: number
+  /** Where scans block movement now (x,z pairs in metres), for the overlay; null when nothing blocks. */
+  blockers: Float32Array | null
 }
 
 export const useScan = create<ScanState>(() => ({
   scans: [], activeId: null, runtime: {}, scan: null, status: 'none', message: null,
-  panelOpen: false, measuring: false, measurePoints: [], version: 0, modelVersion: 0, generation: 0,
+  panelOpen: false, measuring: false, measurePoints: [], version: 0, modelVersion: 0, generation: 0, blockers: null,
 }))
 
 function selection(scans: ScanSettings[], activeId: string | null, runtime: Record<string, ScanRuntime>) {

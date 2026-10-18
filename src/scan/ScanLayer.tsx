@@ -77,11 +77,35 @@ function Section({ scan }: { scan: ScanSettings }) {
   </group>
 }
 
+/** Red 10 cm tiles where scans block movement, shown while the scan panel is open. */
+function BlockedOverlay({ points }: { points: Float32Array }) {
+  const count = points.length / 2
+  const mesh = useMemo(() => {
+    const geo = new THREE.PlaneGeometry(0.1, 0.1).rotateX(-Math.PI / 2)
+    const mat = new THREE.MeshBasicMaterial({ color: '#ff5a4a', transparent: true, opacity: 0.45, depthWrite: false })
+    const m = new THREE.InstancedMesh(geo, mat, count)
+    const at = new THREE.Matrix4()
+    for (let i = 0; i < count; i++) m.setMatrixAt(i, at.makeTranslation(points[i * 2], 0.03, points[i * 2 + 1]))
+    m.raycast = noRaycast
+    m.renderOrder = 5
+    return m
+  }, [points, count])
+  useEffect(() => () => {
+    mesh.geometry.dispose()
+    ;(mesh.material as THREE.Material).dispose()
+    mesh.dispose()
+  }, [mesh])
+  return <primitive object={mesh} />
+}
+
 export function ScanLayer() {
   const scans = useScan((s) => s.scans)
   const points = useScan((s) => s.measurePoints)
+  const blockers = useScan((s) => s.blockers)
+  const panelOpen = useScan((s) => s.panelOpen)
   return <group>
     {scans.filter((s) => s.visible).map((scan) => <Section key={scan.id} scan={scan} />)}
+    {panelOpen && blockers && <BlockedOverlay points={blockers} />}
     {points.map((p, i) => <mesh key={i} position={p} renderOrder={20} raycast={noRaycast}>
       <sphereGeometry args={[0.08, 12, 8]} /><meshBasicMaterial color="#f0a46a" depthTest={false} />
     </mesh>)}

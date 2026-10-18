@@ -38,7 +38,7 @@ export function ScanPanel() {
   return <section className="scan-panel">
     <h3>Property scans</h3>
     <p className="hint">Build a property room by room: kitchen, bathroom, living room, garage, front yard, and backyard. Export mesh GLBs from Scaniverse, then align each section here.</p>
-    <p className="hint">Scans are visual references. Trace solid walls for navigation. Raised floors are viewable, but agents currently navigate one flat ground plane.</p>
+    <p className="hint">Walls and furniture in a scan (0.15–1.8 m above the main floor) block the robot, attendees and planned routes; red tiles show where while this panel is open. Turn <strong>Walls block</strong> off for a section to keep it visual only. Agents walk one flat ground floor, so raised sections are view-only.</p>
     <input ref={file} type="file" accept=".glb,model/gltf-binary" multiple hidden onChange={(e) => { const files = Array.from(e.target.files ?? []); e.target.value = ''; if (files.length) void choose(files) }} />
     <input ref={bundle} type="file" accept=".rfproperty" hidden onChange={(e) => {
       const f = e.target.files?.[0]; e.target.value = ''

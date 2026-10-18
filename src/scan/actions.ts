@@ -1,6 +1,9 @@
 import { scaleFromMeasurement } from './analyze'
 import { DEFAULT_CUT } from './importScan'
-import { patchScan, selectScan, startMeasuring, useScan } from './store'
+import { patchScan, selectScan, startMeasuring, useScan, type ScanSettings } from './store'
+
+/** Sections block movement unless switched off (older saves have no flag). */
+export const blocksMovement = (scan: ScanSettings | null | undefined) => !!scan && scan.blocks !== false
 
 /** Web buttons and immersive tiles call the same metre-based actions. */
 export function nudgeScan(axis: 0 | 1 | 2, metres: number) {
@@ -56,5 +59,6 @@ export function scanControls(): ScanControl[] {
     { id: 'larger', label: 'Scale +1%', run: () => scaleScan(1.01) },
     { id: 'visibility', label: scan?.visible ? 'Hide section' : 'Show section', active: scan?.visible, run: () => { if (scan) patchScan({ visible: !scan.visible }) } },
     { id: 'ceiling', label: scan?.cutHeight === null ? 'Cut ceiling' : 'Show ceiling', active: scan?.cutHeight !== null, run: () => { if (scan) patchScan({ cutHeight: scan.cutHeight === null ? DEFAULT_CUT : null }) } },
+    { id: 'blocks', label: blocksMovement(scan) ? 'Walls block: on' : 'Walls block: off', active: blocksMovement(scan), run: () => { if (scan) patchScan({ blocks: !blocksMovement(scan) }) } },
   ].map((control) => ({ ...control, disabled: !scan }))
 }
