@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { worldActions } from '../world/actions'
 import { useWorld } from '../world/store'
 import { useEditor } from '../editor/settings'
@@ -14,7 +14,9 @@ export function ActorPanel() {
   const kind = useEditor((s) => s.actorKind)
   const appendRoute = useEditor((s) => s.actorAppendRoute)
   const message = useEditor((s) => s.actorMessage)
-  const destinations = useWorld((s) => Object.values(s.objects).filter((o) => o.destinationRole))
+  // Select the stable objects map, then derive: a selector returning a new array each call loops forever (zustand v5).
+  const objects = useWorld((s) => s.objects)
+  const destinations = useMemo(() => Object.values(objects).filter((o) => o.destinationRole), [objects])
   const selected = selectedId ? actors[selectedId] : null
   const [name, setName] = useState(selected?.name || '')
   useEffect(() => setName(selected?.name || ''), [selected?.id, selected?.name])
