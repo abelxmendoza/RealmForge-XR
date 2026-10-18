@@ -7,7 +7,7 @@ import { WORLD, type ObjectKind, type Vec2, type Vec3, type WorldObject } from '
 import { BUILDING_STYLES, PALLET_STYLES, PLATFORM_MATERIALS, RACK_STYLES, TREE_STYLES, WALL_MATERIALS } from './catalog'
 import type { WorldSnapshot } from './store'
 import type { EnvironmentId } from './environment'
-import type { ScanSettings } from '../scan/store'
+import { MAX_PROPERTY_SCANS, MAX_PROPERTY_BYTES, type ScanSettings } from '../scan/store'
 
 /** Environment ids a world file may carry. Kept in step with ENVIRONMENTS by a test (importing it here would be circular). */
 export const ENVIRONMENT_IDS_FOR_FILES: readonly EnvironmentId[] = [
@@ -55,6 +55,7 @@ export interface WorldFile {
   trafficZones?: TrafficZone[]
   /** Alignment of an imported 3D scan. The model itself stays on the device that imported it. */
   scan?: ScanSettings
+  scans?: ScanSettings[]
 }
 
 /** A validated world ready for store.loadWorld(), plus its name. */
@@ -63,6 +64,7 @@ export interface ParsedWorld extends WorldSnapshot {
   name: string
   flow?: FlowSnapshot
   scan?: ScanSettings
+  scans?: ScanSettings[]
 }
 
 export type ParseResult = { ok: true; world: ParsedWorld; warnings: string[] } | { ok: false; error: string }
@@ -113,6 +115,7 @@ export function serializeWorld(
     routes?: PlannedRoute[]
     trafficZones?: TrafficZone[]
     scan?: ScanSettings
+    scans?: ScanSettings[]
   },
   name: string,
   now = new Date(),
@@ -133,7 +136,7 @@ export function serializeWorld(
     goal: world.goal ? [world.goal[0], world.goal[1]] : null,
     ...(routes?.length ? { routes } : {}),
     ...(trafficZones?.length ? { trafficZones } : {}),
-    ...(world.scan ? { scan: structuredClone(world.scan) } : {}),
+    ...(world.scans?.length ? { scans: structuredClone(world.scans), ...(world.scans.length === 1 ? { scan: structuredClone(world.scans[0]) } : {}) } : world.scan ? { scan: structuredClone(world.scan) } : {}),
   }
 }
 
@@ -225,7 +228,8 @@ function parseScan(v: unknown, warnings: string[]): ScanSettings | undefined {
     offset: [s.offset![0], s.offset![1], s.offset![2]],
     opacity: Math.min(1, Math.max(0.05, s.opacity!)),
     visible: s.visible!,
-    cutHeight: finite(s.cutHeight) ? s.cutHeight : null,
+    cutHeight: finite(s.cutHeight) ? Math.min(60, Math.max(0.1, s.cutHeight)) : null,
+    ...(typeof s.level === 'string' ? { level: s.level.trim().slice(0, 60) } : {}),
   }
 }
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
@@ -287,7 +291,22 @@ export function parseWorld(input: unknown, newId: (kind: ObjectKind) => string):
   const environmentId = typeof data.environmentId === 'string' && ENVIRONMENT_IDS_FOR_FILES.includes(data.environmentId as EnvironmentId)
     ? data.environmentId as WorldFile['environmentId'] : undefined
   const flow = parseFlow(data, warnings)
-  const scan = data.scan === undefined ? undefined : parseScan(data.scan, warnings)
+  let scans: ScanSettings[] | undefined
+  if (data.scans !== undefined) {
+    if (!Array.isArray(data.scans) || data.scans.length > MAX_PROPERTY_SCANS) return { ok: false, error: 'Invalid scan sections (maximum 24).' }
+    scans = []
+    const ids = new Set<string>()
+    for (const value of data.scans) {
+      const section = parseScan(value, warnings)
+      if (!section) continue
+      if (ids.has(section.id)) return { ok: false, error: 'Duplicate scan section IDs.' }
+      ids.add(section.id)
+      scans.push(section)
+    }
+    if (scans.reduce((n, s) => n + s.bytes, 0) > MAX_PROPERTY_BYTES) return { ok: false, error: 'Property scans exceed 250 MB.' }
+  }
+  const scan = scans === undefined && data.scan !== undefined ? parseScan(data.scan, warnings) : undefined
+  if (scan && scan.bytes > MAX_PROPERTY_BYTES) return { ok: false, error: 'Property scans exceed 250 MB.' }
   return {
     ok: true,
     world: {
@@ -299,7 +318,7 @@ export function parseWorld(input: unknown, newId: (kind: ObjectKind) => string):
       ...(parsedActors.actors.length ? { actors: parsedActors.actors } : {}),
       ...(environmentId ? { environmentId } : {}),
       ...(flow ? { flow } : {}),
-      ...(scan ? { scan } : {}),
+      ...(scans ? { scans, ...(scans.length === 1 ? { scan: scans[0] } : {}) } : scan ? { scan } : {}),
     },
     warnings,
   }

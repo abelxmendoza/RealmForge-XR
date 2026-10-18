@@ -11,6 +11,7 @@ import { useMocap } from '../mocap/store'
 import { useNav } from '../nav/navigation'
 import { useRoutePlan } from '../nav/routePlan'
 import { useAttendee } from '../sim/attendee'
+import { useScan } from '../scan/store'
 import { useAssetLibrary } from '../world/assetLibrary'
 import { getConfirmation, subscribeConfirmation } from '../world/confirmation'
 import { subscribeHistory } from '../world/history'
@@ -55,6 +56,7 @@ function PaletteContent() {
   useAssetLibrary((s) => s.version)
   usePlacement((s) => s.status)
   usePaletteOffsets()
+  useScan()
   useSyncExternalStore(subscribeActorRuntime, actorRuntimeRevision, actorRuntimeRevision)
 
   useEffect(() => subscribeHistory(() => setHistoryTick((n) => n + 1)), [])

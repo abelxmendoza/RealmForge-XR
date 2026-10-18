@@ -35,6 +35,7 @@ describe('voice: getting around in the headset', () => {
     expect(cmd('go to the build page')).toEqual({ type: 'UI_OPEN_PAGE', page: 'build' })
     expect(cmd('open the view tab')).toEqual({ type: 'UI_OPEN_PAGE', page: 'view' })
     expect(cmd('open plan routes')).toEqual({ type: 'UI_OPEN_PAGE', page: 'plan' })
+    expect(cmd('open the property scans')).toEqual({ type: 'UI_OPEN_PAGE', page: 'scans' })
   })
 
   it('leaves the existing commands alone', () => {

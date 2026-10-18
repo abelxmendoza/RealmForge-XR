@@ -51,6 +51,8 @@ import { usePlacement } from './placement'
 import { toggleRealSurfaces } from './realSurfaces'
 import { scanRoom } from './roomTracker'
 import { exitXR } from './session'
+import { calibrateScan, cycleScan, scanControls, showAllScans, soloScan } from '../scan/actions'
+import { openScanPanel, patchScan, removeScan, startMeasuring, useScan } from '../scan/store'
 import { readSpatial } from './spatialSave'
 
 export const PALETTE_WIDTH = 560
@@ -98,6 +100,12 @@ export interface PaletteSnapshot {
   confirm: { id: number; message: string } | null
   busy: boolean
   offsets: Record<string, number>
+  /** The selected property-scan section (src/scan), and the distance typed in for scale calibration. */
+  scan: { name: string; level: string; floorY: number; visible: boolean; opacity: number; cutHeight: number | null } | null
+  scanStatus: string
+  measuring: boolean
+  measurePoints: number
+  scanDistance: number
 }
 
 export interface PaletteModel {
@@ -141,7 +149,65 @@ function pageContent(s: PaletteSnapshot): { items: ButtonItem[]; actions: Record
       add(btn('page:events', 'Event objects ›', on(s.tool === 'event')), () => openPage('events'))
       add(btn('page:actors', 'Actors ›', on(s.tool === 'actor')), () => openPage('actors'))
       add(btn('page:brush', 'Materials ›'), () => openPage('brush'))
+      add(btn('page:scans', 'Property scans ›'), () => openPage('scans'))
       add(btn('snap', s.snap ? 'Align to Grid · On' : 'Align to Grid', on(s.snap)), () => ed().set({ snap: !s.snap }))
+      break
+    }
+    case 'scans': {
+      const sc = s.scan
+      const no = { disabled: !sc }
+      add(btn('scan:next', 'Next scan section', no), cycleScan)
+      add(btn('scan:visible', sc?.visible ? 'Hide section' : 'Show section', no), () => sc && patchScan({ visible: !sc.visible }))
+      add(btn('page:scan-align', 'Align section ›', no), () => openPage('scan-align'))
+      add(btn('page:scan-display', 'Display section ›', no), () => openPage('scan-display'))
+      add(btn('page:scan-measure', 'Measure scale ›', { disabled: !sc?.visible || s.scanStatus !== 'ready' }), () => openPage('scan-measure'))
+      add(btn('scan:solo', 'Only this section', no), soloScan)
+      add(btn('scan:all', 'Show all sections', no), showAllScans)
+      // Native file pickers and downloads aren't reliable inside an immersive session: open the scan panel and
+      // leave XR, so the same panel is usable in the headset's ordinary browser.
+      add(btn('scan:files', 'Files / names (exits VR)'), () => {
+        openScanPanel(true)
+        return exitXR()
+      })
+      add(btn('scan:remove', 'Remove section', { variant: 'danger', ...no }), async () => {
+        if (sc && (await requestConfirmation({ type: 'DELETE', message: `Remove “${sc.name}” from this property?` }))) removeScan()
+      })
+      break
+    }
+    case 'scan-align':
+    case 'scan-display': {
+      const display = s.page === 'scan-display'
+      for (const c of scanControls().filter((c) => (c.id === 'visibility' || c.id === 'ceiling') === display))
+        add(btn(`scan:${c.id}`, c.label, { disabled: c.disabled, ...on(!!c.active) }), c.run)
+      if (display) {
+        const sc = s.scan
+        const cut = sc?.cutHeight ?? null
+        add(btn('scan:clearer', 'More transparent', { disabled: !sc }), () => sc && patchScan({ opacity: Math.max(0.1, sc.opacity - 0.1) }))
+        add(btn('scan:solid', 'More opaque', { disabled: !sc }), () => sc && patchScan({ opacity: Math.min(1, sc.opacity + 0.1) }))
+        add(btn('scan:cut-down', 'Ceiling cut −0.1 m', { disabled: cut == null }), () => cut != null && patchScan({ cutHeight: Math.max(0.5, cut - 0.1) }))
+        add(btn('scan:cut-up', 'Ceiling cut +0.1 m', { disabled: cut == null }), () => cut != null && patchScan({ cutHeight: Math.min(12, cut + 0.1) }))
+        add(btn('scan:level', 'Floor / area label', { disabled: !sc }), () => {
+          const labels = ['Ground floor', 'Upstairs', 'Outdoors']
+          if (sc) patchScan({ level: labels[(labels.indexOf(sc.level) + 1) % labels.length] })
+        })
+      }
+      break
+    }
+    case 'scan-measure': {
+      const d = s.scanDistance
+      const setD = (v: number) => usePaletteOffsets.setState({ scanDistanceCm: Math.max(1, Math.round(v * 100)) })
+      add(btn('scan:pick', 'Pick two points', { ...on(s.measuring), disabled: !s.scan?.visible || s.scanStatus !== 'ready' }), () => {
+        useEditor.getState().set({ rays: true })
+        startMeasuring()
+      })
+      add(btn('scan:d-1', 'Real distance −1 m'), () => setD(d - 1))
+      add(btn('scan:d+1', 'Real distance +1 m'), () => setD(d + 1))
+      add(btn('scan:d-0.01', 'Real distance −0.01 m'), () => setD(d - 0.01))
+      add(btn('scan:d+0.01', 'Real distance +0.01 m'), () => setD(d + 0.01))
+      add(btn('scan:apply', `Apply ${d.toFixed(2)} m`, { variant: 'primary', disabled: s.measurePoints !== 2 }), () =>
+        calibrateScan(d) ? undefined : { ok: false, error: 'Pick two distinct points and set a valid distance.' },
+      )
+      add(btn('scan:cancel', 'Cancel measurement'), () => startMeasuring(false))
       break
     }
     case 'edit': {
@@ -304,6 +370,13 @@ async function deleteActor() {
   if (actor && (await requestConfirmation({ type: 'DELETE', message: `Delete ${actor.name}?` }))) worldActions.removeActor(actor.id)
 }
 
+function scanMessage(s: PaletteSnapshot): string {
+  const sc = s.scan
+  if (!sc) return 'Add GLB sections or open a property bundle via Files (exits VR).'
+  if (s.page === 'scan-measure' && s.measuring) return `Pick two scan points: ${s.measurePoints}/2. Real distance: ${s.scanDistance.toFixed(2)} m.`
+  return `${sc.name} · ${sc.level || 'Property'} · floor ${sc.floorY.toFixed(2)} m · ${s.scanStatus}. Scans are visual; navigation uses the flat ground plane.`
+}
+
 const STATUS_TEXT: Record<string, string> = { idle: 'No goal set', moving: 'Robot moving', paused: 'Route paused', arrived: 'Arrived', 'no-path': 'No route to goal' }
 
 function statusChip(s: PaletteSnapshot): Item {
@@ -320,7 +393,10 @@ export function buildPalette(s: PaletteSnapshot): PaletteModel {
     exit: () => exitXR(),
     collapse: () => setPaletteHidden(!s.collapsed),
     close: () => closePalette(),
-    back: () => backPage(),
+    back: () => {
+      if (s.page === 'scan-measure' && s.measuring) startMeasuring(false)
+      return backPage()
+    },
   }
   const title: Card = {
     type: 'card',
@@ -368,7 +444,10 @@ export function buildPalette(s: PaletteSnapshot): PaletteModel {
         type: 'row',
         gap: 4,
         items: TOOLBAR_SECTIONS.map((t) => {
-          actions[`section:${t.id}`] = () => openPage(t.id)
+          actions[`section:${t.id}`] = () => {
+            if (s.measuring) startMeasuring(false)
+            openPage(t.id)
+          }
           const activeTab = section === t.id || (!section && sectionOf(s.page) === t.id)
           return btn(`section:${t.id}`, t.label, { variant: activeTab ? 'on' : 'tab', flex: t.label.length > 6 ? 1.35 : 1 })
         }),
@@ -395,7 +474,7 @@ export function buildPalette(s: PaletteSnapshot): PaletteModel {
     gap: 6,
     blocks: [
       { type: 'row', items: [statusChip(s)] },
-      { type: 'row', items: [{ type: 'text', text: s.busy ? 'Working…' : s.message, size: 11.5, color: 'muted', maxLines: 2, flex: 1 }] },
+      { type: 'row', items: [{ type: 'text', text: s.busy ? 'Working…' : s.page.startsWith('scan') ? scanMessage(s) : s.message, size: 11.5, color: 'muted', maxLines: 2, flex: 1 }] },
     ],
   })
 
@@ -431,6 +510,7 @@ export function sectionOf(page: PalettePage): ToolbarSection {
   if (isSection(page)) return page
   if (page === 'saved') return 'save'
   if (page === 'styles' || page === 'room') return 'view'
+  // scans and its sub-pages live under Build, like the HUD's Property scans panel.
   return 'build'
 }
 
@@ -445,6 +525,7 @@ export function readPaletteSnapshot(local: Pick<PaletteSnapshot, 'voice' | 'mess
   const mocap = useMocap.getState()
   const actor = w.selectedActorId ? w.actors[w.selectedActorId] : undefined
   const page = currentPage(ui)
+  const scanState = useScan.getState()
   return {
     ...local,
     page,
@@ -481,5 +562,19 @@ export function readPaletteSnapshot(local: Pick<PaletteSnapshot, 'voice' | 'mess
     history: getHistoryState(),
     guideOpen: useGuide.getState().open,
     offsets: usePaletteOffsets.getState(),
+    scan: scanState.scan
+      ? {
+          name: scanState.scan.name,
+          level: scanState.scan.level ?? '',
+          floorY: scanState.scan.offset[1],
+          visible: scanState.scan.visible,
+          opacity: scanState.scan.opacity,
+          cutHeight: scanState.scan.cutHeight,
+        }
+      : null,
+    scanStatus: scanState.status,
+    measuring: scanState.measuring,
+    measurePoints: scanState.measurePoints.length,
+    scanDistance: (usePaletteOffsets.getState().scanDistanceCm ?? 100) / 100,
   }
 }

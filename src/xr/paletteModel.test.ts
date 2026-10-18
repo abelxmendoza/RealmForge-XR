@@ -45,9 +45,14 @@ const base: PaletteSnapshot = {
   confirm: null,
   busy: false,
   offsets: {},
+  scan: { name: 'Ground floor scan', level: 'Ground floor', floorY: 0, visible: true, opacity: 1, cutHeight: null },
+  scanStatus: 'ready',
+  measuring: false,
+  measurePoints: 0,
+  scanDistance: 1,
 }
 
-const PAGES: PalettePage[] = ['build', 'edit', 'plan', 'simulate', 'view', 'save', 'assets', 'events', 'actors', 'actor-settings', 'brush', 'saved', 'styles', 'room']
+const PAGES: PalettePage[] = ['build', 'edit', 'plan', 'simulate', 'view', 'save', 'assets', 'events', 'actors', 'actor-settings', 'brush', 'saved', 'styles', 'room', 'scans', 'scan-align', 'scan-display', 'scan-measure']
 
 describe('VR palette model', () => {
   it.each(PAGES)('%s: every control fits the panel, has an action and none overlap', (page) => {
@@ -105,6 +110,23 @@ describe('VR palette model', () => {
     expect(hits.find((h) => h.id === 'tool:wall')?.disabled).toBe(true)
     expect(hits.find((h) => h.id === 'exit')?.disabled).toBe(false)
     expect(hits.find((h) => h.id === 'close')?.disabled).toBe(false)
+  })
+})
+
+describe('property scans in VR', () => {
+  it('Build links to Property scans, and scan pages light the Build tab', () => {
+    const ids = layoutPanel(buildPalette(base).spec, measure).hits.map((h) => h.id)
+    expect(ids).toContain('page:scans')
+    expect(sectionOf('scan-measure')).toBe('build')
+  })
+
+  it('without a scan only Files is usable; Apply needs two measured points', () => {
+    const none = layoutPanel(buildPalette({ ...base, page: 'scans', canBack: true, scan: null, scanStatus: 'none' }).spec, measure).hits
+    expect(none.find((h) => h.id === 'scan:files')?.disabled).toBe(false)
+    expect(none.find((h) => h.id === 'scan:next')?.disabled).toBe(true)
+    const measuring = (n: number) => layoutPanel(buildPalette({ ...base, page: 'scan-measure', canBack: true, measuring: true, measurePoints: n }).spec, measure).hits
+    expect(measuring(1).find((h) => h.id === 'scan:apply')?.disabled).toBe(true)
+    expect(measuring(2).find((h) => h.id === 'scan:apply')?.disabled).toBe(false)
   })
 })
 

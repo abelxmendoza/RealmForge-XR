@@ -1,3 +1,4 @@
+import { useScan } from '../scan/store'
 import { useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -167,6 +168,7 @@ function Obstacle({ o }: { o: WorldObject }) {
   }
 
   const onDown = (e: ThreeEvent<PointerEvent>) => {
+    if (useScan.getState().measuring) return
     // Walkable surfaces (slabs, roads, plazas) cover the ground: placement tools land on the ground below
     // (otherwise nothing could be placed on a warehouse floor slab).
     if (useWorld.getState().tool !== 'select' && !blocksNavigation(o)) return applyGroundTool(e)
@@ -189,6 +191,7 @@ function Obstacle({ o }: { o: WorldObject }) {
   }
 
   const onResizeDown = (e: ThreeEvent<PointerEvent>) => {
+    if (useScan.getState().measuring) return
     // Keep the opposite corner fixed and stretch toward the pointer, in the object's own frame.
     const fixed = toWorld(o, -w / 2, -d / 2)
     beginDrag(e, {
@@ -209,6 +212,7 @@ function Obstacle({ o }: { o: WorldObject }) {
   }
 
   const onRotateDown = (e: ThreeEvent<PointerEvent>) => {
+    if (useScan.getState().measuring) return
     beginDrag(e, {
       move: (p) => {
         const cur = useWorld.getState().objects[o.id]
@@ -225,6 +229,7 @@ function Obstacle({ o }: { o: WorldObject }) {
 
   // One-shot buttons: a press is the whole action (works the same for mouse, rays and hands).
   const press = (action: () => void) => (e: ThreeEvent<PointerEvent>) => {
+    if (useScan.getState().measuring) return
     e.stopPropagation()
     action()
   }
@@ -249,7 +254,7 @@ function Obstacle({ o }: { o: WorldObject }) {
       >
         <GrabHandle
           targetRef={groupRef}
-          filter={(e) => e.pointerType === 'grab'}
+          filter={(e) => !useScan.getState().measuring && e.pointerType === 'grab'}
           translate={{ y: false }}
           rotate="y"
           scale={{ uniform: true }}

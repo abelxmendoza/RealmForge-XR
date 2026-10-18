@@ -51,6 +51,7 @@ const PAGES: { words: RegExp; page: PalettePage; bare: boolean }[] = [
   { words: /saved worlds|my saves|load world/, page: 'saved', bare: true },
   { words: /real room|room settings/, page: 'room', bare: true },
   { words: /styles/, page: 'styles', bare: true },
+  { words: /property scans|scans|scan sections/, page: 'scans', bare: true },
   { words: /plan routes|route planning|planning/, page: 'plan', bare: true },
   { words: /build|building tools/, page: 'build', bare: true },
   { words: /edit|editing tools/, page: 'edit', bare: true },

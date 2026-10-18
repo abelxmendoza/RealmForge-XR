@@ -5,7 +5,10 @@ import type { ToolbarSection } from '../editor/toolbar'
 import { getWebXRManager } from './session'
 
 /** Every page of the in-VR Control Palette: the six HUD sections plus their sub-pages. */
-export type PalettePage = ToolbarSection | 'assets' | 'events' | 'actors' | 'actor-settings' | 'brush' | 'saved' | 'styles' | 'room'
+export type PalettePage =
+  | ToolbarSection
+  | 'assets' | 'events' | 'actors' | 'actor-settings' | 'brush' | 'saved' | 'styles' | 'room'
+  | 'scans' | 'scan-align' | 'scan-display' | 'scan-measure'
 
 const SECTIONS: readonly ToolbarSection[] = ['build', 'edit', 'plan', 'simulate', 'view', 'save']
 export const isSection = (page: PalettePage): page is ToolbarSection => (SECTIONS as readonly string[]).includes(page)
@@ -20,6 +23,10 @@ export const PAGE_PARENT: Partial<Record<PalettePage, PalettePage>> = {
   saved: 'save',
   styles: 'view',
   room: 'view',
+  scans: 'build',
+  'scan-align': 'scans',
+  'scan-display': 'scans',
+  'scan-measure': 'scans',
 }
 
 export const PAGE_TITLE: Record<PalettePage, string> = {
@@ -37,6 +44,10 @@ export const PAGE_TITLE: Record<PalettePage, string> = {
   saved: 'Saved worlds',
   styles: 'Styles',
   room: 'Real room',
+  scans: 'Property scans',
+  'scan-align': 'Align section',
+  'scan-display': 'Display section',
+  'scan-measure': 'Measure scale',
 }
 
 /**
