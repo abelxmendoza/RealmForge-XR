@@ -1,8 +1,11 @@
 import { BRAND } from '../theme/brand'
-import { useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { editorHref, LANDING_TEMPLATES, LANDING_VENUES, LANDING_WORLDS, type LandingWorldId } from './entry'
 import { WorldDiorama } from './WorldDiorama'
 import { manualInstallHint, promptInstall, useInstallState } from './install'
+
+const VrDemoReplay = lazy(() => import('./VrDemoReplay'))
+const DEMO_HASH = '#vr-demo'
 
 const GITHUB = 'https://github.com/abelxmendoza/RealmForge-XR'
 
@@ -51,6 +54,41 @@ function TemplateCard({
   )
 }
 
+function InstallButton({ className, hintClassName }: { className: string; hintClassName?: string }) {
+  const state = useInstallState()
+  const [hint, setHint] = useState<string | null>(null)
+
+  if (state === 'installed') {
+    return (
+      <span className={`${className} rf-install-done`} role="status">
+        App installed ✓
+      </span>
+    )
+  }
+
+  const onClick = async () => {
+    if (state === 'available') {
+      setHint(null)
+      await promptInstall()
+    } else {
+      setHint(manualInstallHint())
+    }
+  }
+
+  return (
+    <span className="rf-install">
+      <button type="button" className={className} onClick={() => void onClick()}>
+        Install app <span aria-hidden="true">↓</span>
+      </button>
+      {hintClassName && (
+        <span className={hintClassName} aria-live="polite">
+          {hint}
+        </span>
+      )}
+    </span>
+  )
+}
+
 function enterLabel(id: LandingWorldId) {
   if (id === 'empty-event-venue') return 'Enter Empty Space'
   if (id === 'job-fair') return 'Enter the venue'
@@ -60,6 +98,17 @@ function enterLabel(id: LandingWorldId) {
 export default function LandingPage() {
   const [world, setWorld] = useState<LandingWorldId>('empty-event-venue')
   const selected = LANDING_TEMPLATES.find((item) => item.id === world)!
+  const [demoOpen, setDemoOpen] = useState(() => window.location.hash === DEMO_HASH)
+  const openDemo = () => setDemoOpen(true)
+  const closeDemo = useCallback(() => {
+    setDemoOpen(false)
+    if (window.location.hash === DEMO_HASH) history.replaceState(null, '', window.location.pathname + window.location.search)
+  }, [])
+  useEffect(() => {
+    const onHash = () => window.location.hash === DEMO_HASH && setDemoOpen(true)
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
 
   return (
     <div className="rf-landing" id="top">
@@ -100,7 +149,7 @@ export default function LandingPage() {
               <span>your space.</span>
             </h1>
             <p className="rf-intro">
-              Shape a miniature world — or stage an event venue.
+              Shape a miniature world — or stage an event venue.{' '}
               <br />
               Place booths and barriers, start a virtual attendee, and see how the layout shapes the flow.
             </p>
@@ -108,6 +157,9 @@ export default function LandingPage() {
               <a className="rf-button" href={editorHref(selected.id)}>
                 {enterLabel(selected.id)} <Arrow />
               </a>
+              <button className="rf-button rf-button-ghost rf-demo-launch" onClick={openDemo}>
+                <i aria-hidden="true">▶</i> Watch the VR demo
+              </button>
               <a className="rf-text-link" href="#events">
                 Browse event venues <span aria-hidden="true">↓</span>
               </a>
@@ -206,6 +258,17 @@ export default function LandingPage() {
               <TemplateCard key={item.id} item={item} kind="VENUE" />
             ))}
           </div>
+
+          <button className="rf-demo-banner" onClick={openDemo}>
+            <span className="rf-demo-banner-play" aria-hidden="true">
+              ▶
+            </span>
+            <span>
+              <b>See the whole workflow from inside the headset</b>
+              <small>48-second simulated POV replay · place booths, start the attendee, watch the route replan</small>
+            </span>
+            <Arrow />
+          </button>
 
           <p className="rf-event-note">
             Simulation is a design sketch for layout flow — not a certified crowd, egress, or accessibility model.
@@ -330,6 +393,18 @@ export default function LandingPage() {
           <p className="rf-final-note">Browser-based — no install needed to start building. Install it to launch from your desktop, phone or headset like any other app.</p>
         </section>
       </main>
+
+      {demoOpen && (
+        <Suspense
+          fallback={
+            <div className="rf-demo-backdrop">
+              <p className="rf-demo-loading">Loading the headset replay…</p>
+            </div>
+          }
+        >
+          <VrDemoReplay onClose={closeDemo} />
+        </Suspense>
+      )}
 
       <footer className="rf-footer rf-shell">
         <div>
