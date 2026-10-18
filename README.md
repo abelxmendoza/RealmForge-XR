@@ -254,4 +254,4 @@ See [warehouse catalog workflow and validation](docs/warehouse-catalog.md).
 The root URL introduces RealmForge XR. **Launch editor** opens `?editor=1`; environment cards
 open the editor with the selected template (`?editor=1&world=warehouse`, for example).
 The world editor and XR modules load only when the editor is launched.
-See [landing page verification](docs/landing-page.md).
+See [landing page verification](docs/landing-page.md). The page's demo replays are recorded by script: `npm run demos:record` (details in the same doc).

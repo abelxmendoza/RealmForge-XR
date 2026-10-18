@@ -6,7 +6,13 @@ Dates are UTC.
 
 ## [Unreleased]
 
+### Added
+
+- Landing page "Watch it in action" section: four scripted replays of the real editor (build a scene, robot replan, job fair attendee, VR grab in an emulated Quest 3). Re-record with `npm run demos:record`.
+
 ### Fixed
+
+- Landing page crashed on load: the Install app button's component was lost in a merge.
 
 - Docs/examples cleanup: demo readiness reflects `main`; stale “do not merge Quest” / missing XR confirm notes removed; XR menu example points at production palette + confirmation.
 - Voice spawn for event `prop` objects: requires `catalogId`, wired through `propFromCatalog`; venue phrases (booth, registration desk, stage, …).
