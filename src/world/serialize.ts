@@ -6,6 +6,18 @@ import { isAssetId, isDestinationRole } from './assetTypes'
 import { WORLD, type ObjectKind, type Vec2, type Vec3, type WorldObject } from './types'
 import { BUILDING_STYLES, PALLET_STYLES, PLATFORM_MATERIALS, RACK_STYLES, TREE_STYLES, WALL_MATERIALS } from './catalog'
 import type { WorldSnapshot } from './store'
+import type { EnvironmentId } from './environment'
+
+/** Environment ids a world file may carry. Kept in step with ENVIRONMENTS by a test (importing it here would be circular). */
+export const ENVIRONMENT_IDS_FOR_FILES: readonly EnvironmentId[] = [
+  'forge-district',
+  'mars-outpost',
+  'warehouse',
+  'empty-event-venue',
+  'job-fair',
+  'factory-floor',
+  'music-festival',
+]
 
 /**
  * Versioned, portable JSON format for a whole world.
@@ -31,7 +43,7 @@ export interface WorldFile {
   name: string
   savedAt: string
   actors?: Actor[]
-  environmentId?: 'forge-district' | 'mars-outpost' | 'warehouse' | 'empty-event-venue' | 'job-fair'
+  environmentId?: EnvironmentId
   objects: WorldObject[]
   robotEnabled?: boolean
   robotStart: Vec2
@@ -224,7 +236,7 @@ export function parseWorld(input: unknown, newId: (kind: ObjectKind) => string):
   const parsedActors = parseActors(data.actors, seen, () => newWorldId('actor'))
   if (!parsedActors.ok) return parsedActors
   warnings.push(...parsedActors.warnings)
-  const environmentId = typeof data.environmentId === 'string' && ['forge-district', 'mars-outpost', 'warehouse', 'empty-event-venue', 'job-fair'].includes(data.environmentId)
+  const environmentId = typeof data.environmentId === 'string' && ENVIRONMENT_IDS_FOR_FILES.includes(data.environmentId as EnvironmentId)
     ? data.environmentId as WorldFile['environmentId'] : undefined
   const flow = parseFlow(data, warnings)
   return {

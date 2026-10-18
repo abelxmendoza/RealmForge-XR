@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { BuildingStyle, MaterialId } from './types'
 import type { WorldSnapshot } from './store'
 import { useWorld } from './store'
-import { emptyEventVenue, jobFair, forgeDistrict, marsOutpost, warehouse } from './presets'
+import { emptyEventVenue, factoryFloor, jobFair, forgeDistrict, marsOutpost, musicFestival, warehouse, type TemplateSnapshot } from './presets'
 import { replaceWorld, type ReplaceOptions, type ReplaceResult } from './persistence'
 import { useEditor } from '../editor/settings'
 import { fail, safeConfirm, toErrorMessage } from './errors'
@@ -14,7 +14,14 @@ import { resetAttendeeSimulation } from '../sim/attendee'
  * (pass `confirmReplace` for an in-headset dialog).
  */
 
-export type EnvironmentId = 'forge-district' | 'mars-outpost' | 'warehouse' | 'empty-event-venue' | 'job-fair'
+export type EnvironmentId =
+  | 'forge-district'
+  | 'mars-outpost'
+  | 'warehouse'
+  | 'empty-event-venue'
+  | 'job-fair'
+  | 'factory-floor'
+  | 'music-festival'
 
 export interface EnvironmentLighting {
   /** Desktop / VR clear color (ignored in immersive-ar passthrough). */
@@ -50,8 +57,8 @@ export interface EnvironmentConfig {
   description: string
   appearance: EnvironmentAppearance
   defaults: EnvironmentDefaults
-  /** Fresh world snapshot (new ids every call). */
-  buildWorld: () => WorldSnapshot
+  /** Fresh world snapshot (new ids every call), optionally with pre-drawn traffic zones. */
+  buildWorld: () => TemplateSnapshot
 }
 
 /** Appearance used before any environment is loaded (matches original tabletop look). */
@@ -121,6 +128,33 @@ const WAREHOUSE_APPEARANCE: EnvironmentAppearance = {
   },
 }
 
+const FACTORY_APPEARANCE: EnvironmentAppearance = {
+  ...WAREHOUSE_APPEARANCE,
+  groundColor: '#7f878f',
+  gridMinor: '#ffe066',
+  gridMajor: '#fff3bf',
+  lighting: { ...WAREHOUSE_APPEARANCE.lighting, background: '#181c22', sunColor: '#fff8ec' },
+}
+
+const FESTIVAL_APPEARANCE: EnvironmentAppearance = {
+  groundColor: '#6f9a5c',
+  groundTint: '#83ad6c',
+  tableEdge: '#5a4632',
+  tableBase: '#241c16',
+  gridMinor: '#e9f5db',
+  gridMajor: '#ffffff',
+  lighting: {
+    background: '#1b1530',
+    hemiSky: '#ffd6e8',
+    hemiGround: '#3c4a2c',
+    hemiIntensity: 1.1,
+    sunColor: '#ffc89a',
+    sunIntensity: 2.1,
+    rimColor: '#b197fc',
+    rimIntensity: 0.6,
+  },
+}
+
 export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentConfig> = {
   'forge-district': {
     id: 'forge-district',
@@ -157,6 +191,22 @@ export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentConfig> = {
     appearance: DEFAULT_APPEARANCE,
     defaults: { buildingStyle: 'industrial', wallMaterial: 'metal', platformMaterial: 'concrete' },
     buildWorld: jobFair,
+  },
+  'factory-floor': {
+    id: 'factory-floor',
+    name: 'Factory Floor',
+    description: 'Manufacturing hall with CNC machines, an assembly line, robot cells, AGV lanes and a shipping door.',
+    appearance: FACTORY_APPEARANCE,
+    defaults: { buildingStyle: 'industrial', wallMaterial: 'metal', platformMaterial: 'concrete' },
+    buildWorld: factoryFloor,
+  },
+  'music-festival': {
+    id: 'music-festival',
+    name: 'Music Festival',
+    description: 'Open-air concert site: security gates, main stage, food stalls, bars, toilets and exits.',
+    appearance: FESTIVAL_APPEARANCE,
+    defaults: { buildingStyle: 'industrial', wallMaterial: 'metal', platformMaterial: 'grass' },
+    buildWorld: musicFestival,
   },
 }
 
@@ -248,7 +298,7 @@ export async function loadEnvironment(id: EnvironmentId | string, opts: LoadEnvi
 
   try {
     const env = ENVIRONMENTS[envId]
-    let snap: WorldSnapshot
+    let snap: TemplateSnapshot
     try {
       snap = env.buildWorld()
     } catch (error) {

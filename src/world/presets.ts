@@ -5,6 +5,8 @@ import type { BuildingStyle, MaterialId, ObjectKind, PalletStyle, RackStyle, Vec
 import { BUILDING_STYLES } from './catalog'
 import { PALLET, RACK } from './scale'
 import { propFromCatalog } from './eventCatalog'
+import { newZoneId } from '../flow/store'
+import type { FlowSnapshot, TrafficZone, TrafficZoneType } from '../flow/types'
 
 /**
  * Preset worlds. Each call returns fresh objects with new ids, so loading a preset twice
@@ -322,6 +324,163 @@ export function jobFair(): WorldSnapshot {
   }
 }
 
+/** A template can ship pre-drawn traffic zones (forklift lanes, queues, no-go areas). */
+export type TemplateSnapshot = WorldSnapshot & { flow?: FlowSnapshot }
+
+const zone = (type: TrafficZoneType, name: string, x: number, z: number, w: number, d: number, extra: Partial<TrafficZone> = {}): TrafficZone => ({
+  id: newZoneId(),
+  name,
+  type,
+  position: [x, 0, z],
+  size: [w, 0.1, d],
+  rotationY: 0,
+  ...(type === 'slow' ? { speedLimit: 0.8 } : {}),
+  ...extra,
+})
+
+/**
+ * Factory Floor — a 56 × 40 m manufacturing hall. Shift workers come in the south door, badge in
+ * at the time clock and head to their stations; an AGV (the robot) shuttles parts from raw-material
+ * racking to the assembly line along a pair of one-way lanes. Robot cells sit inside a no-go
+ * safety zone; the east wall is open for shipping.
+ */
+export function factoryFloor(): TemplateSnapshot {
+  const h = 7
+  const objects: WorldObject[] = [
+    slab('concrete', 0, 0, 56, 0.08, 40),
+    // Main east–west aisle for the AGV and forklifts.
+    road(0, 0, 52, 3.6),
+
+    // Perimeter: personnel door in the south wall (x −24…−20), shipping opening in the east wall (z −4…4).
+    wall('metal', 0, -20, 56, h),
+    wall('metal', -26, 20, 4, h),
+    wall('metal', 4, 20, 48, h),
+    wall('metal', -28, 0, 40, h, Math.PI / 2),
+    wall('metal', 28, -12, 16, h, Math.PI / 2),
+    wall('metal', 28, 12, 16, h, Math.PI / 2),
+
+    // Shift entrance, badge-in and the break area.
+    prop('entrance-marker', -22, 18.6),
+    prop('time-clock', -22, 15.4),
+    prop('directional-sign', -19.6, 17.2),
+    prop('table-rect-m', -14, 15),
+    prop('chair-folding', -14, 15.9),
+    prop('chair-folding', -14, 14.1, Math.PI),
+    prop('table-rect-m', -10, 15),
+    prop('chair-folding', -10, 15.9),
+    prop('chair-folding', -10, 14.1, Math.PI),
+
+    // Machining row (north): four CNC machines, operators stand on the aisle side.
+    ...[-20, -13, -6, 1].map((x) => prop('cnc-machine', x, -14)),
+
+    // Assembly line: three conveyor sections with workbenches along the south side.
+    prop('assembly-conveyor', -12, -6),
+    prop('assembly-conveyor', -3.5, -6),
+    prop('assembly-conveyor', 5, -6),
+    ...[-14, -8, -2, 4].map((x) => prop('workbench', x, -4.2)),
+
+    // Robot welding cells behind safety barriers (north-east).
+    prop('robot-cell', 12, -14),
+    prop('robot-cell', 19, -14),
+    ...[10, 13.2, 17.8, 21].map((x) => prop('safety-barrier', x, -10.6)),
+
+    // Raw-material racking and the tool crib (south-east).
+    rack(12, 14.2, 5, 6, 'loaded'),
+    rack(12, 15.4, 5, 6, 'loaded'),
+    pallet(4, 9.5, 'boxes'),
+    pallet(5.6, 9.5, 'wrapped'),
+    prop('tool-crib', 24.6, 7, -Math.PI / 2),
+
+    // Shipping staging by the east opening.
+    pallet(22, -3, 'wrapped'),
+    pallet(22, -5, 'boxes'),
+    pallet(24, -5, 'boxes'),
+    prop('exit-marker', 26.6, 0),
+
+    // High-bay lights over the aisle.
+    lamp(-16, -2.4),
+    lamp(0, 2.4, Math.PI),
+    lamp(16, -2.4),
+  ]
+  const flow: FlowSnapshot = {
+    routes: [],
+    trafficZones: [
+      zone('one-way', 'AGV lane eastbound', 0, -0.9, 48, 1.6, { direction: [1, 0] }),
+      zone('one-way', 'AGV lane westbound', 0, 0.9, 48, 1.6, { direction: [-1, 0] }),
+      zone('no-go', 'Robot cell safety zone', 15.5, -14.6, 12, 5.4),
+      zone('slow', 'Pedestrian crossing', -8, 0, 3, 3.6),
+      zone('slow', 'Pedestrian crossing', 8, 0, 3, 3.6),
+      zone('queue', 'Badge-in queue', -22, 17, 2.4, 2.4),
+    ],
+  }
+  return { objects, flow, robotEnabled: true, robotStart: [6, 11], goal: [-16, -3] }
+}
+
+/**
+ * Music Festival — an open-air concert site on a 74 × 58 m field. Ticket and security gates at the
+ * south entrance, the main stage at the north end with front-of-house mid-field, food stalls down the
+ * west side, merch on the east, bars and toilets near the gates, and side exits. Backstage is a
+ * no-go zone; the gates have a queue zone.
+ */
+export function musicFestival(): TemplateSnapshot {
+  const fence = 2.2
+  const objects: WorldObject[] = [
+    slab('grass', 0, 0, 74, 0.05, 58),
+
+    // Perimeter fence: south entrance (x −10…10), side exits (z 18…26) on the west and east.
+    wall('metal', 0, -29, 74, fence),
+    wall('metal', -23.5, 29, 27, fence),
+    wall('metal', 23.5, 29, 27, fence),
+    wall('metal', -37, -5.5, 47, fence, Math.PI / 2),
+    wall('metal', -37, 27.5, 3, fence, Math.PI / 2),
+    wall('metal', 37, -5.5, 47, fence, Math.PI / 2),
+    wall('metal', 37, 27.5, 3, fence, Math.PI / 2),
+
+    // Entrance: ticket / security gates with room to pass between them.
+    prop('entrance-marker', 0, 31),
+    ...[-7, -2.5, 2.5, 7].map((x) => prop('security-gate', x, 25)),
+    prop('directional-sign', -11, 23),
+    prop('directional-sign', 11, 23, Math.PI),
+
+    // Main stage (north) with side wings of crowd barrier and light towers.
+    prop('main-stage', 0, -20),
+    prop('crowd-barrier', -10, -14, Math.PI / 4),
+    prop('crowd-barrier', 10, -14, -Math.PI / 4),
+    prop('speaker', -9.5, -16.5),
+    prop('speaker', 9.5, -16.5),
+    prop('foh-desk', 0, 2),
+    ...[-3.6, 3.6].map((x) => prop('crowd-barrier', x, 4, Math.PI / 2)),
+    ...([[-14, -8], [14, -8], [-14, 6], [14, 6]] as const).map(([x, z]) => prop('light-tower', x, z)),
+
+    // Food court (west), merch (east), bars and toilets toward the gates, first aid by the east exit.
+    ...[-14, -7, 0, 7].map((z) => prop('food-stall', -32, z, Math.PI / 2)),
+    prop('merch-tent', 31.5, -6, -Math.PI / 2),
+    prop('merch-tent', 31.5, 2, -Math.PI / 2),
+    prop('bar-counter', -20, 15),
+    prop('bar-counter', 20, 15),
+    prop('toilet-block', -32, 12, Math.PI / 2),
+    prop('toilet-block', 32, 12, -Math.PI / 2),
+    prop('first-aid-tent', 31.5, -16, -Math.PI / 2),
+    ...[-24, -18].map((x) => prop('cocktail-table', x, 19)),
+    ...[18, 24].map((x) => prop('cocktail-table', x, 19)),
+
+    prop('exit-marker', -38.6, 22),
+    prop('exit-marker', 38.6, 22),
+  ]
+  const flow: FlowSnapshot = {
+    routes: [],
+    trafficZones: [
+      zone('no-go', 'Backstage', 0, -27, 20, 3.6),
+      zone('queue', 'Gate queue', 0, 27.6, 18, 2.4),
+      zone('one-way', 'Entry lane', 0, 20.5, 12, 4, { direction: [0, -1] }),
+      zone('slow', 'Front-of-house', 0, 2, 9, 6),
+      zone('queue', 'Bar queue', -20, 16.8, 6, 1.6),
+      zone('queue', 'Bar queue', 20, 16.8, 6, 1.6),
+    ],
+  }
+  return { objects, flow, robotEnabled: false, robotStart: [0, 31], goal: null }
+}
+
 /** Desktop inspector list — ids match `EnvironmentId` / `loadEnvironment`. */
 export const PRESETS = [
   { id: 'forge-district', label: 'Forge District (demo city)', build: forgeDistrict },
@@ -329,4 +488,6 @@ export const PRESETS = [
   { id: 'warehouse', label: 'Autonomous Warehouse', build: warehouse },
   { id: 'empty-event-venue', label: 'Empty Space', build: emptyEventVenue },
   { id: 'job-fair', label: 'Job Fair', build: jobFair },
+  { id: 'factory-floor', label: 'Factory Floor', build: factoryFloor },
+  { id: 'music-festival', label: 'Music Festival', build: musicFestival },
 ] as const

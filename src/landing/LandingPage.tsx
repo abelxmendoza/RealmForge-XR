@@ -92,6 +92,8 @@ function InstallButton({ className, hintClassName }: { className: string; hintCl
 function enterLabel(id: LandingWorldId) {
   if (id === 'empty-event-venue') return 'Enter Empty Space'
   if (id === 'job-fair') return 'Enter the venue'
+  if (id === 'music-festival') return 'Enter the festival'
+  if (id === 'factory-floor') return 'Enter the factory'
   return 'Enter the forge'
 }
 
@@ -149,9 +151,9 @@ export default function LandingPage() {
               <span>your space.</span>
             </h1>
             <p className="rf-intro">
-              Shape a miniature world — or stage an event venue.{' '}
+              Lay out a venue, a festival field or a factory floor.{' '}
               <br />
-              Place booths and barriers, start a virtual attendee, and see how the layout shapes the flow.
+              Place stages, stalls, machines and barriers, start a virtual attendee, and see how the layout shapes the flow.
             </p>
             <div className="rf-hero-actions">
               <a className="rf-button" href={editorHref(selected.id)}>
@@ -229,9 +231,9 @@ export default function LandingPage() {
               </h2>
             </div>
             <p>
-              Turn an empty hall into a job fair — or start from a laid-out template.
+              Turn an empty hall into a job fair, or an open field into a festival.
               <br />
-              Every booth, barrier, and stage piece is an editable catalog prop.
+              Every booth, gate, stall and stage is an editable catalog prop.
             </p>
           </div>
 
@@ -239,12 +241,12 @@ export default function LandingPage() {
             <article>
               <span>01</span>
               <h3>Create</h3>
-              <p>Open Empty Space or Job Fair and place furniture, booths, and wayfinding.</p>
+              <p>Open Empty Space, Job Fair or Music Festival and place stages, booths, stalls and wayfinding.</p>
             </article>
             <article>
               <span>02</span>
               <h3>Configure</h3>
-              <p>Assign simulation roles — entrance, registration, booth, stage, exit — without leaving the forge.</p>
+              <p>Assign simulation roles (entrance, ticket gate, booth, stage, bar, exit) and mark queues and no-go areas.</p>
             </article>
             <article>
               <span>03</span>
@@ -286,7 +288,7 @@ export default function LandingPage() {
               </h2>
             </div>
             <p>
-              A city. A new frontier. A facility in motion.
+              A city. A new frontier. A warehouse or a factory in motion.
               <br />
               Start with a template, then make it yours.
             </p>
@@ -344,11 +346,11 @@ export default function LandingPage() {
                 </h3>
                 <div>
                   <p>
-                    Send a robot to a destination — or start a virtual attendee through registration, booths, and exits.
+                    Send an AGV down its lane, or start a virtual attendee through gates, booths, the stage and exits.
                     Block a path and watch navigation find a new way through.
                   </p>
                   <span className="rf-feature-tags">
-                    ROBOT ROUTES <b>·</b> ATTENDEE FLOW <b>·</b> DYNAMIC REPLANNING
+                    ROBOT ROUTES <b>·</b> ATTENDEE FLOW <b>·</b> TRAFFIC ZONES
                   </span>
                 </div>
               </article>
