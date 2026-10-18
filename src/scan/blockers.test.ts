@@ -93,6 +93,18 @@ describe('scan walls block movement', () => {
     expect(isBlocked(grid, ...worldToCell(grid, [10, 0]))).toBe(false)
   })
 
+  it('keeps 10 cm coverage along one huge wall triangle', () => {
+    // A 60 m site boundary as a single triangle pair (the old 200-step cap spaced it 30 cm apart).
+    const pts = scanBlockerPoints(new Float32Array(wall(-30, 0, 30, 0)), at)
+    const xs = new Set<number>()
+    for (let i = 0; i < pts.length; i += 2) xs.add(Math.round(pts[i] * 10))
+    for (let x = -299; x <= 299; x++) expect(xs.has(x)).toBe(true)
+    const grid = buildGrid([], { blockers: pts })
+    expect(planPath(grid, [0, -5], [0, 5])).not.toBeNull()
+    const fenced = (path: [number, number][] | null) => !path || path.every((p) => Math.abs(p[0]) > 29.5 || Math.abs(p[1]) > 0.1)
+    expect(fenced(planPath(grid, [0, -5], [0, 5]))).toBe(true)
+  })
+
   it('only counts surfaces in the walking band', () => {
     const raised = scanBlockerPoints(room(), { ...at, position: [0, BLOCK_BAND[1] + 0.1, 0] })
     expect(raised.length).toBe(0)

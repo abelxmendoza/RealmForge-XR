@@ -4,8 +4,8 @@ import type { Vec3 } from '../world/types'
 export const BLOCK_BAND: [number, number] = [0.15, 1.8]
 /** Sample spacing on the scan's surfaces (metres). */
 const RES = 0.1
-/** Cap on samples per triangle edge, so one giant triangle can't stall the page. */
-const MAX_STEPS = 200
+/** Safety cap on pieces examined per call, so a pathological mesh can't freeze the page. */
+const MAX_PIECES = 20_000_000
 
 export interface ScanPlacement {
   scale: number
@@ -35,6 +35,8 @@ export function scanBlockerPoints(tri: Float32Array | number[], place: ScanPlace
     out.push(ix * res, iz * res)
   }
   const v = new Float64Array(9)
+  const stack: Float64Array[] = []
+  let pieces = 0
   const n = Math.floor(tri.length / 9)
   for (let t = 0; t < n; t++) {
     for (let q = 0; q < 3; q++) {
@@ -47,33 +49,32 @@ export function scanBlockerPoints(tri: Float32Array | number[], place: ScanPlace
       v[q * 3 + 1] = y + py
       v[q * 3 + 2] = -x * s + z * c + pz
     }
-    const minY = Math.min(v[1], v[4], v[7])
-    const maxY = Math.max(v[1], v[4], v[7])
-    if (maxY < band[0] || minY > band[1]) continue
-    const edge = Math.max(
-      Math.hypot(v[3] - v[0], v[4] - v[1], v[5] - v[2]),
-      Math.hypot(v[6] - v[0], v[7] - v[1], v[8] - v[2]),
-      Math.hypot(v[6] - v[3], v[7] - v[4], v[8] - v[5]),
-    )
-    const steps = Math.min(MAX_STEPS, Math.ceil(edge / res))
-    if (steps <= 1) {
-      add(v[0], v[1], v[2])
-      add(v[3], v[4], v[5])
-      add(v[6], v[7], v[8])
-      add((v[0] + v[3] + v[6]) / 3, (v[1] + v[4] + v[7]) / 3, (v[2] + v[5] + v[8]) / 3)
-      continue
-    }
-    // Barycentric grid over the triangle.
-    for (let a = 0; a <= steps; a++) {
-      for (let b = 0; b <= steps - a; b++) {
-        const u = a / steps
-        const w = b / steps
-        add(
-          v[0] + u * (v[3] - v[0]) + w * (v[6] - v[0]),
-          v[1] + u * (v[4] - v[1]) + w * (v[7] - v[1]),
-          v[2] + u * (v[5] - v[2]) + w * (v[8] - v[2]),
-        )
+    // Halve along the longest edge until every piece is under `res`, dropping pieces outside the band.
+    // Cost follows the in-band area, and spacing never exceeds `res` however large the triangle.
+    stack.length = 0
+    stack.push(Float64Array.from(v))
+    while (stack.length && pieces < MAX_PIECES) {
+      const p = stack.pop()!
+      pieces++
+      if (Math.max(p[1], p[4], p[7]) < band[0] || Math.min(p[1], p[4], p[7]) > band[1]) continue
+      const e01 = Math.hypot(p[3] - p[0], p[4] - p[1], p[5] - p[2])
+      const e12 = Math.hypot(p[6] - p[3], p[7] - p[4], p[8] - p[5])
+      const e20 = Math.hypot(p[0] - p[6], p[1] - p[7], p[2] - p[8])
+      const longest = Math.max(e01, e12, e20)
+      if (longest <= res) {
+        add(p[0], p[1], p[2])
+        add(p[3], p[4], p[5])
+        add(p[6], p[7], p[8])
+        add((p[0] + p[3] + p[6]) / 3, (p[1] + p[4] + p[7]) / 3, (p[2] + p[5] + p[8]) / 3)
+        continue
       }
+      // Rotate so the longest edge is a→b, then split at its midpoint m: (a, m, c) and (m, b, c).
+      const [a, b, c] = longest === e01 ? [0, 3, 6] : longest === e12 ? [3, 6, 0] : [6, 0, 3]
+      const m = [(p[a] + p[b]) / 2, (p[a + 1] + p[b + 1]) / 2, (p[a + 2] + p[b + 2]) / 2]
+      stack.push(
+        Float64Array.of(p[a], p[a + 1], p[a + 2], m[0], m[1], m[2], p[c], p[c + 1], p[c + 2]),
+        Float64Array.of(m[0], m[1], m[2], p[b], p[b + 1], p[b + 2], p[c], p[c + 1], p[c + 2]),
+      )
     }
   }
   return new Float32Array(out)
