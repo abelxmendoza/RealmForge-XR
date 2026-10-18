@@ -155,7 +155,7 @@ function WorldScaler() {
 function MocapMenuButton() {
   const enabled = useMocap((s) => s.enabled)
   const status = useMocap((s) => s.status)
-  return <MenuButton label={enabled ? `Mocap ${status}` : 'Mocap off'} active={enabled && status === 'live'} onPress={toggleMocap} />
+  return <MenuButton label={enabled ? `Capture ${status}` : 'Motion Cap'} active={enabled && status === 'live'} onPress={toggleMocap} />
 }
 
 /** Big invisible plane under the map so drags keep receiving moves past the map edge. */
