@@ -8,6 +8,8 @@ import { create } from 'zustand'
  */
 const FULL_FEATURES = [
   'local-floor',
+  // Lets you walk past the play-area boundary in passthrough (Quest Browser); used as the reference space when granted.
+  'unbounded',
   'anchors',
   'plane-detection',
   'mesh-detection',
@@ -39,10 +41,15 @@ export interface XRSessionMeta {
   attempt: string | null
   features: string[]
   blend: string | null
+  /** Reference space in use: 'unbounded' (walk anywhere) or 'local-floor'. */
+  referenceSpace: string | null
+  /** Session visibility: 'visible', or 'visible-blurred' / 'hidden' while the system pauses it (boundary, menu). */
+  visibility: string | null
   lastError: string | null
   entering: boolean
   setEntering: (v: boolean) => void
-  setStarted: (info: { attempt: string; features: string[]; blend: string }) => void
+  setStarted: (info: { attempt: string; features: string[]; blend: string; referenceSpace: string }) => void
+  setVisibility: (v: string) => void
   setError: (message: string) => void
   clear: () => void
 }
@@ -51,13 +58,16 @@ export const useXRSessionMeta = create<XRSessionMeta>((set) => ({
   attempt: null,
   features: [],
   blend: null,
+  referenceSpace: null,
+  visibility: null,
   lastError: null,
   entering: false,
   setEntering: (entering) => set({ entering }),
-  setStarted: ({ attempt, features, blend }) =>
-    set({ attempt, features, blend, lastError: null, entering: false }),
+  setStarted: ({ attempt, features, blend, referenceSpace }) =>
+    set({ attempt, features, blend, referenceSpace, visibility: 'visible', lastError: null, entering: false }),
+  setVisibility: (visibility) => set({ visibility }),
   setError: (lastError) => set({ lastError, entering: false }),
-  clear: () => set({ attempt: null, features: [], blend: null, lastError: null, entering: false }),
+  clear: () => set({ attempt: null, features: [], blend: null, referenceSpace: null, visibility: null, lastError: null, entering: false }),
 }))
 
 /** Bound from the R3F canvas so HUD buttons (outside Canvas) can call setSession. */
@@ -109,9 +119,18 @@ export async function enterARWithFallback(): Promise<EnterARResult> {
       const session = await navigator.xr.requestSession('immersive-ar', a.init)
       const features = [...((session as XRSession & { enabledFeatures?: string[] }).enabledFeatures ?? [])]
       const blend = session.environmentBlendMode ?? '?'
+      // Unbounded tracking lets you walk beyond the boundary; placement is head-relative, so the origin doesn't matter.
+      const referenceSpace: XRReferenceSpaceType = features.includes('unbounded') ? 'unbounded' : 'local-floor'
+      // (Only before presenting: three.js can't switch it mid-session, e.g. if Enter AR is pressed twice.)
+      if (!manager.isPresenting) manager.setReferenceSpaceType(referenceSpace)
+      // A system pause (walking out of bounds, the Quest menu) blurs or hides the session; keep state and say so.
+      session.addEventListener('visibilitychange', () => {
+        useXRSessionMeta.getState().setVisibility(session.visibilityState)
+        if (session.visibilityState !== 'visible') console.warn('[RealmForge] XR session paused by the system:', session.visibilityState)
+      })
       await manager.setSession(session)
-      meta.setStarted({ attempt: a.name, features, blend })
-      console.log('[RealmForge] AR session started:', { attempt: a.name, features, blend, priorErrors: errors })
+      meta.setStarted({ attempt: a.name, features, blend, referenceSpace })
+      console.log('[RealmForge] AR session started:', { attempt: a.name, features, blend, referenceSpace, priorErrors: errors })
       return { ok: true, session, attempt: a.name }
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))

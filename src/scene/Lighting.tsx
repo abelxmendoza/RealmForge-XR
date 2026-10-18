@@ -58,6 +58,7 @@ export function Lighting() {
         shadow-mapSize={[SHADOW_MAP, SHADOW_MAP]}
         shadow-bias={-0.0004}
       />
+      {/* Cool rim light from the back so building silhouettes separate from the board. */}
       <directionalLight ref={rim} target={target} intensity={lighting.rimIntensity} color={lighting.rimColor} />
     </>
   )

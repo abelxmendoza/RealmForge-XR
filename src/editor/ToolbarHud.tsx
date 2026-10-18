@@ -27,6 +27,8 @@ import { useEditor } from './settings'
 import { downloadWorld, importWorld, quickSave, useWorldLibrary } from '../world/persistence'
 import { redo, undo, subscribeHistory } from '../world/history'
 import { toggleRays, toggleSurface } from './xrInput'
+import { toggleOcclusion } from '../xr/occlusion'
+import { toggleRealSurfaces } from '../xr/realSurfaces'
 import { toggleMocap, useMocap } from '../mocap/store'
 import { SCALE_IDS, type ScaleId } from '../scene/worldRoot'
 import { HOME_HREF, leaveEditor } from './leaveEditor'
@@ -79,6 +81,8 @@ export function ToolbarHud() {
   const worldScale = useEditor((s) => s.worldScale)
   const rays = useEditor((s) => s.rays)
   const surface = useEditor((s) => s.surface)
+  const occlusion = useEditor((s) => s.occlusion)
+  const realSurfaces = useEditor((s) => s.realSurfaces)
   const mocap = useMocap()
   const attendee = useAttendee()
   const [hist, setHist] = useState({ canUndo: false, canRedo: false })
@@ -499,6 +503,24 @@ export function ToolbarHud() {
               onClick={toggleMocap}
             >
               Motion Capture
+            </button>
+            <button
+              type="button"
+              className={occlusion ? 'on' : ''}
+              aria-pressed={occlusion}
+              title="Hide virtual objects behind real ones: Quest 3/3S live depth, else your Space Setup room (O)"
+              onClick={toggleOcclusion}
+            >
+              {occlusion ? 'Hide Behind Real · On' : 'Hide Behind Real'}
+            </button>
+            <button
+              type="button"
+              className={realSurfaces ? 'on' : ''}
+              aria-pressed={realSurfaces}
+              title="Objects rest on real tables and stop at real walls and furniture (needs Space Setup; not at Miniature View) (P)"
+              onClick={toggleRealSurfaces}
+            >
+              {realSurfaces ? 'Real Surfaces · On' : 'Real Surfaces'}
             </button>
             <button
               type="button"

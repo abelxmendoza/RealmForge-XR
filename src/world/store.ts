@@ -72,6 +72,8 @@ const ID_PREFIX: Record<ObjectKind, string> = {
   tree: 'tree',
   streetlight: 'lamp',
   crate: 'crate',
+  pallet: 'pallet',
+  rack: 'rack',
   prop: 'prop',
 }
 export const idFor = (kind: ObjectKind) => newId(ID_PREFIX[kind] ?? 'obj')

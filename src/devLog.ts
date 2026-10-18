@@ -1,6 +1,6 @@
 /**
- * Dev-only remote error log (see tools/client-log.ts): sends uncaught errors, promise rejections and
- * console.error calls to the dev server, so problems on the headset show up on the PC without USB
+ * Dev-only remote error log (see tools/client-log.ts): sends uncaught errors, promise rejections,
+ * console.error/warn calls and "[RealmForge]" status logs to the dev server, so problems on the headset show up on the PC without USB
  * debugging. Stripped from production builds.
  */
 export function installDevLog() {
@@ -19,6 +19,17 @@ export function installDevLog() {
   console.error = (...args: unknown[]) => {
     send('console.error', args.map(describe).join(' '))
     original(...args)
+  }
+  const warn = console.warn.bind(console)
+  console.warn = (...args: unknown[]) => {
+    send('console.warn', args.map(describe).join(' '))
+    warn(...args)
+  }
+  // App status lines ("[RealmForge] AR session started: …") are useful on the PC too.
+  const log = console.log.bind(console)
+  console.log = (...args: unknown[]) => {
+    if (typeof args[0] === 'string' && args[0].startsWith('[RealmForge]')) send('info', args.map(describe).join(' '))
+    log(...args)
   }
   send('info', 'dev log connected')
 }

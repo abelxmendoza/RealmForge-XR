@@ -1,6 +1,6 @@
+import { create } from 'zustand'
 import { worldActions } from '../world/actions'
 import { SelectionOutline } from '../scene/structures'
-import { useState } from 'react'
 import * as THREE from 'three'
 import { Line } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
@@ -10,13 +10,17 @@ import { WORLD, type Vec2, type Vec3, type WorldObject } from '../world/types'
 import { BUILDING_STYLES, DECOR_DEFAULTS, PLATFORM_DEFAULTS } from '../world/catalog'
 import { SNAP, snapFootprint, snapPoint } from '../world/snap'
 import { SCALE_PRESETS, WORLD_ROOT, groundPoint, onTable, worldRootRef } from '../scene/worldRoot'
-import { groundMaterial } from '../scene/materials'
+import { flatMaterial, groundMaterial } from '../scene/materials'
 import { tiledPlane, useGeometry } from '../scene/geometry'
 import { Structure } from '../scene/structures'
 import { beginDrag } from './drag'
 import { useEditor } from './settings'
+import { useSelection } from './selection'
+import { HAPTIC, pulse } from '../xr/haptics'
+import { usePlacement } from '../xr/placement'
+import { useEnvironment } from '../world/environment'
 import { propFromCatalog } from '../world/eventCatalog'
-import { addWaypoint } from '../nav/routePlan'
+import { restLocalY, settleObject } from '../xr/realSurfaces'
 
 const MIN_WALL = 0.6
 const MIN_PLATFORM = 0.5
@@ -63,6 +67,158 @@ function objectForTool(tool: 'building' | 'decor', at: Vec2): Omit<WorldObject, 
 
 type Draft = { kind: 'wall' | 'platform'; a: Vec2; b: Vec2 }
 
+/**
+ * Ground interaction state, shared so presses and hovers forwarded from walkable objects (slabs, roads)
+ * behave like the ground's own: the wall/platform being drawn, and the asset tool's hover point.
+ */
+const useGroundUI = create<{ draft: Draft | null; hover: Vec2 | null; placementError: boolean }>(() => ({ draft: null, hover: null, placementError: false }))
+const setDraft = (draft: Draft | null) => useGroundUI.setState({ draft })
+
+/** Asset tool: track the ground point under the pointer for the placement ghost. */
+export function applyGroundHover(e: ThreeEvent<PointerEvent>) {
+  if (useWorld.getState().tool !== 'asset') return
+  const point = groundPoint(e)
+  if (point) useGroundUI.setState({ hover: point, placementError: false })
+}
+export const clearGroundHover = () => useGroundUI.setState({ hover: null })
+/** Set the asset tool's aim point directly (XR hands / controllers aiming without rays). */
+export function setGroundHover(point: Vec2 | null) {
+  const cur = useGroundUI.getState().hover
+  if (!point && !cur) return
+  if (point && cur && Math.hypot(point[0] - cur[0], point[1] - cur[1]) < 0.05) return
+  useGroundUI.setState({ hover: point, placementError: false })
+}
+/** Place the selected library asset at `point` (map metres); haptic tick on success. */
+export function placeAssetAt(point: Vec2): boolean {
+  const result = worldActions.placeCatalogAsset(point)
+  useGroundUI.setState({ placementError: !result.ok })
+  if (result.ok) {
+    settleObject(result.id)
+    pulse('active', HAPTIC.place)
+    finishPlacement(result.id)
+  }
+  return result.ok
+}
+
+/** Tools that place a picked object where you aim: library assets and event objects (chairs, tables, booths…). */
+export const isPlacingTool = (tool: string) => tool === 'asset' || tool === 'event'
+
+/** The event object (chairs, tables, booths, stages…) picked for the Event tool, as it would sit at `point`. */
+function eventPreview(point: Vec2): WorldObject | null {
+  const { eventCatalogId, assetRotation } = useEditor.getState()
+  const at = placePoint(point)
+  const prop = propFromCatalog(eventCatalogId, [at[0], 0, at[1]], assetRotation)
+  return prop ? ({ id: 'preview', ...prop } as WorldObject) : null
+}
+
+/** Place the picked event object at `point` (map metres); haptic tick on success. */
+export function placeEventAt(point: Vec2): boolean {
+  const prop = eventPreview(point)
+  if (!prop) return false
+  const { id: _preview, ...data } = prop
+  const w = useWorld.getState()
+  const id = w.addObject(data)
+  settleObject(id)
+  pulse('active', HAPTIC.place)
+  finishPlacement(id)
+  return true
+}
+
+/** Place whatever the current placing tool holds (asset or event object). */
+export function placeAt(point: Vec2): boolean {
+  return useWorld.getState().tool === 'event' ? placeEventAt(point) : placeAssetAt(point)
+}
+
+/**
+ * Apply the current tool at a ground press. Used by the ground itself and by walkable objects
+ * (slabs, roads, plazas): those cover the ground, so a placement tool pressed on them lands here,
+ * at the ground point under the pointer. Reads the tool at press time (never a stale render value).
+ */
+export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
+  const p = groundPoint(e)
+  if (!p) return
+  const raw: Vec2 = [clampToWorld(p[0]), clampToWorld(p[1])]
+  const w = useWorld.getState()
+  const tool = w.tool
+  switch (tool) {
+    case 'select':
+      w.select(null)
+      useSelection.getState().clear()
+      return
+    case 'goal':
+      e.stopPropagation()
+      if (w.selectedActorId) {
+        const result = worldActions.setActorGoal(w.selectedActorId, raw)
+        useEditor.getState().set({ actorMessage: result.ok ? 'Actor destination set.' : result.error })
+      } else w.setGoal(raw)
+      finishPlacement(null)
+      return
+    case 'robot':
+      e.stopPropagation()
+      w.placeRobot(raw)
+      finishPlacement(null)
+      return
+    case 'actor': {
+      e.stopPropagation()
+      const result = worldActions.placeActor(raw)
+      useEditor.getState().set({ actorMessage: result.ok ? 'Actor placed. Select it to customize or choose its destination.' : result.error })
+      if (result.ok) {
+        if ('id' in result && result.id) useWorld.getState().selectActor(result.id)
+        finishPlacement(null)
+      }
+      return
+    }
+    case 'asset': {
+      e.stopPropagation()
+      placeAssetAt(raw)
+      return
+    }
+    case 'event': {
+      e.stopPropagation()
+      placeEventAt(raw)
+      return
+    }
+    case 'building':
+    case 'decor': {
+      e.stopPropagation()
+      const id = w.addObject(objectForTool(tool, placePoint(raw)))
+      settleObject(id)
+      finishPlacement(id)
+      return
+    }
+    case 'wall':
+    case 'platform': {
+      const kind = tool
+      const at = placePoint(raw)
+      let cur: Draft = { kind, a: at, b: at }
+      setDraft(cur)
+      beginDrag(e, {
+        move: (q) => {
+          cur = { kind, a: at, b: placePoint(q) }
+          setDraft(cur)
+        },
+        end: () => {
+          setDraft(null)
+          const s = useEditor.getState()
+          const store = useWorld.getState()
+          let id: string
+          if (kind === 'wall') {
+            const wall = wallFromSegment(cur.a, cur.b)
+            if (wall.size[0] < MIN_WALL) return
+            id = store.addObject({ kind: 'wall', ...wall, color: WALL_DEFAULTS.color, material: s.wallMaterial })
+          } else {
+            const plat = platformFromCorners(cur.a, cur.b)
+            if (plat.size[0] < MIN_PLATFORM || plat.size[2] < MIN_PLATFORM) return
+            id = store.addObject({ kind: 'platform', ...plat, material: s.platformMaterial })
+          }
+          finishPlacement(id)
+        },
+      })
+    }
+  }
+}
+
+/** The map's ground. Clicking it applies the current tool; with the asset tool a ghost previews placement. */
 /** After a successful place, return to Select so the next click can pick/move instead of spawning again. */
 function finishPlacement(id?: string | null) {
   const w = useWorld.getState()
@@ -73,136 +229,32 @@ function finishPlacement(id?: string | null) {
 /** The map's ground. Empty-ground clicks apply the current place tool; object presses select/move instead. */
 export function Ground() {
   const tool = useWorld((s) => s.tool)
+  const draft = useGroundUI((s) => s.draft)
+  const hover = useGroundUI((s) => s.hover)
+  const placementError = useGroundUI((s) => s.placementError)
+  // Read reactive settings and geometry so ghost validity always matches the commit action.
   useEditor((s) => s.actorKind)
   useEditor((s) => s.assetId)
   useEditor((s) => s.assetRotation)
+  useEditor((s) => s.eventCatalogId)
   useEditor((s) => s.snap)
   useWorld((s) => s.objects)
-  const [hover, setHover] = useState<Vec2 | null>(null)
-  const [placementError, setPlacementError] = useState(false)
-  const [draft, setDraft] = useState<Draft | null>(null)
   const size = WORLD.half * 2
-
-  const onDown = (e: ThreeEvent<PointerEvent>) => {
-    const p = groundPoint(e)
-    if (!p) return
-    const raw: Vec2 = [clampToWorld(p[0]), clampToWorld(p[1])]
-    const w = useWorld.getState()
-    switch (tool) {
-      case 'select':
-        w.select(null)
-        return
-      case 'goal': {
-        e.stopPropagation()
-        if (w.selectedActorId) {
-          const append = useEditor.getState().actorAppendRoute || e.nativeEvent.shiftKey
-          const result = append
-            ? worldActions.appendActorWaypoint(w.selectedActorId, raw)
-            : worldActions.setActorGoal(w.selectedActorId, raw)
-          useEditor.getState().set({
-            actorMessage: result.ok
-              ? append
-                ? 'Stop added to actor route.'
-                : 'Actor destination set.'
-              : result.error,
-          })
-          finishPlacement(null)
-          return
-        }
-        // Robot multi-waypoint route: stay on Add Waypoint so users can click several stops, then Play.
-        const result = addWaypoint(raw)
-        if (!result.ok) useEditor.getState().set({ actorMessage: result.error })
-        else useEditor.getState().set({ actorMessage: `Waypoint ${result.index + 1} added. Add more, then Play.` })
-        return
-      }
-      case 'robot':
-        e.stopPropagation()
-        w.placeRobot(raw)
-        finishPlacement(null)
-        return
-      case 'actor': {
-        e.stopPropagation()
-        const result = worldActions.placeActor(raw)
-        useEditor.getState().set({ actorMessage: result.ok ? 'Actor placed. Select it to customize or choose its destination.' : result.error })
-        if (result.ok) {
-          if ('id' in result && result.id) useWorld.getState().selectActor(result.id)
-          finishPlacement(null)
-        }
-        return
-      }
-      case 'asset': {
-        e.stopPropagation()
-        const result = worldActions.placeCatalogAsset(raw)
-        setPlacementError(!result.ok)
-        if (result.ok) finishPlacement(result.id)
-        return
-      }
-      case 'building':
-      case 'decor': {
-        e.stopPropagation()
-        const id = w.addObject(objectForTool(tool, placePoint(raw)))
-        finishPlacement(id)
-        return
-      }
-      case 'event': {
-        e.stopPropagation()
-        const at = placePoint(raw)
-        const catalogId = useEditor.getState().eventCatalogId
-        const prop = propFromCatalog(catalogId, [at[0], 0, at[1]])
-        if (!prop) return
-        const id = w.addObject(prop)
-        finishPlacement(id)
-        return
-      }
-      case 'wall':
-      case 'platform': {
-        const kind = tool
-        const at = placePoint(raw)
-        let cur: Draft = { kind, a: at, b: at }
-        setDraft(cur)
-        beginDrag(e, {
-          move: (q) => {
-            cur = { kind, a: at, b: placePoint(q) }
-            setDraft(cur)
-          },
-          end: () => {
-            setDraft(null)
-            const s = useEditor.getState()
-            const store = useWorld.getState()
-            let id: string | undefined
-            if (kind === 'wall') {
-              const wall = wallFromSegment(cur.a, cur.b)
-              if (wall.size[0] < MIN_WALL) return
-              id = store.addObject({ kind: 'wall', ...wall, color: WALL_DEFAULTS.color, material: s.wallMaterial })
-            } else {
-              const plat = platformFromCorners(cur.a, cur.b)
-              if (plat.size[0] < MIN_PLATFORM || plat.size[2] < MIN_PLATFORM) return
-              id = store.addObject({ kind: 'platform', ...plat, material: s.platformMaterial })
-            }
-            finishPlacement(id)
-          },
-        })
-      }
-    }
-  }
-
-  // Read reactive settings and geometry so ghost validity always matches the commit action.
-  const actorPreview = tool === 'actor' && hover ? worldActions.previewActor(hover) : null
-  const preview = tool === 'asset' && hover ? worldActions.previewCatalogAsset(hover) : actorPreview ? { valid: actorPreview.valid, object: { size: actorPreview.actor.size, rotationY: actorPreview.actor.rotationY, position: [actorPreview.actor.position[0], 0, actorPreview.actor.position[1]] as Vec3 } } : null
+  const eventGhost = tool === 'event' && hover ? eventPreview(hover) : null
+  const preview = tool === 'asset' && hover ? worldActions.previewCatalogAsset(hover) : eventGhost ? { object: eventGhost, valid: true } : null
+  const ok = !!preview && preview.valid && !placementError
   return (
     <>
-      <Board size={size} onPointerDown={onDown} onPointerMove={(e) => {
-        if (tool !== 'asset' && tool !== 'actor') return
-        const point = groundPoint(e)
-        if (point) { setHover(point); setPlacementError(false) }
-      }} onPointerOut={() => setHover(null)} />
-      {preview && <group position={preview.object.position} rotation={[0, preview.object.rotationY, 0]}>
-        <mesh position={[0, preview.object.size[1] / 2, 0]} raycast={() => null}>
-          <boxGeometry args={preview.object.size} />
-          <meshBasicMaterial color={preview.valid && !placementError ? '#45d6a0' : '#ff536b'} transparent opacity={0.15} depthWrite={false} />
-        </mesh>
-        <SelectionOutline size={preview.object.size} color={preview.valid && !placementError ? '#45d6a0' : '#ff536b'} />
-      </group>}
+      <Board size={size} onPointerDown={applyGroundTool} onPointerMove={applyGroundHover} onPointerOut={clearGroundHover} />
+      {preview && (
+        <group position={[preview.object.position[0], restLocalY(preview.object.position[0], preview.object.position[2]), preview.object.position[2]]} rotation={[0, preview.object.rotationY, 0]}>
+          <mesh position={[0, preview.object.size[1] / 2, 0]} raycast={() => null}>
+            <boxGeometry args={preview.object.size} />
+            <meshBasicMaterial color={ok ? '#45d6a0' : '#ff536b'} transparent opacity={0.15} depthWrite={false} />
+          </mesh>
+          <SelectionOutline size={preview.object.size} color={ok ? '#45d6a0' : '#ff536b'} />
+        </group>
+      )}
       {draft && <DraftPreview draft={draft} />}
     </>
   )
@@ -232,7 +284,7 @@ const SHADOW_GROUND = new THREE.ShadowMaterial({ opacity: 0.35, depthWrite: fals
  * - real: transparent grid over your actual floor or table (passthrough shows through), with shadows,
  *   the map boundary and a 1 m origin cross, so true metres stay readable while you walk around
  * Either way the ground plane keeps its pointer handler, so pokes and rays still place things.
- * When the world sits on a table there is also a bevelled table edge. Edge sizes are real centimetres
+ * At tabletop scale the board has an edge: a low lip on the floor, or a bevelled table edge when Place pinned it to a real table. Edge sizes are real centimetres
  * at any tabletop scale (divided by the world ratio), so the rim stays grabbable; on the floor
  * (room scale and up) there is no table.
  */
@@ -240,20 +292,35 @@ function Board({ size, onPointerDown, onPointerMove, onPointerOut }: { size: num
   const ground = useGeometry(() => tiledPlane(size, size, 2), [size])
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
   const real = useEditor((s) => s.surface === 'real')
+  // With the Select tool a hand grab near the board must reach the table edge (the map's grab handle), not
+  // the ground, which sits right next to it and would otherwise win the grab. Placement tools still take
+  // grabs on the ground (pinch the floor to place).
+  const groundTakesGrabs = useWorld((s) => s.tool !== 'select')
+  // Virtual ground, grid and table colours follow the active environment (Forge / Mars / Warehouse).
+  const appearance = useEnvironment((s) => s.appearance)
   const table = onTable(ratio)
   const cm = (v: number) => v / 100 / ratio
-  const fine = real ? { color: '#ffffff', opacity: 0.25 } : { color: '#ffffff', opacity: 0.07 }
-  const major = real ? { color: '#7bdff2', opacity: 0.55 } : { color: '#e8f4ff', opacity: 0.18 }
+  const fine = real ? { color: '#ffffff', opacity: 0.25 } : { color: appearance.gridMinor, opacity: 0.07 }
+  const major = real ? { color: '#7bdff2', opacity: 0.55 } : { color: appearance.gridMajor, opacity: 0.18 }
   return (
     <>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} geometry={ground} material={real ? SHADOW_GROUND : groundMaterial()} receiveShadow onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerOut={onPointerOut} />
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        geometry={ground}
+        material={real ? SHADOW_GROUND : groundMaterial(appearance.groundColor, appearance.groundTint)}
+        receiveShadow
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerOut={onPointerOut}
+        pointerEventsType={groundTakesGrabs ? 'all' : { deny: 'grab' }}
+      />
       {/* Fine grid at the snapping step (only once it's big enough to read), major lines every 5 m. */}
       {ratio >= SCALE_PRESETS.room.ratio && (
         <gridHelper args={[size, size / SNAP, fine.color, fine.color]} position={[0, 0.006, 0]} material-transparent material-opacity={fine.opacity} material-depthWrite={false} raycast={() => null} />
       )}
       <gridHelper args={[size, size / 5, major.color, major.color]} position={[0, 0.008, 0]} material-transparent material-opacity={major.opacity} material-depthWrite={false} raycast={() => null} />
       {real && <RealSurfaceMarks half={size / 2} />}
-      {table && <TableEdge size={size} cm={cm} />}
+      {table && <TableEdge size={size} cm={cm} rim={appearance.tableEdge} base={appearance.tableBase} />}
     </>
   )
 }
@@ -277,22 +344,21 @@ function RealSurfaceMarks({ half }: { half: number }) {
   )
 }
 
-const RIM_MAT = new THREE.MeshStandardMaterial({ color: '#d9d4c8', roughness: 0.7 })
-const BASE_MAT = new THREE.MeshStandardMaterial({ color: '#2c2f36', roughness: 0.6 })
 
 /**
  * Table edge so the miniature reads as an object in passthrough; its dark base is the map's grab handle.
  * Built as a frame around the board (not a slab under it), so with the real surface your actual table
  * shows through the middle.
  */
-function TableEdge({ size, cm }: { size: number; cm: (v: number) => number }) {
+function TableEdge({ size, cm, rim, base }: { size: number; cm: (v: number) => number; rim: string; base: string }) {
+  const rimMat = flatMaterial(rim, { roughness: 0.7 })
+  const baseMat = flatMaterial(base, { roughness: 0.6 })
+  const onRealTable = usePlacement((p) => p.status === 'pinned' && p.surfaceLabel === 'table')
   return (
     <>
-      {/* Top sits 1 mm below the ground plane: coplanar faces z-fight. */}
-      <Frame inner={size} outer={size + cm(3)} y={-cm(0.1) - cm(0.6)} height={cm(1.2)} material={RIM_MAT} />
       {/*
-        The dark base is the map's grab handle in XR: grab its rim with one hand to move the whole map
-        (up, down, closer), or with both hands to turn it. Grab pointers only, so desktop is unaffected.
+        The table edge is the map's grab handle in XR: grab the rim or the dark base with one hand to move the
+        whole map (up, down, closer), or with both hands to turn it. Grab pointers only, so desktop is unaffected.
       */}
       <GrabHandle
         targetRef={worldRootRef}
@@ -301,12 +367,24 @@ function TableEdge({ size, cm }: { size: number; cm: (v: number) => number }) {
         scale={false}
         apply={(state, target) => {
           target.position.copy(state.current.position)
+          // Room scale and up: slide and turn only; the ground stays on the real floor.
+          if (!onTable(SCALE_PRESETS[useEditor.getState().worldScale].ratio)) target.position.y = WORLD_ROOT.floorY
           target.quaternion.copy(state.current.quaternion)
-          // Keep the shared default in sync so a re-render of <Scene> can't snap the map back.
+          // Keep the shared default in sync so a re-render of <Scene> (or Recenter) can't snap the map back.
           WORLD_ROOT.position.copy(state.current.position)
+          WORLD_ROOT.yaw = state.current.rotation.y
         }}
       >
-        <Frame inner={size} outer={size + cm(6)} y={-cm(1.4) - cm(2.5)} height={cm(5)} material={BASE_MAT} raycastable />
+        {onRealTable ? (
+          <group>
+            {/* Pinned to a real table: rim and dark base under the board. Rim top 1 mm below the ground (no z-fight). */}
+            <Frame inner={size} outer={size + cm(3)} y={-cm(0.1) - cm(0.6)} height={cm(1.2)} material={rimMat} raycastable />
+            <Frame inner={size} outer={size + cm(10)} y={-cm(1.4) - cm(2.5)} height={cm(5)} material={baseMat} raycastable />
+          </group>
+        ) : (
+          // On the floor: a low lip around the board (nothing sinks into your floor). Still the grab handle.
+          <Frame inner={size} outer={size + cm(8)} y={cm(0.75)} height={cm(1.5)} material={rimMat} raycastable />
+        )}
       </GrabHandle>
     </>
   )

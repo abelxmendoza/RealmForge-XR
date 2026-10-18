@@ -68,7 +68,91 @@ Every control is a pointer event, so mouse, controller rays and hand rays behave
 
 A selected object shows drag handles (yellow sphere resizes, blue sphere rotates) and press
 buttons (green cube duplicates, purple cube cycles material/style, red cube deletes). They are
-ordinary pointer targets, so they work with controller and hand rays too.
+ordinary pointer targets: click them on desktop, poke them with a fingertip or grip them with a controller in XR.
+
+### Hand grab in XR
+
+With the **Select** tool, grab an object directly with your hand (pinch or close your fist on it)
+or with a controller (squeeze the grip while touching it). Rays are off by default (toggle with X or the wrist menu).
+
+| Gesture | What it does |
+| --- | --- |
+| One hand: grab and move | Slides the object across the map; it stays on the ground |
+| One hand: twist your wrist | Turns the object (yaw only) |
+| Second hand grabs the same object | Two-hand rotate; pull hands apart or together to scale uniformly |
+| Release | The object stays where you left it; the robot replans |
+| Grab the dark table edge | Moves the whole map (up, down, closer); two hands turn it. Works with any tool (tabletop scale only) |
+
+Snapping (G) applies while you hold the object: position snaps so footprint edges land on the 0.5-unit
+grid, yaw to 15°, width and depth to 0.5 and height to 0.5. A one-hand grab never resizes an object.
+The grab logic lives in `src/editor/grab.ts` and uses `@react-three/handle` for the hand tracking math.
+
+### Gestures (XR, Minority Report–style)
+
+| Gesture | Does |
+| --- | --- |
+| **L** (thumb + index at a right angle), hold | Sets the world's primary axis to where your index points |
+| **Two fists**, pull | Moves the world past you at true scale (walk the 80 m map from a small room) |
+| **Frame** (both hands in mirrored L's), hold | Selects everything inside the frame as a group |
+| **Pinch** at a distance + **roll your wrist** | Rotates the object (or the group) |
+
+**Controllers** do the same: both grips pull the world, both triggers frame, hold A sets the axis, right
+trigger + twist rotates, left stick moves you and right stick snap-turns.
+
+Holding an object shows a snap ghost; controllers buzz on grab, snap, place and presses; objects outline
+when you can grab them. Place library assets by aiming at the floor and pinching (or trigger), no rays needed.
+Everything placeable is in the **asset library**, including your own `.glb` models: see [docs/asset-library.md](docs/asset-library.md).
+
+The app asks for WebXR `unbounded` tracking so you can walk past the play-area boundary, and keeps the
+ground on your real floor (a detected floor plane, or the floor-level reference space). Design notes,
+tuning and limits are in [docs/gestures.md](docs/gestures.md).
+
+### Wrist menu (XR)
+
+Turn your **left palm toward your face** (or tilt the top of the left controller toward you) and a small
+panel appears above your wrist. Poke it with your right index finger:
+
+- **Rays on/off**: pointer rays for distant objects (same as X). Grabbing and poking keep working either way
+- **Snap on/off**: same as G
+- **Real / Virtual**: the surface the world stands on (same as V)
+- **1:60 · 1:20 · 1:4 · 1:1**: world scale presets (below)
+- **Recenter**: puts the world back in front of you at the current scale
+- **Mocap**: connects the Smartsuit Pro skeleton ([docs/smartsuit.md](docs/smartsuit.md))
+
+## Life size and world scale
+
+Everything is modelled at **real-world size: 1 unit = 1 m**. Doors are 2.1–2.4 m (3.5 m garage doors),
+storeys are 3 m with window rows at real sill height, streetlights 6 m, and houses, offices and towers
+use real footprints. The map is an 80 × 80 m city block. Sizes live in `src/world/scale.ts` and the
+catalog.
+
+The same world can be shown at four scales (HUD **Scale** select or the wrist menu):
+
+| Preset | Board size | Where it goes |
+| --- | --- | --- |
+| Tabletop 1:60 | ~1.3 m | On your floor just ahead of you (Place pins it to a real table); grab its edge to move it |
+| Room 1:20 | ~4 m | On your floor, ahead of you |
+| Large 1:4 | ~20 m | On your floor; the robot start is 1.5 m ahead, buildings are knee to chest high |
+| Life size 1:1 | 80 m | On your floor at true size; stand next to the robot and walk up to a doorway |
+
+Handles, buttons and the goal flag keep a reachable real size at every scale, and lighting and shadows
+follow the world.
+
+**Occlusion (O, the HUD, or wrist Occl.; off by default).** Hides virtual objects behind real ones: live depth on
+Quest 3/3S, or your Space Setup walls and furniture on Quest 2 (see [docs/occlusion.md](docs/occlusion.md)).
+
+**Real room (P / wrist Surf.; spatial save).** With Space Setup, objects rest on real tables and stop at
+real walls, and saved worlds remember their real spot on this headset (see [docs/real-room.md](docs/real-room.md)).
+
+**Moving the floating panels.** Grab the **Move** bar above the Control Palette or guide panel, or point a ray at
+it and pull the trigger. The panel faces you when released and stays there until Recenter.
+
+**Real vs virtual surface (V, or the wrist menu).** With **Real** (the default) the ground is a transparent
+grid: passthrough shows your actual floor or table, grid lines mark the 0.5 m snap step and every 5 m, an
+orange outline marks the map's edge, and a 1 m cross marks its origin. Objects still cast shadows onto your
+real floor. Walk around and everything stays put at true size. **Virtual** draws the solid placeholder
+ground instead. At life size the floor is out of fingertip reach, so turn on rays (X) to point at the floor
+when placing objects, then grab them by hand.
 
 In **VR/AR**, use hand grab (rays default off), the left-wrist menu, and the floating control
 palette. Open **Guide** anytime for short, sectioned help.
@@ -94,6 +178,7 @@ src/nav/navigation.ts      replans on every geometry/goal/robot change; flags ro
 src/agent/Robot.tsx        primitive robot that follows waypoints
 src/world/catalog.ts       object defaults, building styles, material lists, style cycling
 src/world/snap.ts          grid / angle snapping helpers
+src/world/scale.ts         real-world constants: storey height, door sizes, facade bays
 src/world/presets.ts       preset layouts (Forge / Mars / Warehouse)
 src/world/environment.ts   environment config + loadEnvironment() API
 src/world/actions.ts       XR-safe World Action API (see docs/xr-world-actions.md)
@@ -105,7 +190,9 @@ src/xr/*                   AR enter fallback, Place city plane pinning
 src/scene/worldRoot.ts     presentation scale presets (tabletop → life size); store stays metres
 src/scene/structures/      how each object kind is drawn (buildings, walls, platforms, decorations, props)
 src/scene/materials.ts     procedural canvas textures + shared, cached materials
-src/scene/*                scene graph, lighting, route + goal visuals
+src/scene/*                scene graph, lighting, world root (scale presets, placement), route + goal visuals
+src/xr/*                   AR session fallback, "Place city" plane pinning and anchors
+src/mocap/*                Smartsuit Pro (Rokoko) stream: parser, client, debug skeleton (+ tools/mocap-bridge.ts)
 ```
 
 World save/load and undo/redo: `docs/world-persistence.md`. Quest XR testing: `docs/quest2-testing.md`.
