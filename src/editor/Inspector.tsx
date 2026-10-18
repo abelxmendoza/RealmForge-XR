@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { create } from 'zustand'
 import { ActorPanel } from '../actors/ActorPanel'
 import { getAsset } from '../world/assets'
 import { AssetCatalogPanel } from './AssetCatalogPanel'
@@ -30,17 +31,31 @@ import {
 import { useEditor, type DecorKind } from './settings'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 import { SimulationPanel } from '../sim/SimulationPanel'
+import { FlowPanel } from '../flow/FlowPanel'
 import { useNav } from '../nav/navigation'
 import { useHudSection } from './hudSectionStore'
 import { resolveInspectorContext, TOOL_PANEL_HEADINGS } from './inspectorContext'
 import { useAttendee, type AttendeeStatus } from '../sim/attendee'
+
+/** Whether the right panel is hidden; a store so toolbar buttons can reopen it. */
+export const useInspectorPanel = create<{ collapsed: boolean; setCollapsed: (collapsed: boolean) => void }>((set) => ({
+  collapsed: false,
+  setCollapsed: (collapsed) => set({ collapsed }),
+}))
+
+/** Switch to the catalog-object tool and make sure its panel is visible. */
+export function openObjectLibrary() {
+  worldActions.setTool('asset')
+  useInspectorPanel.getState().setCollapsed(false)
+}
 
 /**
  * Context-sensitive right panel: shows only controls for the active Hud section,
  * selected object/actor, or placement tool. Uses existing world/editor/attendee stores.
  */
 export function Inspector() {
-  const [collapsed, setCollapsed] = useState(false)
+  const collapsed = useInspectorPanel((s) => s.collapsed)
+  const setCollapsed = useInspectorPanel((s) => s.setCollapsed)
   const section = useHudSection((s) => s.section)
   const selected = useWorld((s) => (s.selectedId ? s.objects[s.selectedId] : null))
   const selectedActorId = useWorld((s) => s.selectedActorId)
@@ -64,18 +79,17 @@ export function Inspector() {
     )
   }
 
+  const context = resolveInspectorContext({
+    section,
+    tool,
+    hasObject: Boolean(selected),
+    hasActor: Boolean(selectedActorId),
+  })
+
   return (
-    <div
-      className="inspector"
-      data-context={resolveInspectorContext({
-        section,
-        tool,
-        hasObject: Boolean(selected),
-        hasActor: Boolean(selectedActorId),
-      })}
-    >
+    <div className="inspector" data-context={context}>
       <header className="inspector-chrome">
-        <h2 className="inspector-title">{panelHeading(section, tool, selected, selectedActorId)}</h2>
+        <h2 className="inspector-title">{panelHeading(context, tool)}</h2>
         <button
           type="button"
           className="ghost inspector-toggle"
@@ -88,13 +102,13 @@ export function Inspector() {
       </header>
 
       <div className="inspector-body">
-        {section === 'simulate' ? (
+        {context === 'simulate' ? (
           <SimulationPanel />
-        ) : section === 'save' ? (
+        ) : context === 'save' ? (
           <WorldsPanel />
-        ) : selected ? (
+        ) : context === 'object' && selected ? (
           <ObjectPanel o={selected} />
-        ) : selectedActorId ? (
+        ) : context === 'actor' ? (
           <ActorPanel />
         ) : (
           <ToolContextPanel tool={tool} />
@@ -110,16 +124,11 @@ export function Inspector() {
   )
 }
 
-function panelHeading(
-  section: string,
-  tool: Tool,
-  selected: WorldObject | null,
-  selectedActorId: string | null,
-): string {
-  if (section === 'simulate') return 'Simulation'
-  if (section === 'save') return 'Saved worlds'
-  if (selected) return 'Selected object'
-  if (selectedActorId) return 'Selected actor'
+function panelHeading(context: string, tool: Tool): string {
+  if (context === 'simulate') return 'Simulation'
+  if (context === 'save') return 'Saved worlds'
+  if (context === 'object') return 'Selected object'
+  if (context === 'actor' && tool !== 'actor') return 'Selected actor'
   return TOOL_PANEL_HEADINGS[tool] ?? 'Inspector'
 }
 
@@ -148,6 +157,8 @@ function ToolContextPanel({ tool }: { tool: Tool }) {
       return <ActorPanel />
     case 'goal':
       return <GoalToolPanel />
+    case 'route':
+      return <FlowPanel />
     case 'robot':
       return <RobotToolPanel />
     case 'select':
@@ -185,7 +196,8 @@ function GoalToolPanel() {
   const selectedActorId = useWorld((s) => s.selectedActorId)
   const actor = useWorld((s) => (selectedActorId ? s.actors[selectedActorId] : null))
   const status = useNav((s) => s.status)
-  const destinations = useWorld((s) => Object.values(s.objects).filter((o) => o.destinationRole))
+  const objects = useWorld((s) => s.objects)
+  const destinations = useMemo(() => Object.values(objects).filter((o) => o.destinationRole), [objects])
   return (
     <section>
       <p className="hint">
@@ -234,7 +246,8 @@ function RobotToolPanel() {
   const goal = useWorld((s) => s.goal)
   const status = useNav((s) => s.status)
   const replans = useNav((s) => s.replanCount)
-  const destinations = useWorld((s) => Object.values(s.objects).filter((o) => o.destinationRole))
+  const objects = useWorld((s) => s.objects)
+  const destinations = useMemo(() => Object.values(objects).filter((o) => o.destinationRole), [objects])
   return (
     <section>
       <p className="hint">Click the ground to place the robot start. Navigation updates automatically when the destination or obstacles change.</p>

@@ -10,6 +10,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useXR } from '@react-three/xr'
 import * as THREE from 'three'
 import { worldActions } from '../world/actions'
+import { flowActions } from '../flow/actions'
 import { useWorld } from '../world/store'
 import { getHistoryState, subscribeHistory } from '../world/history'
 import { getConfirmation, resolveConfirmation, subscribeConfirmation } from '../world/confirmation'
@@ -201,8 +202,16 @@ function PaletteContent() {
   } else if (page === 'plan') {
     buttons = ([
       ['goal', 'Add Waypoint'],
+      ['route', 'Flow Route'],
       ['robot', 'Place Robot'],
-    ] as const).map(([id, label]) => ({ label, active: tool === id, run: () => worldActions.setTool(id) }))
+    ] as const).map(([id, label]) => ({
+      label,
+      active: tool === id,
+      run: () => (id === 'route' ? flowActions.beginRoute('waypoint') : worldActions.setTool(id)),
+    }))
+    if (tool === 'route') {
+      buttons.push({ label: 'Finish Flow Route', run: () => flowActions.finishRoute() })
+    }
     if (route.playState === 'playing') {
       buttons.push({ label: 'Pause', run: () => pauseRoute() })
     } else {

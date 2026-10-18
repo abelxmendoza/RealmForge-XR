@@ -15,6 +15,12 @@ describe('resolveInspectorContext', () => {
     ).toBe('object')
   })
 
+  it('shows catalog tools even while an object is selected', () => {
+    for (const tool of ['actor', 'asset', 'event'] as const) {
+      expect(resolveInspectorContext({ section: 'build', tool, hasObject: true, hasActor: false })).toBe(tool)
+    }
+  })
+
   it('prefers selected actor when no object', () => {
     expect(
       resolveInspectorContext({ section: 'plan', tool: 'actor', hasObject: false, hasActor: true }),

@@ -2,6 +2,7 @@ import { BRAND } from '../theme/brand'
 import { useState } from 'react'
 import { editorHref, LANDING_TEMPLATES, LANDING_VENUES, LANDING_WORLDS, type LandingWorldId } from './entry'
 import { WorldDiorama } from './WorldDiorama'
+import { manualInstallHint, promptInstall, useInstallState } from './install'
 
 const GITHUB = 'https://github.com/abelxmendoza/RealmForge-XR'
 
@@ -76,9 +77,12 @@ export default function LandingPage() {
               GitHub <Arrow />
             </a>
           </nav>
-          <a className="rf-button rf-button-small" href={editorHref()}>
-            Launch editor <Arrow />
-          </a>
+          <div className="rf-nav-actions">
+            <InstallButton className="rf-button rf-button-small rf-button-ghost rf-nav-install" />
+            <a className="rf-button rf-button-small" href={editorHref()}>
+              Launch editor <Arrow />
+            </a>
+          </div>
         </div>
       </header>
 
@@ -321,8 +325,9 @@ export default function LandingPage() {
             <a className="rf-button rf-button-ghost" href={editorHref('job-fair')}>
               Open job fair <Arrow />
             </a>
+            <InstallButton className="rf-button rf-button-ghost" hintClassName="rf-install-hint" />
           </div>
-          <p className="rf-final-note">Browser-based. No install to start building.</p>
+          <p className="rf-final-note">Browser-based — no install needed to start building. Install it to launch from your desktop, phone or headset like any other app.</p>
         </section>
       </main>
 

@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { worldActions } from '../world/actions'
+import { flowActions } from '../flow/actions'
+import { useFlow } from '../flow/store'
 import { SelectionOutline } from '../scene/structures'
 import * as THREE from 'three'
 import { Line } from '@react-three/drei'
@@ -82,9 +84,14 @@ const setDraft = (draft: Draft | null) => useGroundUI.setState({ draft })
 /** Asset / event / actor tools: track the ground point under the pointer for the placement ghost. */
 export function applyGroundHover(e: ThreeEvent<PointerEvent>) {
   const tool = useWorld.getState().tool
-  if (tool !== 'asset' && tool !== 'event' && tool !== 'actor') return
   const point = groundPoint(e)
-  if (point) useGroundUI.setState({ hover: point, placementError: false })
+  if (point) {
+    const clamped: Vec2 = [clampToWorld(point[0]), clampToWorld(point[1])]
+    flowActions.setPointerTarget(clamped)
+    if (tool === 'asset' || tool === 'event' || tool === 'actor' || tool === 'building') {
+      useGroundUI.setState({ hover: clamped, placementError: false })
+    }
+  }
 }
 export const clearGroundHover = () => useGroundUI.setState({ hover: null })
 /** Set the asset tool's aim point directly (XR hands / controllers aiming without rays). */
@@ -101,7 +108,7 @@ export function placeAssetAt(point: Vec2): boolean {
   if (result.ok) {
     settleObject(result.id)
     pulse('active', HAPTIC.place)
-    finishPlacement(result.id)
+    keepPlacing(result.id)
   }
   return result.ok
 }
@@ -122,11 +129,18 @@ export function placeEventAt(point: Vec2): boolean {
   const prop = eventPreview(point)
   if (!prop) return false
   const { id: _preview, ...data } = prop
+  const check = flowActions.validatePlacement(data)
+  if (check.reject) {
+    useGroundUI.setState({ placementError: true })
+    useEditor.getState().set({ actorMessage: flowActions.placementMessage(check, placePoint(point)) })
+    return false
+  }
+  if (check.reasons.length) useEditor.getState().set({ actorMessage: flowActions.placementMessage(check) })
   const w = useWorld.getState()
   const id = w.addObject(data)
   settleObject(id)
   pulse('active', HAPTIC.place)
-  finishPlacement(id)
+  keepPlacing(id)
   return true
 }
 
@@ -144,6 +158,7 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
   const p = groundPoint(e)
   if (!p) return
   const raw: Vec2 = [clampToWorld(p[0]), clampToWorld(p[1])]
+  flowActions.setPointerTarget(raw)
   const w = useWorld.getState()
   const tool = w.tool
   switch (tool) {
@@ -151,6 +166,13 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
       w.select(null)
       useSelection.getState().clear()
       return
+    case 'route': {
+      e.stopPropagation()
+      const at = placePoint(raw)
+      if (!useFlow.getState().draft) flowActions.beginRoute('waypoint')
+      flowActions.addWaypoint(at)
+      return
+    }
     case 'goal': {
       e.stopPropagation()
       if (w.selectedActorId) {
@@ -202,9 +224,19 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
     case 'building':
     case 'decor': {
       e.stopPropagation()
-      const id = w.addObject(objectForTool(tool, placePoint(raw)))
+      const draftObj = objectForTool(tool, placePoint(raw))
+      const check = flowActions.validatePlacement(draftObj)
+      if (check.reject) {
+        useGroundUI.setState({ placementError: true })
+        useEditor.getState().set({
+          actorMessage: flowActions.placementMessage(check, [draftObj.position[0], draftObj.position[2]]),
+        })
+        return
+      }
+      if (check.reasons.length) useEditor.getState().set({ actorMessage: flowActions.placementMessage(check) })
+      const id = w.addObject(draftObj)
       settleObject(id)
-      finishPlacement(id)
+      keepPlacing(id)
       return
     }
     case 'wall':
@@ -245,6 +277,17 @@ function finishPlacement(id?: string | null) {
   const w = useWorld.getState()
   if (id) w.select(id)
   w.setTool('select')
+}
+
+/**
+ * Catalog placements (buildings, decorations, library assets, event objects) keep the tool armed
+ * and the catalog open, so you can place several in a row. Clicking an existing object still
+ * selects it instead of spawning; "Done placing" (or 1 / Esc) returns to Select.
+ */
+function keepPlacing(id: string) {
+  const o = useWorld.getState().objects[id]
+  useWorld.getState().select(null)
+  if (o) useEditor.getState().set({ actorMessage: 'Placed. Click empty ground to place another, or press Done placing.' })
 }
 
 /** The map's ground. Empty-ground clicks apply the current place tool; object presses select/move instead. */

@@ -26,6 +26,7 @@ export {
 } from '../actors/actions'
 import { selectCatalogAsset, rotateCatalogAsset, previewCatalogAsset, placeCatalogAsset, listDestinations, sendRobotToDestination } from './assetActions'
 export { selectCatalogAsset, rotateCatalogAsset, previewCatalogAsset, placeCatalogAsset, listDestinations, sendRobotToDestination } from './assetActions'
+export { flowActions } from '../flow/actions'
 /**
  * XR-compatible World Action API — thin facade over existing stores.
  *

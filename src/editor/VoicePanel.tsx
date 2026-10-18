@@ -3,6 +3,9 @@ import { useVoiceCommands } from '../voice/useVoiceCommands'
 import { VOICE_OPTIONS } from '../voice/sharedConfirm'
 import { getConfirmation, subscribeConfirmation } from '../world/confirmation'
 
+/** Shown when nothing has been said yet; mentions Space, so small touch screens hide it. */
+const IDLE_HINT = 'Tap and speak, or hold Space'
+
 /**
  * The one voice control in the web app: a microphone button at the bottom of the screen.
  * Tap it and speak; the command runs when you pause (tap again to run it right away).
@@ -62,7 +65,7 @@ export function VoicePanel() {
         : 'Speak now, e.g. “add three trees near the robot”'
       : result
         ? `${heard ? `“${heard}” · ` : ''}${result}`
-        : 'Tap and speak, or hold Space'
+        : IDLE_HINT
 
   return (
     <div className="voice-mic" aria-label="Voice commands">
@@ -97,7 +100,7 @@ export function VoicePanel() {
           <button type="submit">Run</button>
         </form>
       )}
-      <p className={voice.lastError ? 'heard error' : ok ? 'heard ok' : 'heard'} role="status" aria-live="polite">
+      <p className={voice.lastError ? 'heard error' : ok ? 'heard ok' : line === IDLE_HINT ? 'heard idle' : 'heard'} role="status" aria-live="polite">
         {line}
       </p>
     </div>
