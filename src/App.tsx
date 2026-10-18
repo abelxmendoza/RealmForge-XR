@@ -17,6 +17,8 @@ import { useEditor } from './editor/settings'
 import { importWorld, quickSave } from './world/persistence'
 import { redo, undo } from './world/history'
 import { toggleRays, toggleSurface } from './editor/xrInput'
+import { toggleOcclusion } from './xr/occlusion'
+import { toggleRealSurfaces } from './xr/realSurfaces'
 import { toolByKey } from './editor/toolbar'
 import { ToolbarHud } from './editor/ToolbarHud'
 import { xrStore } from './xr/xrStore'
@@ -104,6 +106,8 @@ function useKeyboard() {
       if (e.key === 'g' || e.key === 'G') return useEditor.getState().set({ snap: !useEditor.getState().snap })
       if (e.key === 'x' || e.key === 'X') return toggleRays()
       if (e.key === 'v' || e.key === 'V') return toggleSurface()
+      if (e.key === 'o' || e.key === 'O') return toggleOcclusion()
+      if (e.key === 'p' || e.key === 'P') return toggleRealSurfaces()
       if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         e.preventDefault()
         useGuide.getState().toggleGuide()

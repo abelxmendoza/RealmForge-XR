@@ -16,6 +16,12 @@ describe('AR_ATTEMPTS', () => {
     expect(minimal).toEqual(['local-floor'])
   })
 
+  it('asks for unbounded tracking (walk past the boundary) in the full attempts, not the minimal fallback', () => {
+    expect(AR_ATTEMPTS[0].init.optionalFeatures).toContain('unbounded')
+    expect(AR_ATTEMPTS[1].init.optionalFeatures).toContain('unbounded')
+    expect(AR_ATTEMPTS[2].init.optionalFeatures).not.toContain('unbounded')
+  })
+
   it('asks for depth only on the first attempt', () => {
     const full = AR_ATTEMPTS[0].init.optionalFeatures ?? []
     expect(full).toContain('depth-sensing')

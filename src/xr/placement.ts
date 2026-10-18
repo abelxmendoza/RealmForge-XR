@@ -1,12 +1,12 @@
 import { create } from 'zustand'
-import { WORLD_ROOT } from '../scene/worldRoot'
 
 export type PlacementStatus = 'free' | 'choosing' | 'pinned'
 
 export type QuatTuple = [number, number, number, number]
 export type Vec3Tuple = [number, number, number]
 
-const DEFAULT_POSITION: Vec3Tuple = [WORLD_ROOT.position.x, WORLD_ROOT.position.y, WORLD_ROOT.position.z]
+// Identity until pinned: the scale presets (WorldScaler in Scene) place the world root themselves.
+const DEFAULT_POSITION: Vec3Tuple = [0, 0, 0]
 const DEFAULT_QUAT: QuatTuple = [0, 0, 0, 1]
 
 export interface PlacementState {

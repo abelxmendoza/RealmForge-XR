@@ -137,11 +137,11 @@ describe('validation', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
     const o = r.world.objects[0]
-    expect(o.position).toEqual([40, 0, -40])
+    expect(o.position).toEqual([WORLD.half, 0, -WORLD.half])
     expect(o.size[0]).toBeLessThanOrEqual(WORLD.half * 4)
     expect(o.style).toBeUndefined()
     expect(o.solid).toBeUndefined()
-    expect(r.world.robotStart).toEqual([40, 40])
+    expect(r.world.robotStart).toEqual([WORLD.half, WORLD.half])
     expect(r.warnings.length).toBeGreaterThanOrEqual(4)
   })
 
