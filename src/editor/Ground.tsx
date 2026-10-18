@@ -62,7 +62,14 @@ function objectForTool(tool: 'building' | 'decor', at: Vec2): Omit<WorldObject, 
 
 type Draft = { kind: 'wall' | 'platform'; a: Vec2; b: Vec2 }
 
-/** The map's ground. Clicking it applies the current tool. */
+/** After a successful place, return to Move so the next click can select instead of spawning again. */
+function finishPlacement(id?: string | null) {
+  const w = useWorld.getState()
+  if (id) w.select(id)
+  w.setTool('select')
+}
+
+/** The map's ground. Empty-ground clicks apply the current place tool; object presses select/move instead. */
 export function Ground() {
   const tool = useWorld((s) => s.tool)
   useEditor((s) => s.actorKind)
@@ -90,28 +97,35 @@ export function Ground() {
           const result = worldActions.setActorGoal(w.selectedActorId, raw)
           useEditor.getState().set({ actorMessage: result.ok ? 'Actor destination set.' : result.error })
         } else w.setGoal(raw)
+        finishPlacement(null)
         return
       case 'robot':
         e.stopPropagation()
         w.placeRobot(raw)
+        finishPlacement(null)
         return
       case 'actor': {
         e.stopPropagation()
         const result = worldActions.placeActor(raw)
         useEditor.getState().set({ actorMessage: result.ok ? 'Actor placed. Select it to customize or choose its destination.' : result.error })
+        if (result.ok) {
+          if ('id' in result && result.id) useWorld.getState().selectActor(result.id)
+          finishPlacement(null)
+        }
         return
       }
       case 'asset': {
         e.stopPropagation()
         const result = worldActions.placeCatalogAsset(raw)
         setPlacementError(!result.ok)
+        if (result.ok) finishPlacement(result.id)
         return
       }
       case 'building':
       case 'decor': {
         e.stopPropagation()
         const id = w.addObject(objectForTool(tool, placePoint(raw)))
-        w.select(id)
+        finishPlacement(id)
         return
       }
       case 'event': {
@@ -121,7 +135,7 @@ export function Ground() {
         const prop = propFromCatalog(catalogId, [at[0], 0, at[1]])
         if (!prop) return
         const id = w.addObject(prop)
-        w.select(id)
+        finishPlacement(id)
         return
       }
       case 'wall':
@@ -139,7 +153,7 @@ export function Ground() {
             setDraft(null)
             const s = useEditor.getState()
             const store = useWorld.getState()
-            let id: string
+            let id: string | undefined
             if (kind === 'wall') {
               const wall = wallFromSegment(cur.a, cur.b)
               if (wall.size[0] < MIN_WALL) return
@@ -149,7 +163,7 @@ export function Ground() {
               if (plat.size[0] < MIN_PLATFORM || plat.size[2] < MIN_PLATFORM) return
               id = store.addObject({ kind: 'platform', ...plat, material: s.platformMaterial })
             }
-            store.select(id)
+            finishPlacement(id)
           },
         })
       }
