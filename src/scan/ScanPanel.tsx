@@ -84,8 +84,9 @@ export function ScanPanel() {
               <strong>iPhone capture:</strong> Scan a room using a 3D scanning app such as Polycam or Scaniverse.
               Export a textured GLB and select it below. LiDAR is available only on supported iPhone Pro models;
               other iPhones may use photo-based reconstruction when supported by the scanning app.
-              A normal photo or live camera stream alone is not a 3D scan.
+              A normal photo or live camera stream alone is not a 3D scan. For the iPhone 15 (non-Pro), choose Scaniverse photogrammetry mesh mode, not LiDAR or a Gaussian splat.
             </p>
+            <p className="hint"><a href="https://scaniverse.com/support" target="_blank" rel="noreferrer">Scaniverse official capture and export help ↗</a></p>
           ) : (
             <p className="hint">
               <strong>RealSense D455 capture:</strong> Record RGB-D frames on your computer using librealsense,
