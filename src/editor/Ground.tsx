@@ -95,12 +95,21 @@ export function Ground() {
       case 'goal': {
         e.stopPropagation()
         if (w.selectedActorId) {
-          const result = worldActions.setActorGoal(w.selectedActorId, raw)
-          useEditor.getState().set({ actorMessage: result.ok ? 'Actor destination set.' : result.error })
+          const append = useEditor.getState().actorAppendRoute || e.nativeEvent.shiftKey
+          const result = append
+            ? worldActions.appendActorWaypoint(w.selectedActorId, raw)
+            : worldActions.setActorGoal(w.selectedActorId, raw)
+          useEditor.getState().set({
+            actorMessage: result.ok
+              ? append
+                ? 'Stop added to actor route.'
+                : 'Actor destination set.'
+              : result.error,
+          })
           finishPlacement(null)
           return
         }
-        // Multi-waypoint route: stay on Add Waypoint so users can click several stops, then Play.
+        // Robot multi-waypoint route: stay on Add Waypoint so users can click several stops, then Play.
         const result = addWaypoint(raw)
         if (!result.ok) useEditor.getState().set({ actorMessage: result.error })
         else useEditor.getState().set({ actorMessage: `Waypoint ${result.index + 1} added. Add more, then Play.` })

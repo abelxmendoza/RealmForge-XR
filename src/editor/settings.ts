@@ -13,6 +13,8 @@ export type DecorKind = Extract<ObjectKind, 'tree' | 'streetlight' | 'crate'>
 export interface EditorSettings {
   actorKind: ActorKind
   actorMessage: string
+  /** When true, goal clicks append a stop to the selected actor’s route instead of replacing it. */
+  actorAppendRoute: boolean
   assetId: AssetId
   assetRotation: number
   snap: boolean
@@ -39,6 +41,7 @@ export interface EditorSettings {
 export const useEditor = create<EditorSettings>((set) => ({
   actorKind: 'worker',
   actorMessage: '',
+  actorAppendRoute: false,
   assetId: 'storage-rack',
   assetRotation: 0,
   snap: true,

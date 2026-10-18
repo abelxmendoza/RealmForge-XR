@@ -2,7 +2,8 @@ import { useWorld } from '../world/store'
 import { navObstacles, WORLD, type Vec2 } from '../world/types'
 import { buildGrid, isBlocked, worldToCell, pathIsClear, type Grid } from '../nav/grid'
 import { planPath } from '../nav/astar'
-import { ACTOR_CATALOG, actorRadius, cloneActor, type Actor } from './types'
+import { withHistorySuppressed } from '../world/history'
+import { ACTOR_CATALOG, actorRadius, actorRoute, cloneActor, type Actor } from './types'
 
 export type ActorStatus = 'idle' | 'moving' | 'arrived' | 'no-path'
 export interface ActorRuntime {
@@ -97,7 +98,20 @@ export function tickActors(delta: number) {
       if (distance <= travel + 1e-6) ++runtime.target
       else break
     }
-    if (runtime.target >= runtime.path.length && runtime.status === 'moving') { runtime.status = 'arrived'; changed = true }
+    if (runtime.target >= runtime.path.length && runtime.status === 'moving') {
+      const remaining = actorRoute(actor).slice(1)
+      if (remaining.length) {
+        // Advance to the next planned stop without creating an undo step.
+        withHistorySuppressed(() => {
+          useWorld.getState().updateActor(actor.id, { goal: [...remaining[0]!] as Vec2, route: remaining.map((p) => [...p] as Vec2) })
+        })
+        plan({ ...actor, goal: remaining[0]!, route: remaining }, runtime)
+        changed = true
+      } else {
+        runtime.status = 'arrived'
+        changed = true
+      }
+    }
   }
   if (changed) publish()
 }

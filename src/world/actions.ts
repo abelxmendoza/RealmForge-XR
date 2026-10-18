@@ -1,5 +1,29 @@
-import { selectActorKind, previewActor, placeActor, selectActor, updateActor, setActorGoal, sendActorToDestination, duplicateActor, removeActor } from '../actors/actions'
-export { selectActorKind, previewActor, placeActor, selectActor, updateActor, setActorGoal, sendActorToDestination, duplicateActor, removeActor } from '../actors/actions'
+import {
+  selectActorKind,
+  previewActor,
+  placeActor,
+  selectActor,
+  updateActor,
+  setActorGoal,
+  appendActorWaypoint,
+  sendActorToDestination,
+  appendActorDestination,
+  duplicateActor,
+  removeActor,
+} from '../actors/actions'
+export {
+  selectActorKind,
+  previewActor,
+  placeActor,
+  selectActor,
+  updateActor,
+  setActorGoal,
+  appendActorWaypoint,
+  sendActorToDestination,
+  appendActorDestination,
+  duplicateActor,
+  removeActor,
+} from '../actors/actions'
 import { selectCatalogAsset, rotateCatalogAsset, previewCatalogAsset, placeCatalogAsset, listDestinations, sendRobotToDestination } from './assetActions'
 export { selectCatalogAsset, rotateCatalogAsset, previewCatalogAsset, placeCatalogAsset, listDestinations, sendRobotToDestination } from './assetActions'
 /**
@@ -204,7 +228,17 @@ export const worldActions = {
   listDestinations,
   sendRobotToDestination,
 
-  selectActorKind, previewActor, placeActor, selectActor, updateActor, setActorGoal, sendActorToDestination, duplicateActor, removeActor,
+  selectActorKind,
+  previewActor,
+  placeActor,
+  selectActor,
+  updateActor,
+  setActorGoal,
+  appendActorWaypoint,
+  sendActorToDestination,
+  appendActorDestination,
+  duplicateActor,
+  removeActor,
 
   // tools
   setTool,
