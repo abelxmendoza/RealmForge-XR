@@ -2,6 +2,7 @@ import { BRAND } from '../theme/brand'
 import { useState } from 'react'
 import { editorHref, LANDING_TEMPLATES, LANDING_VENUES, LANDING_WORLDS, type LandingWorldId } from './entry'
 import { WorldDiorama } from './WorldDiorama'
+import { manualInstallHint, promptInstall, useInstallState } from './install'
 
 const GITHUB = 'https://github.com/abelxmendoza/RealmForge-XR'
 
@@ -50,6 +51,41 @@ function TemplateCard({
   )
 }
 
+function InstallButton({ className, hintClassName }: { className: string; hintClassName?: string }) {
+  const state = useInstallState()
+  const [hint, setHint] = useState<string | null>(null)
+
+  if (state === 'installed') {
+    return (
+      <span className={`${className} rf-install-done`} role="status">
+        App installed ✓
+      </span>
+    )
+  }
+
+  const onClick = async () => {
+    if (state === 'available') {
+      setHint(null)
+      await promptInstall()
+    } else {
+      setHint(manualInstallHint())
+    }
+  }
+
+  return (
+    <span className="rf-install">
+      <button type="button" className={className} onClick={() => void onClick()}>
+        Install app <span aria-hidden="true">↓</span>
+      </button>
+      {hintClassName && (
+        <span className={hintClassName} aria-live="polite">
+          {hint}
+        </span>
+      )}
+    </span>
+  )
+}
+
 export default function LandingPage() {
   const [world, setWorld] = useState<LandingWorldId>('job-fair')
   const selected = LANDING_TEMPLATES.find((item) => item.id === world)!
@@ -70,9 +106,12 @@ export default function LandingPage() {
               GitHub <Arrow />
             </a>
           </nav>
-          <a className="rf-button rf-button-small" href={editorHref()}>
-            Launch editor <Arrow />
-          </a>
+          <div className="rf-nav-actions">
+            <InstallButton className="rf-button rf-button-small rf-button-ghost rf-nav-install" />
+            <a className="rf-button rf-button-small" href={editorHref()}>
+              Launch editor <Arrow />
+            </a>
+          </div>
         </div>
       </header>
 
@@ -316,8 +355,9 @@ export default function LandingPage() {
             <a className="rf-button rf-button-ghost" href={editorHref('empty-event-venue')}>
               Start empty venue <Arrow />
             </a>
+            <InstallButton className="rf-button rf-button-ghost" hintClassName="rf-install-hint" />
           </div>
-          <p className="rf-final-note">Browser-based. No install to start building.</p>
+          <p className="rf-final-note">Browser-based — no install needed to start building. Install it to launch from your desktop, phone or headset like any other app.</p>
         </section>
       </main>
 

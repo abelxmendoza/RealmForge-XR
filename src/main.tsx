@@ -2,7 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import LandingPage from './landing/LandingPage'
 import { readEntry } from './landing/entry'
+import { setupInstall } from './landing/install'
 import './landing/landing.css'
+
+setupInstall()
 
 const root = createRoot(document.getElementById('root')!)
 const entry = readEntry(window.location.search)

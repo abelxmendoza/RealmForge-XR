@@ -2,8 +2,8 @@ export const LANDING_WORLDS = [
   {
     id: 'forge-district',
     name: 'Forge District',
-    shortName: 'Forge',
-    number: '01',
+    shortName: 'City',
+    number: '02',
     category: 'URBAN WORLDBUILDING',
     description: 'A city block with room for your next big idea. Shape buildings, roads, and the spaces in between.',
     color: '#ff8854',
@@ -13,7 +13,7 @@ export const LANDING_WORLDS = [
     id: 'mars-outpost',
     name: 'Mars Outpost',
     shortName: 'Mars',
-    number: '02',
+    number: '03',
     category: 'OFF-WORLD EXPLORATION',
     description: 'Build a foothold on a new frontier. Arrange habitats, research facilities, and routes across red terrain.',
     color: '#de805c',
@@ -23,7 +23,7 @@ export const LANDING_WORLDS = [
     id: 'warehouse',
     name: 'Autonomous Warehouse',
     shortName: 'Warehouse',
-    number: '03',
+    number: '04',
     category: 'ROBOT NAVIGATION',
     description: 'Lay out a working facility. Place equipment, mark destinations, and put the robot’s route to the test.',
     color: '#87b8b1',
@@ -37,7 +37,7 @@ export const LANDING_VENUES = [
     id: 'empty-event-venue',
     name: 'Empty',
     shortName: 'Empty',
-    number: '04',
+    number: '01',
     category: 'EVENT DESIGN',
     description: 'A completely empty board with no objects, actors, robot or destination. Build your own scene from scratch.',
     color: '#c4a574',
@@ -55,7 +55,8 @@ export const LANDING_VENUES = [
   },
 ] as const
 
-export const LANDING_TEMPLATES = [...LANDING_WORLDS, ...LANDING_VENUES] as const
+/** Preview-picker order: Empty first, then the worlds, then the Job Fair. */
+export const LANDING_TEMPLATES = [LANDING_VENUES[0], ...LANDING_WORLDS, LANDING_VENUES[1]] as const
 export type LandingWorldId = (typeof LANDING_TEMPLATES)[number]['id']
 
 export function editorHref(world?: LandingWorldId) {
