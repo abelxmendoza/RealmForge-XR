@@ -19,6 +19,7 @@ export const TOOL_PANEL_HEADINGS: Partial<Record<Tool, string>> = {
   wall: 'Draw wall',
   building: 'Place building',
   goal: 'Set destination',
+  route: 'Flow route',
   robot: 'Place robot',
   platform: 'Place road',
   decor: 'Place decoration',
