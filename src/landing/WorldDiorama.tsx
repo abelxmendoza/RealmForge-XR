@@ -12,7 +12,7 @@ const footprint = (x: number, z: number, width: number, depth: number, h = 0) =>
 function labelFor(world: LandingWorldId) {
   if (world === 'mars-outpost') return 'Mars research outpost'
   if (world === 'warehouse') return 'Warehouse with equipment'
-  if (world === 'empty-event-venue') return 'Empty event venue hall'
+  if (world === 'empty-event-venue') return 'Empty Space'
   if (world === 'job-fair') return 'Job fair venue with booths and stage'
   return 'Miniature city'
 }

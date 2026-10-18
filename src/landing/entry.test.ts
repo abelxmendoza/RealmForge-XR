@@ -14,6 +14,16 @@ describe('landing page editor entry', () => {
     expect(LANDING_VENUES.map((v) => v.id)).toEqual(['empty-event-venue', 'job-fair'])
     expect(LANDING_TEMPLATES).toHaveLength(5)
   })
+  it('starts the hero picker with Empty Space', () => {
+    expect(LANDING_TEMPLATES[0]).toMatchObject({ id: 'empty-event-venue', name: 'Empty Space', number: '01' })
+    expect(LANDING_TEMPLATES.map((t) => t.id)).toEqual([
+      'empty-event-venue',
+      'job-fair',
+      'forge-district',
+      'mars-outpost',
+      'warehouse',
+    ])
+  })
   it('opens the editor without a template and ignores unknown template input', () => {
     expect(readEntry(editorHref())).toEqual({ editor: true })
     expect(readEntry('?editor=1&world=unknown')).toEqual({ editor: true })

@@ -50,8 +50,14 @@ function TemplateCard({
   )
 }
 
+function enterLabel(id: LandingWorldId) {
+  if (id === 'empty-event-venue') return 'Enter Empty Space'
+  if (id === 'job-fair') return 'Enter the venue'
+  return 'Enter the forge'
+}
+
 export default function LandingPage() {
-  const [world, setWorld] = useState<LandingWorldId>('job-fair')
+  const [world, setWorld] = useState<LandingWorldId>('empty-event-venue')
   const selected = LANDING_TEMPLATES.find((item) => item.id === world)!
 
   return (
@@ -96,8 +102,7 @@ export default function LandingPage() {
             </p>
             <div className="rf-hero-actions">
               <a className="rf-button" href={editorHref(selected.id)}>
-                {selected.id === 'job-fair' || selected.id === 'empty-event-venue' ? 'Enter the venue' : 'Enter the forge'}{' '}
-                <Arrow />
+                {enterLabel(selected.id)} <Arrow />
               </a>
               <a className="rf-text-link" href="#events">
                 Browse event venues <span aria-hidden="true">↓</span>
@@ -178,7 +183,7 @@ export default function LandingPage() {
             <article>
               <span>01</span>
               <h3>Create</h3>
-              <p>Open Empty Event Venue or Job Fair and place furniture, booths, and wayfinding.</p>
+              <p>Open Empty Space or Job Fair and place furniture, booths, and wayfinding.</p>
             </article>
             <article>
               <span>02</span>
@@ -310,11 +315,11 @@ export default function LandingPage() {
             starts here.
           </h2>
           <div className="rf-final-actions">
-            <a className="rf-button" href={editorHref('job-fair')}>
-              Open job fair <Arrow />
+            <a className="rf-button" href={editorHref('empty-event-venue')}>
+              Enter Empty Space <Arrow />
             </a>
-            <a className="rf-button rf-button-ghost" href={editorHref('empty-event-venue')}>
-              Start empty venue <Arrow />
+            <a className="rf-button rf-button-ghost" href={editorHref('job-fair')}>
+              Open job fair <Arrow />
             </a>
           </div>
           <p className="rf-final-note">Browser-based. No install to start building.</p>
