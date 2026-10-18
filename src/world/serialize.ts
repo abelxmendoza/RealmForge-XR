@@ -1,5 +1,6 @@
 import { cloneActor, type Actor } from '../actors/types'
 import { parseActors } from '../actors/serialization'
+import type { FlowSnapshot, PlannedRoute, RouteMode, RouteStatus, TrafficZone, TrafficZoneType } from '../flow/types'
 import { newId as newWorldId } from './store'
 import { isAssetId, isDestinationRole } from './assetTypes'
 import { WORLD, type ObjectKind, type Vec2, type Vec3, type WorldObject } from './types'
@@ -35,12 +36,17 @@ export interface WorldFile {
   robotEnabled?: boolean
   robotStart: Vec2
   goal: Vec2 | null
+  /** RealmForge Flow — planned routes (intent waypoints). Trajectories regenerate on load. */
+  routes?: PlannedRoute[]
+  /** RealmForge Flow — traffic control zones. */
+  trafficZones?: TrafficZone[]
 }
 
 /** A validated world ready for store.loadWorld(), plus its name. */
 export interface ParsedWorld extends WorldSnapshot {
   environmentId?: WorldFile['environmentId']
   name: string
+  flow?: FlowSnapshot
 }
 
 export type ParseResult = { ok: true; world: ParsedWorld; warnings: string[] } | { ok: false; error: string }
@@ -81,9 +87,23 @@ export const cleanName = (name: unknown, fallback = 'Untitled world') => {
 }
 
 /** Build the file for the current world. Only schema fields are written (no editor state, no secrets). */
-export function serializeWorld(world: { objects: Record<string, WorldObject> | WorldObject[]; robotEnabled?: boolean; robotStart: Vec2; goal: Vec2 | null; actors?: Actor[] | Record<string, Actor> }, name: string, now = new Date()): WorldFile {
+export function serializeWorld(
+  world: {
+    objects: Record<string, WorldObject> | WorldObject[]
+    robotEnabled?: boolean
+    robotStart: Vec2
+    goal: Vec2 | null
+    actors?: Actor[] | Record<string, Actor>
+    routes?: PlannedRoute[]
+    trafficZones?: TrafficZone[]
+  },
+  name: string,
+  now = new Date(),
+): WorldFile {
   const list = Array.isArray(world.objects) ? world.objects : Object.values(world.objects)
   const actors = world.actors ? Object.values(world.actors) : []
+  const routes = world.routes?.map(pickRoute)
+  const trafficZones = world.trafficZones?.map(pickZone)
   return {
     format: WORLD_FORMAT,
     version: WORLD_VERSION,
@@ -94,7 +114,37 @@ export function serializeWorld(world: { objects: Record<string, WorldObject> | W
     ...(world.robotEnabled === false ? { robotEnabled: false } : {}),
     robotStart: [world.robotStart[0], world.robotStart[1]],
     goal: world.goal ? [world.goal[0], world.goal[1]] : null,
+    ...(routes?.length ? { routes } : {}),
+    ...(trafficZones?.length ? { trafficZones } : {}),
   }
+}
+
+function pickRoute(r: PlannedRoute): PlannedRoute {
+  return {
+    id: r.id,
+    name: r.name,
+    mode: r.mode,
+    waypoints: r.waypoints.map((p) => [p[0], p[1]] as Vec2),
+    assignedAgentIds: [...r.assignedAgentIds],
+    status: r.status === 'draft' ? 'draft' : 'valid',
+    trajectory: [],
+    visible: r.visible !== false,
+  }
+}
+
+function pickZone(z: TrafficZone): TrafficZone {
+  const out: TrafficZone = {
+    id: z.id,
+    name: z.name,
+    type: z.type,
+    position: [...z.position],
+    size: [...z.size],
+    rotationY: z.rotationY,
+  }
+  if (z.direction) out.direction = [z.direction[0], z.direction[1]]
+  if (z.speedLimit !== undefined) out.speedLimit = z.speedLimit
+  if (z.restrictedAgents) out.restrictedAgents = [...z.restrictedAgents]
+  return out
 }
 
 export const worldToJSON = (file: WorldFile) => JSON.stringify(file, null, 2)
@@ -176,7 +226,149 @@ export function parseWorld(input: unknown, newId: (kind: ObjectKind) => string):
   warnings.push(...parsedActors.warnings)
   const environmentId = typeof data.environmentId === 'string' && ['forge-district', 'mars-outpost', 'warehouse', 'empty-event-venue', 'job-fair'].includes(data.environmentId)
     ? data.environmentId as WorldFile['environmentId'] : undefined
-  return { ok: true, world: { name: cleanName(data.name), objects, robotStart, goal, ...(data.robotEnabled === false ? { robotEnabled: false } : {}), ...(parsedActors.actors.length ? { actors: parsedActors.actors } : {}), ...(environmentId ? { environmentId } : {}) }, warnings }
+  const flow = parseFlow(data, warnings)
+  return {
+    ok: true,
+    world: {
+      name: cleanName(data.name),
+      objects,
+      robotStart,
+      goal,
+      ...(data.robotEnabled === false ? { robotEnabled: false } : {}),
+      ...(parsedActors.actors.length ? { actors: parsedActors.actors } : {}),
+      ...(environmentId ? { environmentId } : {}),
+      ...(flow ? { flow } : {}),
+    },
+    warnings,
+  }
+}
+
+const ROUTE_MODES: ReadonlySet<RouteMode> = new Set(['manual', 'waypoint', 'automatic'])
+const ROUTE_STATUSES: ReadonlySet<RouteStatus> = new Set(['draft', 'valid', 'replanned', 'blocked', 'unreachable'])
+const ZONE_TYPES: ReadonlySet<TrafficZoneType> = new Set(['one-way', 'restricted', 'slow', 'stop', 'queue', 'no-go'])
+
+function parseFlow(data: Record<string, unknown>, warnings: string[]): FlowSnapshot | undefined {
+  const routesIn = data.routes
+  const zonesIn = data.trafficZones
+  if (routesIn === undefined && zonesIn === undefined) return undefined
+  const routes: PlannedRoute[] = []
+  const trafficZones: TrafficZone[] = []
+  const seen = new Set<string>()
+
+  if (routesIn !== undefined) {
+    if (!Array.isArray(routesIn)) {
+      warnings.push('Ignored invalid "routes" (not an array).')
+    } else {
+      for (let i = 0; i < routesIn.length; i++) {
+        const r = readRoute(routesIn[i], i, warnings)
+        if (!r) continue
+        if (seen.has(r.id)) {
+          warnings.push(`Route ${i}: duplicate id "${r.id}" skipped.`)
+          continue
+        }
+        seen.add(r.id)
+        routes.push(r)
+      }
+    }
+  }
+
+  if (zonesIn !== undefined) {
+    if (!Array.isArray(zonesIn)) {
+      warnings.push('Ignored invalid "trafficZones" (not an array).')
+    } else {
+      for (let i = 0; i < zonesIn.length; i++) {
+        const z = readZone(zonesIn[i], i, warnings)
+        if (!z) continue
+        if (seen.has(z.id)) {
+          warnings.push(`Traffic zone ${i}: duplicate id "${z.id}" skipped.`)
+          continue
+        }
+        seen.add(z.id)
+        trafficZones.push(z)
+      }
+    }
+  }
+
+  return { routes, trafficZones }
+}
+
+function readRoute(v: unknown, i: number, warnings: string[]): PlannedRoute | null {
+  if (!isObj(v)) {
+    warnings.push(`Route ${i}: skipped (not an object).`)
+    return null
+  }
+  if (typeof v.id !== 'string' || !ID_RE.test(v.id) || v.id.length > LIMITS.maxIdLength) {
+    warnings.push(`Route ${i}: skipped (invalid id).`)
+    return null
+  }
+  if (!Array.isArray(v.waypoints)) {
+    warnings.push(`Route ${i}: skipped (waypoints missing).`)
+    return null
+  }
+  const waypoints: Vec2[] = []
+  for (const p of v.waypoints) {
+    const pt = readPoint(p)
+    if (pt) waypoints.push(pt)
+  }
+  const mode = typeof v.mode === 'string' && ROUTE_MODES.has(v.mode as RouteMode) ? (v.mode as RouteMode) : 'waypoint'
+  const status =
+    typeof v.status === 'string' && ROUTE_STATUSES.has(v.status as RouteStatus) ? (v.status as RouteStatus) : 'valid'
+  const assigned = Array.isArray(v.assignedAgentIds)
+    ? v.assignedAgentIds.filter((a): a is string => typeof a === 'string')
+    : []
+  return {
+    id: v.id,
+    name: cleanName(v.name, `Route ${i + 1}`),
+    mode,
+    waypoints,
+    assignedAgentIds: assigned,
+    status: status === 'draft' ? 'draft' : 'valid',
+    trajectory: [],
+    visible: v.visible !== false,
+  }
+}
+
+function readZone(v: unknown, i: number, warnings: string[]): TrafficZone | null {
+  if (!isObj(v)) {
+    warnings.push(`Traffic zone ${i}: skipped (not an object).`)
+    return null
+  }
+  if (typeof v.id !== 'string' || !ID_RE.test(v.id)) {
+    warnings.push(`Traffic zone ${i}: skipped (invalid id).`)
+    return null
+  }
+  if (typeof v.type !== 'string' || !ZONE_TYPES.has(v.type as TrafficZoneType)) {
+    warnings.push(`Traffic zone ${i}: skipped (unknown type).`)
+    return null
+  }
+  if (!Array.isArray(v.position) || v.position.length !== 3 || !v.position.every(finite)) {
+    warnings.push(`Traffic zone ${i}: skipped (bad position).`)
+    return null
+  }
+  if (!Array.isArray(v.size) || v.size.length !== 3 || !v.size.every(finite)) {
+    warnings.push(`Traffic zone ${i}: skipped (bad size).`)
+    return null
+  }
+  const zone: TrafficZone = {
+    id: v.id,
+    name: cleanName(v.name, `Zone ${i + 1}`),
+    type: v.type as TrafficZoneType,
+    position: [
+      clamp(v.position[0] as number, -WORLD.half, WORLD.half),
+      clamp(v.position[1] as number, 0, LIMITS.maxHeight),
+      clamp(v.position[2] as number, -WORLD.half, WORLD.half),
+    ],
+    size: [
+      clamp(v.size[0] as number, LIMITS.minSize, LIMITS.maxSize),
+      clamp(v.size[1] as number, LIMITS.minSize, LIMITS.maxHeight),
+      clamp(v.size[2] as number, LIMITS.minSize, LIMITS.maxSize),
+    ],
+    rotationY: finite(v.rotationY) ? (v.rotationY as number) : 0,
+  }
+  const dir = readPoint(v.direction)
+  if (dir) zone.direction = dir
+  if (finite(v.speedLimit)) zone.speedLimit = v.speedLimit as number
+  return zone
 }
 
 /** One object, or an error string when it can't be used at all. */

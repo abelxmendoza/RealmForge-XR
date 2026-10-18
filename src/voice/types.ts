@@ -32,6 +32,20 @@ export type VoiceCommand =
   | { type: 'ROTATE_OBJECTS'; which: 'selected' | 'last'; degrees: number }
   | { type: 'RESIZE_OBJECTS'; which: 'selected' | 'last'; factor: number; axis: 'all' | 'height' | 'footprint' }
   | { type: 'DUPLICATE_OBJECTS'; which: 'selected' | 'last'; count: number }
+  /** RealmForge Flow — spatial path planning (pointer supplies coordinates). */
+  | { type: 'FLOW_CREATE_ROUTE' }
+  | { type: 'FLOW_ADD_WAYPOINT' }
+  | { type: 'FLOW_FINISH_ROUTE' }
+  | { type: 'FLOW_CANCEL_ROUTE' }
+  | { type: 'FLOW_RECALCULATE' }
+  | { type: 'FLOW_SHOW_ROUTES' }
+  | { type: 'FLOW_HIDE_ROUTES' }
+  | { type: 'FLOW_PAUSE' }
+  | { type: 'FLOW_RESUME' }
+  | { type: 'FLOW_ASSIGN_ROBOT' }
+  | { type: 'FLOW_CLEAR_ROUTE' }
+  | { type: 'FLOW_AVOID_AREA' }
+  | { type: 'FLOW_MAKE_ONE_WAY' }
 
 export type ParseResult =
   | { ok: true; command: VoiceCommand }

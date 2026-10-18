@@ -30,6 +30,7 @@ import {
 import { useEditor, type DecorKind } from './settings'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 import { SimulationPanel } from '../sim/SimulationPanel'
+import { FlowPanel } from '../flow/FlowPanel'
 import { useNav } from '../nav/navigation'
 import { useHudSection } from './hudSectionStore'
 import { resolveInspectorContext, TOOL_PANEL_HEADINGS } from './inspectorContext'
@@ -148,6 +149,8 @@ function ToolContextPanel({ tool }: { tool: Tool }) {
       return <ActorPanel />
     case 'goal':
       return <GoalToolPanel />
+    case 'route':
+      return <FlowPanel />
     case 'robot':
       return <RobotToolPanel />
     case 'select':

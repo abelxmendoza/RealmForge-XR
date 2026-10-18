@@ -2,6 +2,7 @@ import { installAutosave } from '../world/autosave'
 import { useWorld } from '../world/store'
 import { startActors } from '../actors/runtime'
 import App from '../App'
+import { startFlow } from '../flow/controller'
 import { startNavigation } from '../nav/navigation'
 import { installHistory } from '../world/history'
 import { installDirtyTracking } from '../world/persistence'
@@ -31,6 +32,7 @@ export async function initializeEditor(world?: LandingWorldId) {
   if (!world) useWorld.getState().loadWorld({ objects: [], actors: [], robotEnabled: false, robotStart: [0, 0], goal: null })
   startNavigation()
   startActors()
+  startFlow()
   installHistory()
   installDirtyTracking()
   installAutosave()

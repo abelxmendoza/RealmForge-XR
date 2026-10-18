@@ -18,6 +18,7 @@ import { tickDemo } from '../editor/demo'
 import { Robot } from '../agent/Robot'
 import { Attendee, AttendeeRoute } from '../sim/AttendeeView'
 import { Route } from './Route'
+import { FlowOverlay } from '../flow/RouteOverlay'
 import { Lighting } from './Lighting'
 import { ThumbnailCapture } from './ThumbnailCapture'
 import { WristMenu } from '../editor/WristMenu'
@@ -116,6 +117,7 @@ export function Scene() {
           <WarehouseInterior />
           <Obstacles />
           <Route />
+          <FlowOverlay />
           {/* The robot and attendee never block rays or clicks meant for what's behind them. */}
           <PassThrough>{robotEnabled && <Robot />}</PassThrough>
           <AttendeeRoute />

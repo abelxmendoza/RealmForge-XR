@@ -3,6 +3,8 @@ import { ControlsGuide } from './editor/ControlsGuide'
 import { VoicePanel } from './editor/VoicePanel'
 import { useGuide } from './guide/guideStore'
 import { worldActions } from './world/actions'
+import { flowActions } from './flow/actions'
+import { useFlow } from './flow/store'
 import { useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { XR } from '@react-three/xr'
@@ -100,8 +102,22 @@ function useKeyboard() {
       }
 
       const w = useWorld.getState()
+      if (e.key === 'Enter' && useFlow.getState().draft) {
+        e.preventDefault()
+        flowActions.finishRoute()
+        return
+      }
+      if (e.key === 'Escape' && useFlow.getState().draft) {
+        e.preventDefault()
+        flowActions.cancelRoute()
+        return
+      }
       const tool = toolByKey(e.key)
-      if (tool) return worldActions.setTool(tool.id)
+      if (tool) {
+        if (tool.id === 'route') flowActions.beginRoute('waypoint')
+        else worldActions.setTool(tool.id)
+        return
+      }
       if (e.key === 'b' || e.key === 'B') return blockRoute()
       if (e.key === 'g' || e.key === 'G') return useEditor.getState().set({ snap: !useEditor.getState().snap })
       if (e.key === 'x' || e.key === 'X') return toggleRays()
@@ -118,7 +134,10 @@ function useKeyboard() {
         return
       }
       const sel = w.selectedId ? w.objects[w.selectedId] : null
-      if (!sel) return
+      if (!sel) {
+        if (e.key === 'Escape') w.select(null)
+        return
+      }
       if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected()
       else if (e.key === 'd' || e.key === 'D') {
         e.preventDefault()
