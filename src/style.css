@@ -1862,6 +1862,40 @@ dialog.controls-guide::backdrop {
   min-width: 40px;
 }
 
+.scan-howto {
+  margin: 8px 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--rf-line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.scan-howto summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12.5px;
+}
+
+.scan-howto ol {
+  margin: 8px 0 2px;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--rf-muted);
+}
+
+.scan-howto li + li {
+  margin-top: 4px;
+}
+
+.scan-howto strong {
+  color: var(--rf-text);
+}
+
+.scan-howto a {
+  color: var(--rf-copper);
+}
+
 .scan-alert {
   padding: 8px 10px;
   border: 1px solid rgba(240, 164, 106, 0.5);

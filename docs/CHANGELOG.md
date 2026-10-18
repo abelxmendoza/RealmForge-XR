@@ -8,6 +8,8 @@ Dates are UTC.
 
 ### Added
 
+- Scaniverse instructions for scanning a real space: step-by-step **How to scan with Scaniverse** in the scan panel (open until the first scan is added), a **Scans** tab in the in-app Guide (web and headset), and a README section.
+
 - Multi-section property scans: named rooms/areas, floor elevation and labels, shared web/XR alignment, visibility/solo, clipping, and two-point scale calibration.
 - Portable `.rfproperty` bundles include original mesh assets for cross-device viewing; imports preserve saved worlds' files through remapped IDs.
 - Backward-compatible single-scan loading, per-section runtime status/dirty tracking, aggregate import limits, and hidden-section GPU cleanup.

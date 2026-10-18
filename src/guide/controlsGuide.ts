@@ -9,6 +9,7 @@ export type GuideSectionId =
   | 'wrist'
   | 'panel'
   | 'tools'
+  | 'scans'
   | 'voice'
   | 'desktop'
   | 'comfort'
@@ -91,6 +92,21 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Place robot / Set destination — pathfinding.',
       'Yellow handle resize · blue rotate.',
       'Green duplicate · purple style · red delete.',
+    ],
+  },
+  {
+    id: 'scans',
+    title: 'Scan a real space (Scaniverse)',
+    tab: 'Scans',
+    lines: [
+      '1. Install Scaniverse (free, iPhone or Android).',
+      '2. New scan → choose Mesh, not Splat.',
+      '3. One room at a time; overlap a shared doorway.',
+      '4. Share → Export Model → GLB.',
+      '5. Send the .glb to this device (AirDrop, Drive…).',
+      '6. Build → Property scans → Add scans (.glb).',
+      '7. Line rooms up, then Measure scale with a',
+      '   known distance, like a door width.',
     ],
   },
   {
