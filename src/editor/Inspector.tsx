@@ -71,6 +71,7 @@ export function Inspector() {
   const tool = useWorld((s) => s.tool)
   const sim = useAttendee()
   const scanOpen = useScan((s) => s.panelOpen)
+  useEffect(() => { if (scanOpen) setCollapsed(false) }, [scanOpen, setCollapsed])
   const selectedId = selected?.id ?? null
   // Picking another tool, tab or object hands the side panel back to it.
   useEffect(() => {
@@ -104,7 +105,7 @@ export function Inspector() {
   return (
     <div className="inspector" data-context={context}>
       <header className="inspector-chrome">
-        <h2 className="inspector-title">{scanOpen ? 'Scan' : panelHeading(context, tool)}</h2>
+        <h2 className="inspector-title">{scanOpen ? 'Property scans' : panelHeading(context, tool)}</h2>
         <button
           type="button"
           className="ghost inspector-toggle"

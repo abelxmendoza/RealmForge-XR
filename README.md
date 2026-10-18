@@ -255,3 +255,9 @@ The root URL introduces RealmForge XR. **Launch editor** opens `?editor=1`; envi
 open the editor with the selected template (`?editor=1&world=warehouse`, for example).
 The world editor and XR modules load only when the editor is launched.
 See [landing page verification](docs/landing-page.md).
+
+## Scan a property, plan on web, explore in XR
+
+Build → **Property scans** assembles up to 24 named GLB mesh sections (250 MB total): rooms, garage, and outdoor areas. Align sections, calibrate scale, label floors, and show/hide or solo parts of a property. Web and immersive controls share the same transforms and actions. Export a **property bundle (.rfproperty)** to carry the actual mesh files to another device; ordinary world JSON carries alignment only. Native file controls run outside immersive mode. Navigation remains on one flat plane; scan surfaces are visual references.
+
+See [property scan workflow, transfer format, and validation](docs/property-scans.md).

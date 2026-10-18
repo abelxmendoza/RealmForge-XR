@@ -299,7 +299,7 @@ export function ToolbarHud() {
                 if (isCompact()) setMenuOpen(false)
               }}
             >
-              Import scan
+              Property scans
             </button>
           </div>
         )}

@@ -24,18 +24,20 @@ function open(): Promise<IDBDatabase | null> {
 
 function run<T>(db: IDBDatabase, mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
-    const req = fn(db.transaction(STORE, mode).objectStore(STORE))
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error ?? new Error('Scan storage failed'))
+    const tx = db.transaction(STORE, mode)
+    const req = fn(tx.objectStore(STORE))
+    tx.oncomplete = () => resolve(req.result)
+    tx.onabort = () => reject(tx.error ?? new Error('Scan storage failed'))
+    tx.onerror = () => reject(tx.error ?? new Error('Scan storage failed'))
   })
 }
 
 export async function putScanBlob(id: string, blob: Blob): Promise<void> {
-  memory.set(id, blob)
   const db = await open()
-  if (!db) return
+  if (!db) { memory.set(id, blob); return }
   try {
     await run(db, 'readwrite', (s) => s.put(blob, id))
+    memory.delete(id)
   } finally {
     db.close()
   }
@@ -48,11 +50,18 @@ export async function getScanBlob(id: string): Promise<Blob | null> {
   if (!db) return null
   try {
     const blob = await run<Blob | undefined>(db, 'readonly', (s) => s.get(id))
-    if (blob) memory.set(id, blob)
     return blob ?? null
   } catch {
     return null
   } finally {
     db.close()
   }
+}
+
+/** Only for failed bundle staging; removing a section does not delete saved worlds' assets. */
+export async function deleteScanBlob(id: string): Promise<void> {
+  memory.delete(id)
+  const db = await open()
+  if (!db) return
+  try { await run(db, 'readwrite', (s) => s.delete(id)) } catch { /* Best-effort rollback. */ } finally { db.close() }
 }
