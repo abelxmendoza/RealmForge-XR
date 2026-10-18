@@ -152,7 +152,7 @@ function PaletteContent() {
       disabled: !selected || (action === 'roof' && !!selected.assetId),
       run: () => editPaletteSelection(action),
     }))
-    buttons.unshift({ label: 'Move', active: tool === 'select', run: () => worldActions.setTool('select') })
+    buttons.unshift({ label: 'Select', active: tool === 'select', run: () => worldActions.setTool('select') })
     buttons.push({ label: 'Delete', disabled: !selected, run: deletePaletteSelection })
   } else if (page === 'plan') {
     buttons = ([

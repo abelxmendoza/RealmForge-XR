@@ -17,6 +17,10 @@ describe('toolbar information architecture', () => {
     }
   })
 
+  it('labels the select tool Select, not Move', () => {
+    expect(TOOLBAR_TOOLS.find((t) => t.id === 'select')?.label).toBe('Select')
+  })
+
   it('uses friendly scale names', () => {
     expect(SCALE_LABELS.tabletop).toContain('Miniature')
     expect(SCALE_LABELS.life).toContain('Life Size')

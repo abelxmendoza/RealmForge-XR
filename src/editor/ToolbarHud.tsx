@@ -78,7 +78,7 @@ export function ToolbarHud() {
   useEffect(() => subscribeHistory((s) => setHist({ canUndo: s.canUndo, canRedo: s.canRedo })), [])
 
   // Follow placement / route tools into their section when the keyboard picks them (1–0).
-  // Leave "Move" (select) alone so first-time users stay on Build until they choose.
+  // Leave Select alone so first-time users stay on Build until they choose.
   useEffect(() => {
     const t = TOOLBAR_TOOLS.find((x) => x.id === tool)
     if (t && t.id !== 'select') setSection(t.section)
@@ -239,6 +239,9 @@ export function ToolbarHud() {
 
         {section === 'edit' && (
           <div className="row hud-section-actions">
+            <p className="hud-inline-hint">
+              {selectedId ? 'Drag the selection to move it. Then rotate, resize, or remove.' : 'Select an object first — then drag to move, or use the actions below.'}
+            </p>
             <button
               type="button"
               disabled={!selectedId}

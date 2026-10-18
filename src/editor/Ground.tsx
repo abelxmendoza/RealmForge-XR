@@ -62,7 +62,7 @@ function objectForTool(tool: 'building' | 'decor', at: Vec2): Omit<WorldObject, 
 
 type Draft = { kind: 'wall' | 'platform'; a: Vec2; b: Vec2 }
 
-/** After a successful place, return to Move so the next click can select instead of spawning again. */
+/** After a successful place, return to Select so the next click can pick/move instead of spawning again. */
 function finishPlacement(id?: string | null) {
   const w = useWorld.getState()
   if (id) w.select(id)
