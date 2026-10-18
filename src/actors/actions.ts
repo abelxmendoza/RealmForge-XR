@@ -48,9 +48,9 @@ function validPose(actor: Actor, ignoreId?: string) {
     return Math.hypot(position[0] - actor.position[0], position[1] - actor.position[1]) >= actorRadius(other) + radius
   })
 }
-export function placeActor(at: Vec2): ActorResult {
+export function placeActor(at: Vec2, kind: ActorKind = useEditor.getState().actorKind): ActorResult {
   startActors()
-  const preview = previewActor(at)
+  const preview = previewActor(at, kind)
   if (!preview?.valid) return { ok: false, error: `Choose clear ground with room for this actor (maximum ${MAX_ACTORS} actors).` }
   const { id: omitted, ...actor } = preview.actor
   return { ok: true, id: useWorld.getState().addActor(actor) }
@@ -129,3 +129,64 @@ export function duplicateActor(id: string): ActorResult {
   return { ok: false, error: 'No clear space next to this actor.' }
 }
 export function removeActor(id: string) { useWorld.getState().removeActor(id) }
+
+/**
+ * Put `count` actors on clear ground near `center` (voice: "a few people", "two delivery robots").
+ * `spots` are tried first (e.g. points along a road), then a widening ring. Returns the new ids.
+ */
+export function spawnActors(kind: ActorKind, count: number, center: Vec2, spots: Vec2[] = []): string[] {
+  const ids: string[] = []
+  const want = Math.max(0, Math.min(count, MAX_ACTORS - Object.keys(useWorld.getState().actors).length))
+  const step = actorRadius(ACTOR_CATALOG[kind]) * 2 + WORLD.cell * 2
+  const ring = function* (): Generator<Vec2> {
+    yield center
+    for (let r = step; r < WORLD.half; r += step) {
+      const n = Math.max(6, Math.round((2 * Math.PI * r) / step))
+      for (let i = 0; i < n; i++) yield [center[0] + Math.cos((i / n) * Math.PI * 2) * r, center[1] + Math.sin((i / n) * Math.PI * 2) * r]
+    }
+  }
+  for (const at of [...spots, ...ring()]) {
+    if (ids.length >= want) break
+    const placed = placeActor(at, kind)
+    if (placed.ok && placed.id) ids.push(placed.id)
+  }
+  return ids
+}
+
+/**
+ * Keep an actor walking a loop through `stops` (voice: "walking around"). Stops the actor can't
+ * reach are skipped; with fewer than two reachable stops the actor just stays put.
+ */
+export function setActorLoop(id: string, stops: Vec2[]): ActorResult {
+  const actor = useWorld.getState().actors[id]
+  if (!actor) return { ok: false, error: 'Actor no longer exists.' }
+  const first = setActorGoal(id, null)
+  if (!first.ok) return first
+  let added = 0
+  for (const stop of stops) if (appendActorWaypoint(id, stop).ok) added++
+  if (added < 2) return { ok: false, error: 'No room for this actor to walk around.' }
+  useWorld.getState().updateActor(id, { loop: true })
+  return { ok: true }
+}
+
+/** Speed up or slow down actors (clamped to the 0.1–8 m/s the panel allows). */
+export function scaleActorSpeed(ids: string[], factor: number): number {
+  let n = 0
+  for (const id of ids) {
+    const a = useWorld.getState().actors[id]
+    if (a && updateActor(id, { speed: Math.max(0.1, Math.min(8, a.speed * factor)) }).ok) n++
+  }
+  return n
+}
+
+/** Stop where they are: clear the route and the loop. */
+export function stopActors(ids: string[]): number {
+  let n = 0
+  for (const id of ids) {
+    if (!useWorld.getState().actors[id]) continue
+    const position = getActorRuntime(id)?.position ?? useWorld.getState().actors[id].position
+    useWorld.getState().updateActor(id, { goal: null, route: [], loop: false, position: [...position] as Vec2 })
+    n++
+  }
+  return n
+}

@@ -99,7 +99,9 @@ export function tickActors(delta: number) {
       else break
     }
     if (runtime.target >= runtime.path.length && runtime.status === 'moving') {
-      const remaining = actorRoute(actor).slice(1)
+      const route = actorRoute(actor)
+      // Looping actors put the stop they just reached back on the end, so they keep walking.
+      const remaining = actor.loop && route.length > 1 ? [...route.slice(1), route[0]!] : route.slice(1)
       if (remaining.length) {
         // Advance to the next planned stop without creating an undo step.
         withHistorySuppressed(() => {

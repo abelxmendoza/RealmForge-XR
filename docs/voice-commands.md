@@ -49,6 +49,14 @@ submitMockTranscript("Load Mars Outpost")
 | `src/voice/mockProvider.ts` | Manual transcript injection |
 | `src/voice/events.ts` | ElevenLabs-compatible event bus |
 | `vite/assemblyaiTokenPlugin.ts` | Server-side temp token proxy |
+| `src/voice/vocabulary.ts` | Numbers, nouns, looks, people, spoken references, AssemblyAI keyterms |
+| `src/voice/sceneCommands.ts` | Splits a sentence into clauses; scene, edit, delete and people grammar |
+| `src/voice/sceneExecutor.ts` | Runs scene commands and BATCHes (one undo step, one summary line) |
+| `src/world/compose.ts` | Lays out a sentence's objects and people as a scene (road as spine) |
+| `src/world/targets.ts` | Resolves “the houses”, “the second house”, “them” to ids |
+| `src/world/edit.ts` | Restyle, resize by axis or to metres, delete |
+| `src/world/recipes.ts` | Whole scenes from one phrase |
+| `src/voice/claudeFallback.ts` + `tools/voice-plan.ts` | Claude fallback for sentences the keywords can't read |
 
 Voice **does not** own a second world store. All mutations go through Agent 2’s `worldActions`.
 
@@ -124,6 +132,37 @@ Parsed by `src/voice/objectCommands.ts`, executed through `src/world/spawn.ts` (
 - **“it”** = selected object (else the last one added); **“them”** = everything from the last add/duplicate.
 - Objects land on free ground, spaced apart and snapped; solid ones never cover the robot start or goal. If space runs out, it adds what fits and says so.
 
+### Scenes, people and shaping things
+
+One sentence can hold several commands. Each clause is parsed on its own; a clause without a verb borrows the one before it, and “with pitched roofs” stays on the thing it describes. The whole sentence is **one undo step** and gets one summary line. Clauses it can't read are named in the reply; the rest still runs.
+
+| Spoken example | Result |
+| --- | --- |
+| “Add 3 lampposts, a road and two houses with a few people walking around” | A street: the road is laid first, houses face it from both sides, lights run along the kerbs, 3 people walk up and down it |
+| “Add two brick houses with pitched roofs and a road” | Looks on new buildings: materials, colours, roofs, sizes |
+| “Add four trees along the road” / “Add 5 crates in a row” / “Add trees around the goal” | Lines an existing road, a row, a ring |
+| “Add a tree near the houses” / “Put a wall between the road and the tower” | Places relative to named things |
+| “Build a small neighbourhood” / “a busy main street” / “a town square with a stage” | Recipes (`src/world/recipes.ts`): neighbourhood, street, town square, downtown, park, parking lot, industrial yard, street market. small/big/huge scale the counts; extras after “with” are added |
+| “Make the houses brick” / “Paint the second house red” / “Give the houses flat roofs” / “Make the first house a tower” | `EDIT_OBJECTS` |
+| “Make the road 30 meters long” / “Make the road longer” / “Make the tower 3 times taller” / “Make it 10 meters tall” | `SIZE_OBJECTS` (length = the long side, so roads stretch along the road) |
+| “Make the trees solid” / “… walkable” | Whether they block the robot |
+| “Move the houses 5 meters north” / “Rotate the houses 45 degrees” | Existing move/rotate/resize/duplicate now take named targets |
+| “Remove the trees” / “Delete the people” / “Get rid of all the crates” | `DELETE_OBJECTS` (asks first when it's more than 3 things) |
+| “Add a few people walking around” / “two delivery robots near the goal” / “3 cars driving around” | `SPAWN_ACTORS` (workers, courier robots, vehicles; max 32) |
+| “Have the people walk around” / “Send the workers to the goal” / “Make them stop” / “Make the people faster” | `ACTOR_BEHAVIOUR` |
+
+- **Naming things:** “the houses” = the houses from the last command if there are any, else every house; “the house” = the selected house, else the newest; “all the trees” = every tree; “the second house” = creation order; “them” after adding people = those people.
+- **Walking around** sets a looping route (`Actor.loop`): each stop reached goes back on the end, so people keep walking. On a road they walk its length; elsewhere a small square.
+- **Listening:** AssemblyAI gets `keyterms_prompt` with the scene vocabulary (lamppost, asphalt, pitched roofs…). A sentence that trails off on “and”, “with” or a comma waits 2 s instead of 0.7 s for the rest. While you talk, the panel previews the plan (“3 streetlights · road · 2 houses · 3 people”).
+
+### Claude fallback
+
+When the keyword parser can't read a sentence, or skips part of one, the browser sends it to `POST /api/voice/plan` (Vite middleware in dev/preview, `api/voice/plan.ts` on Vercel). Claude (`claude-haiku-5-5`, low effort) rewrites it as short commands in the grammar above (“add a road”, “add 4 houses along the road”), and the browser parses those with the **same** parser, so nothing runs that the keywords don't understand, and confirmations and undo work as usual. A note explains approximations (“shops are houses for now”).
+
+- Set the key server-side: `npm run env:set -- ANTHROPIC_API_KEY <key>` (and in Vercel's environment variables).
+- Without a key the route returns 503 and the fallback switches itself off for the session; keyword commands are unaffected.
+- `new VoiceController({ claudeFallback: false })` turns it off (it is off by default outside the browser, e.g. in tests).
+
 ### Worlds
 
 | Spoken example | Command | Action |
@@ -135,7 +174,7 @@ Parsed by `src/voice/objectCommands.ts`, executed through `src/world/spawn.ts` (
 | “Go home” / “Exit the editor” / “Back to landing” | `GO_HOME` | Leaves for the project page; confirms if unsaved |
 | “Go home now” / “Leave now” / “Force home” | `GO_HOME` (force) | Same, **skips confirm** — escape hatch if UI is stuck |
 
-**Unsupported (structured reject):** “Stop navigation” (no safe stop API yet), free-form NL, anything not listed.
+**Unsupported (structured reject):** “Stop navigation” (no safe stop API yet), and anything neither the keywords nor the Claude fallback can map to the editor.
 
 Destructive commands without a connected `ConfirmHandler` return `needs_confirmation` and **do not** mutate the world. Core voice logic never calls `window.confirm()`.
 

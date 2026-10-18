@@ -1,10 +1,11 @@
 import { useWorld } from './store'
-import { WORLD, blocksNavigation, type BuildingStyle, type MaterialId, type ObjectKind, type TreeStyle, type Vec2, type Vec3, type WorldObject } from './types'
+import { WORLD, blocksNavigation, type RoofType, type BuildingStyle, type MaterialId, type ObjectKind, type TreeStyle, type Vec2, type Vec3, type WorldObject } from './types'
 import { BUILDING_STYLES, DECOR_DEFAULTS, PLATFORM_DEFAULTS } from './catalog'
 import { buildAsset, footprintsOverlap, getAsset } from './assets'
 import type { AssetId } from './assetTypes'
 import { propFromCatalog } from './eventCatalog'
 import { snapAngle, snapFootprint, snapSize } from './snap'
+import { getLastBatch, setLastBatch, targetCenter, type Target } from './targets'
 
 /**
  * Batch create / move / rotate / resize for voice (and any other caller that speaks in
@@ -24,6 +25,10 @@ export interface SpawnSpec {
   scale?: number
   /** Extra height multiplier ("tall", "short"). */
   heightScale?: number
+  /** Buildings: "with pitched roofs". */
+  roof?: RoofType
+  /** Buildings: "red houses" / "brick houses" (buildings are drawn from their colour). */
+  color?: string
 }
 
 /** Where to put things: a named spot, optionally offset by a direction and distance. */
@@ -35,17 +40,23 @@ export interface Placement {
   direction?: Direction
   /** Metres from the anchor along `direction`. */
   distance?: number
+  /** "near the houses": the centre of what this names (wins over `anchor` when it resolves). */
+  near?: Target
+  /** "between the road and the tower": midpoint of the two. */
+  between?: [Target, Target]
+  /** An exact spot (used by scene layout). Wins over everything else. */
+  point?: Vec2
+  /** "in a row" / "around the robot": how a batch is laid out around the anchor (default: spiral). */
+  arrange?: 'row' | 'ring'
 }
 
 export const MAX_SPAWN = 25
 const DIR: Record<Direction, Vec2> = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] }
 
-/** The objects created by the last batch, so "move them" can find them. */
-let lastBatch: string[] = []
-export const getLastBatch = () => lastBatch.filter((id) => useWorld.getState().objects[id])
+export { getLastBatch }
 
 /** One undo step for a group of edits (history coalesces "drag" gestures). */
-function batch<T>(fn: () => T): T {
+export function oneUndoStep<T>(fn: () => T): T {
   const w = useWorld.getState()
   const wasDragging = w.dragging
   if (!wasDragging) w.setDragging(true)
@@ -69,7 +80,7 @@ export function objectFor(spec: SpawnSpec, at: Vec2): Omit<WorldObject, 'id'> | 
     case 'building': {
       const style = (spec.style && spec.style in BUILDING_STYLES ? spec.style : 'office') as BuildingStyle
       const def = BUILDING_STYLES[style]
-      return { kind: 'building', position: [at[0], 0, at[1]], size: sized(def.size), rotationY: 0, color: def.color, style, roof: def.roof }
+      return { kind: 'building', position: [at[0], 0, at[1]], size: sized(def.size), rotationY: 0, color: spec.color ?? def.color, style, roof: spec.roof ?? def.roof }
     }
     case 'tree':
       return { kind: 'tree', position: [at[0], 0, at[1]], size: sized(DECOR_DEFAULTS.tree.size), rotationY: 0, style: spec.style === 'pine' ? 'pine' : 'round' }
@@ -101,7 +112,12 @@ export function anchorPoint(p: Placement = {}): Vec2 {
   const w = useWorld.getState()
   const selected = w.selectedId ? w.objects[w.selectedId] : null
   let at: Vec2
-  switch (p.anchor) {
+  const between = p.between ? p.between.map(targetCenter) : null
+  const near = p.near ? targetCenter(p.near) : null
+  if (p.point) at = [...p.point]
+  else if (between?.[0] && between[1]) at = [(between[0][0] + between[1][0]) / 2, (between[0][1] + between[1][1]) / 2]
+  else if (near) at = near
+  else switch (p.anchor) {
     case 'robot':
       at = [...w.robotStart]
       break
@@ -140,7 +156,7 @@ const padded = (o: Pick<WorldObject, 'position' | 'size' | 'rotationY'>, gap: nu
  * Is `o` a good spot? Inside the map, not on top of anything solid (or anything at all, for solids),
  * and a solid never lands on the robot or its goal.
  */
-function fits(o: Omit<WorldObject, 'id'>, others: Pick<WorldObject, 'position' | 'size' | 'rotationY' | 'kind' | 'solid'>[], gap: number): boolean {
+export function fits(o: Omit<WorldObject, 'id'>, others: Pick<WorldObject, 'position' | 'size' | 'rotationY' | 'kind' | 'solid'>[], gap: number): boolean {
   const ex = o.size[0] / 2
   const ez = o.size[2] / 2
   if (Math.abs(o.position[0]) + ex > WORLD.half || Math.abs(o.position[2]) + ez > WORLD.half) return false
@@ -163,7 +179,7 @@ function fits(o: Omit<WorldObject, 'id'>, others: Pick<WorldObject, 'position' |
 }
 
 /** Spiral of candidate centres around `center`, nearest first. */
-function* spiral(center: Vec2, step: number, maxRadius: number): Generator<Vec2> {
+export function* spiral(center: Vec2, step: number, maxRadius: number): Generator<Vec2> {
   yield center
   for (let r = 1; r * step <= maxRadius; r++) {
     for (let i = -r; i <= r; i++) {
@@ -197,7 +213,7 @@ export function spawnObjects(spec: SpawnSpec, count: number, placement: Placemen
   const others: Omit<WorldObject, 'id'>[] = Object.values(useWorld.getState().objects)
   const ids: string[] = []
 
-  batch(() => {
+  oneUndoStep(() => {
     for (const c of spiral(center, Math.max(1, step / 2), WORLD.half * 2)) {
       if (ids.length >= requested) break
       const snapped = snapFootprint(c, sample.size[0], sample.size[2], 0)
@@ -208,10 +224,24 @@ export function spawnObjects(spec: SpawnSpec, count: number, placement: Placemen
     }
   })
   if (ids.length) {
-    lastBatch = ids
+    setLastBatch(ids)
     useWorld.getState().select(ids[ids.length - 1])
   }
   return { ids, requested }
+}
+
+/** A row or ring of `n` spots around `center`, then the usual spiral for anything that didn't fit. */
+function* arranged(kind: 'row' | 'ring', center: Vec2, n: number, step: number): Generator<Vec2> {
+  if (kind === 'row') {
+    for (let i = 0; i < n; i++) yield [center[0] + (i - (n - 1) / 2) * step, center[1]]
+  } else {
+    const r = Math.max(step * 1.5, (n * step) / (2 * Math.PI))
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2
+      yield [center[0] + Math.cos(a) * r, center[1] + Math.sin(a) * r]
+    }
+  }
+  yield* spiral(center, Math.max(1, step / 2), WORLD.half * 2)
 }
 
 /** Ids for "it" (the selection, else the last batch) or "them" (the last batch, else the selection). */
@@ -253,7 +283,7 @@ export function moveObjects(ids: string[], move: { direction?: Direction; distan
     dx = ux * d
     dz = uz * d
   }
-  batch(() => {
+  oneUndoStep(() => {
     for (const o of objs) {
       const [x, z] = clampPoint([o.position[0] + dx, o.position[2] + dz], Math.max(o.size[0], o.size[2]) / 2)
       useWorld.getState().updateObject(o.id, { position: [x, o.position[1], z] })
@@ -266,7 +296,7 @@ export function moveObjects(ids: string[], move: { direction?: Direction; distan
 export function rotateObjects(ids: string[], degrees: number): number {
   const w = useWorld.getState()
   let n = 0
-  batch(() => {
+  oneUndoStep(() => {
     for (const id of ids) {
       const o = w.objects[id]
       if (!o) continue
@@ -282,7 +312,7 @@ export function resizeObjects(ids: string[], factor: number, axis: 'all' | 'heig
   const f = Math.max(0.2, Math.min(5, factor))
   const w = useWorld.getState()
   let n = 0
-  batch(() => {
+  oneUndoStep(() => {
     for (const id of ids) {
       const o = w.objects[id]
       if (!o) continue
@@ -307,7 +337,7 @@ export function duplicateObjects(id: string, count: number): SpawnResult {
   const others: Omit<WorldObject, 'id'>[] = Object.values(useWorld.getState().objects)
   const ids: string[] = []
   const { id: _id, ...base } = src
-  batch(() => {
+  oneUndoStep(() => {
     for (const c of spiral([src.position[0], src.position[2]], Math.max(1, step / 2), WORLD.half * 2)) {
       if (ids.length >= requested) break
       const snapped = snapFootprint(c, src.size[0], src.size[2], src.rotationY)
@@ -318,7 +348,7 @@ export function duplicateObjects(id: string, count: number): SpawnResult {
     }
   })
   if (ids.length) {
-    lastBatch = ids
+    setLastBatch(ids)
     useWorld.getState().select(ids[ids.length - 1])
   }
   return { ids, requested }
