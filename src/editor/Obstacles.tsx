@@ -1,16 +1,21 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
+import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { ThreeEvent } from '@react-three/fiber'
 import { Handle as GrabHandle, type HandleState } from '@react-three/handle'
 import { clampToWorld, useWorld } from '../world/store'
-import type { Vec2, WorldObject } from '../world/types'
+import { blocksNavigation, type Vec2, type WorldObject } from '../world/types'
 import { snapAngle, snapFootprint, snapSize } from '../world/snap'
 import { cycleVariant } from '../world/catalog'
 import { SCALE_PRESETS, groundPoint, uiSize } from '../scene/worldRoot'
 import { SelectionOutline, Structure } from '../scene/structures'
 import { beginDrag } from './drag'
+import { applyGroundHover, applyGroundTool } from './Ground'
 import { MIN_SIZE, grabPatch, samePatch, type GrabPatch } from './grab'
 import { useEditor } from './settings'
+import { HAPTIC, pulse } from '../xr/haptics'
+import { clampToRoom, settleObject } from '../xr/realSurfaces'
+import { groupIds, useSelection } from './selection'
 
 /** What a hand grab remembers between frames: the object as grabbed, and the last patch sent. */
 interface GrabMemo {
@@ -35,12 +40,26 @@ const toLocal = (o: WorldObject, p: Vec2, from: Vec2 = [o.position[0], o.positio
 }
 
 /** Editor actions shared by the keyboard, the HUD and the in-scene buttons. */
+/** Duplicate the framed group (the copies become the new group), or the single selected object. */
 export function duplicateSelected() {
   const w = useWorld.getState()
+  const group = groupIds()
+  if (group.length) {
+    const copies = group.map((id) => w.duplicateObject(id)).filter((id): id is string => !!id)
+    useSelection.getState().setGroup(copies)
+    return
+  }
   if (w.selectedId) w.duplicateObject(w.selectedId)
 }
+/** Delete the framed group, or the single selected object. */
 export function deleteSelected() {
   const w = useWorld.getState()
+  const group = groupIds()
+  if (group.length) {
+    for (const id of group) w.removeObject(id)
+    useSelection.getState().clear()
+    return
+  }
   if (w.selectedId) w.removeObject(w.selectedId)
 }
 export function cycleSelected() {
@@ -63,8 +82,33 @@ export function Obstacles() {
 
 function Obstacle({ o }: { o: WorldObject }) {
   const selected = useWorld((s) => s.selectedId === o.id)
+  // Framed group members get their own outline; the live frame preview a lighter one.
+  const inGroup = useSelection((s) => s.ids.includes(o.id))
+  const inPreview = useSelection((s) => s.preview.includes(o.id))
   const [w, h, d] = o.size
   const groupRef = useRef<THREE.Group>(null)
+  // Near-grab feedback: hover outline when a hand/controller can grab it; while held, the object follows the
+  // hand freely (`free`) and a ghost shows the snapped pose it will commit to.
+  const [hovered, setHovered] = useState(false)
+  const [holding, setHolding] = useState(false)
+  const free = useRef<{ x: number; z: number; yaw: number } | null>(null)
+  useFrame((state) => {
+    const g = groupRef.current
+    if (!g) return
+    // Standing inside it (a booth, stage or building at 1:1): pointers pass through it, otherwise your hand's
+    // grab pointer touches it from inside and switches your ray off, so nothing beyond can be reached.
+    if (state.gl.xr.isPresenting && !free.current) {
+      const inside = headInside(g.worldToLocal(state.camera.getWorldPosition(headLocal)), o.size)
+      const pe = inside ? 'none' : undefined
+      const holder = g as THREE.Group & { pointerEvents?: 'none' }
+      if (holder.pointerEvents !== pe) holder.pointerEvents = pe
+    }
+    const f = free.current
+    if (!f) return
+    g.position.x = f.x
+    g.position.z = f.z
+    g.rotation.y = f.yaw
+  })
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
 
   /**
@@ -80,22 +124,40 @@ function Obstacle({ o }: { o: WorldObject }) {
       world.setTool('select')
       world.select(o.id)
       world.setDragging(true)
+      setHolding(true)
+      pulse('active', HAPTIC.grab)
     }
     const { position, quaternion, scale } = state.current
-    const patch = grabPatch(
-      memo.base,
-      { x: position.x, z: position.z, rotationY: yawOf.setFromQuaternion(quaternion, 'YXZ').y, scale: scale.x },
-      useEditor.getState().snap,
-    )
+    const t = { x: position.x, z: position.z, rotationY: yawOf.setFromQuaternion(quaternion, 'YXZ').y, scale: scale.x }
+    const snap = useEditor.getState().snap
+    const patch = grabPatch(memo.base, t, snap)
+    // Respect real surfaces: stop at real walls and furniture (no-op when off).
+    const prev = memo.last?.position ?? memo.base.position
+    patch.position = clampToRoom(memo.base, prev, patch.position, patch.size)
+    // The store (and navigation) get the snapped pose; the object itself follows the hand until release.
+    if (snap) {
+      const loose = grabPatch(memo.base, t, false)
+      const [lx, , lz] = clampToRoom(memo.base, prev, loose.position, loose.size)
+      free.current = { x: lx, z: lz, yaw: loose.rotationY }
+    } else free.current = null
     if (!samePatch(memo.last, patch)) {
       world.updateObject(o.id, patch)
+      if (memo.last && snap) pulse('active', HAPTIC.tick) // feel each snap step
       memo.last = patch
     }
-    if (state.last) world.setDragging(false)
+    if (state.last) {
+      free.current = null
+      setHolding(false)
+      settleObject(o.id)
+      world.setDragging(false)
+    }
     return memo
   }
 
   const onDown = (e: ThreeEvent<PointerEvent>) => {
+    // Walkable surfaces (slabs, roads, plazas) cover the ground: placement tools land on the ground below
+    // (otherwise nothing could be placed on a warehouse floor slab).
+    if (useWorld.getState().tool !== 'select' && !blocksNavigation(o)) return applyGroundTool(e)
     // Prefer select/move over spawning: a press on an existing object never places a new one.
     e.stopPropagation()
     const world = useWorld.getState()
@@ -162,8 +224,17 @@ function Obstacle({ o }: { o: WorldObject }) {
   const bz = Math.max(d / 2, 2 * r)
   const top = h + r
   return (
-    <group ref={groupRef} position={o.position} rotation={[0, o.rotationY, 0]}>
-      <group onPointerDown={onDown}>
+    <>
+    <group ref={groupRef} position={o.position} rotation={[0, o.rotationY, 0]} userData={{ objectId: o.id }}>
+      {/* Walkable surfaces pass hovers through to the ground, so the asset tool's ghost shows over roads and slabs too. */}
+      <group
+        onPointerDown={onDown}
+        onPointerMove={blocksNavigation(o) ? undefined : applyGroundHover}
+        onPointerOver={(e) => {
+          if (e.pointerType === 'grab' || e.pointerType === 'touch') setHovered(true)
+        }}
+        onPointerOut={() => setHovered(false)}
+      >
         <GrabHandle
           targetRef={groupRef}
           filter={(e) => e.pointerType === 'grab'}
@@ -175,6 +246,8 @@ function Obstacle({ o }: { o: WorldObject }) {
           <Structure o={o} />
         </GrabHandle>
       </group>
+      {!selected && (inGroup || inPreview) && <SelectionOutline size={o.size} color={inGroup ? '#7bdff2' : '#ffffff'} />}
+      {!selected && !inGroup && !inPreview && hovered && <SelectionOutline size={o.size} color="#d8e6f0" />}
       {selected && (
         <>
           <SelectionOutline size={o.size} />
@@ -186,7 +259,24 @@ function Obstacle({ o }: { o: WorldObject }) {
         </>
       )}
     </group>
+      {holding && useEditor.getState().snap && (
+        <group position={o.position} rotation={[0, o.rotationY, 0]}>
+          <mesh position={[0, o.size[1] / 2, 0]} raycast={() => null}>
+            <boxGeometry args={o.size} />
+            <meshBasicMaterial color="#7bdff2" transparent opacity={0.18} depthWrite={false} />
+          </mesh>
+          <SelectionOutline size={o.size} color="#7bdff2" />
+        </group>
+      )}
+    </>
   )
+}
+
+const headLocal = new THREE.Vector3()
+
+/** Whether a point (in an object's local space: base centre, yaw applied) is inside its box, with a small margin. */
+export function headInside(p: { x: number; y: number; z: number }, size: readonly [number, number, number], margin = 0.05): boolean {
+  return Math.abs(p.x) <= size[0] / 2 + margin && Math.abs(p.z) <= size[2] / 2 + margin && p.y >= -margin && p.y <= size[1] + margin
 }
 
 type HandleProps = { position: [number, number, number]; size: number; color: string; onPointerDown: (e: ThreeEvent<PointerEvent>) => void }

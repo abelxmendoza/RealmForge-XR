@@ -153,6 +153,52 @@ from your hands or controllers. Gestures are listed in the README under *Hand gr
 - [ ] Wrist **Real / Virtual** button (and V on desktop) switches to the solid placeholder ground and back
 - [ ] Holds a usable frame rate at 1:1 with Forge District loaded (panel or feel)
 
+## Gestures (Quest 3S recommended)
+
+See docs/gestures.md for the poses.
+
+- [ ] Walk past your old play area without the app pausing; the dev log's "AR session started" line shows `referenceSpace: 'unbounded'`
+- [ ] L with your right hand pointed along a real wall: an arrow grows along your finger, then the grid and aisles turn to match
+- [ ] Both fists, pull toward you: the world slides past at true scale; twist the fists and it turns
+- [ ] Frame a few pallets with both hands: white preview, then a cyan group; the wrist shows Duplicate / Delete / Clear
+- [ ] Pinch a distant rack and roll your wrist: it turns, in 15° steps with snap on (flip `ROLL_GAIN` if reversed)
+- [ ] Pinch-roll on a grouped object turns the whole group about its centre
+- [ ] Near grab still works, and gestures don't fire while you're grabbing or using the wrist menu
+- [ ] Wrist **Gestures off** disables all of the above
+- [ ] Each gesture edit is one Undo
+- [ ] Controllers: left stick moves you, right stick snap-turns, both grips pull the world
+- [ ] Controllers: hold A aiming along a wall sets the axis; both triggers frame-select; right trigger on a distant rack + twist (or stick flicks) rotates it
+- [ ] Controllers: grip on an object still near-grabs it; grip on a wrist button presses it
+
+## Floor, asset library and refinements
+
+- [ ] At **1:1** the grid sits on your real floor (touch the floor: hand and grid meet); still true after walking, pulling and Recenter
+- [ ] The dev log shows `[RealmForge] floor at …` with `(floor plane)` or `(local-floor)`
+- [ ] Wrist **Assets** opens the Control Palette on its Assets page; **Palette** shows and hides it
+- [ ] With an asset picked, the ghost follows where you aim on the floor; pinch (hands) or trigger (controller) places it
+- [ ] Right-stick flick rotates the ghost 90° before placing
+- [ ] Objects outline when your hand or controller is close enough to grab
+- [ ] Holding an object with snap on: it follows your hand and a cyan ghost shows the snapped spot; release lands there
+- [ ] Controllers buzz on grab, snap steps, placing and button presses
+- [ ] Library: pallets, racks, buildings, decor and main's warehouse catalog all place, save and load
+
+## Movable menus and occlusion
+
+- [ ] Grab the **Move** bar above the Control Palette with your hand (or squeeze the grip on it) and move it; it turns to face you on release
+- [ ] With rays on, point at the Move bar, pull the trigger or pinch, and drag the palette from a distance
+- [ ] The guide panel moves the same way and stays put when you change sections
+- [ ] Recenter (palette, guide or wrist) brings each panel back in front of you
+- [ ] Wrist **Occl.** off: nothing is hidden. On (3S): your hand in front of an object hides it, and the status line reads `occlusion: depth`
+- [ ] On (Quest 2): objects behind a Space Setup wall or table disappear, and the status line reads `occlusion: room`; the floor grid stays visible
+
+## Real room (needs Space Setup)
+
+- [ ] Wrist status shows `room N` (not `room: not set up`); if not, palette View, then Scan room
+- [ ] Occl. on with room data: objects behind a real wall disappear (`occl room`)
+- [ ] Surf. on at 1:1: an object dropped over your real table lands on it; moving it stops at a wall or couch
+- [ ] Save a world in AR, exit, re-enter (or reload) and load it: it returns to the same real spot; the saved list shows `(anchored)`
+- [ ] Wrist menu: two rows, no overlapping text; View page holds scale, ground, gestures, mocap, place, scan
+
 ## Smartsuit mock skeleton
 
 On the PC run `npm run mocap:mock` (alongside the dev server), then press **Mocap** on the wrist menu.
@@ -175,3 +221,9 @@ enabled features (`[MR] session started: …`).
 | No **Enter AR**, or "not supported" | Page must be `https://` or `localhost` |
 | No outlines, nothing snaps | Redo Space Setup with a table, and allow spatial-data access when prompted |
 | Page won't load after unplugging | Re-run `adb reverse tcp:5173 tcp:5173` |
+
+## Event objects in the headset and standing inside objects
+
+- [ ] Palette **Events** tab lists tables, chairs, booths, stages, signs (6 per page, More objects for the rest)
+- [ ] Pick one: a ghost follows your aim on the floor; pinch / trigger (or a ray press) places it; stick flick rotates
+- [ ] At 1:1, stand inside a booth or under the stage edge: your ray still works and reaches objects beyond it

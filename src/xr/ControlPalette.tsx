@@ -2,7 +2,9 @@ import { listTemplates } from '../world/library'
 import { ACTOR_CATALOG, ACTOR_KINDS } from '../actors/types'
 import { actorRuntimeRevision, subscribeActorRuntime, getActorRuntime } from '../actors/runtime'
 import { requestConfirmation } from '../world/confirmation'
-import { ASSETS, getAsset } from '../world/assets'
+import { getAsset } from '../world/assets'
+import { libraryAssets, useAssetLibrary } from '../world/assetLibrary'
+import { EVENT_CATALOG } from '../world/eventCatalog'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useXR } from '@react-three/xr'
@@ -15,7 +17,15 @@ import { useWorldLibrary } from '../world/persistence'
 import { BUILDING_STYLE_IDS, WALL_MATERIALS, PLATFORM_MATERIALS, TREE_STYLES } from '../world/catalog'
 import { useEditor } from '../editor/settings'
 import { useNav } from '../nav/navigation'
-import { toggleRays, toggleSurface } from '../editor/xrInput'
+import { togglePlaceCity, toggleRays, toggleSurface } from '../editor/xrInput'
+import { PanelMoveBar } from './PanelMoveBar'
+import { paletteAnchor, setPaletteHidden, summonPalette, usePaletteUI } from './paletteUI'
+import { HAPTIC, pulse } from './haptics'
+import { toggleMocap, useMocap } from '../mocap/store'
+import { scanRoom } from './roomTracker'
+import { toggleRealSurfaces } from './realSurfaces'
+import { toggleOcclusion } from './occlusion'
+import { readSpatial, useSpatial } from './spatialSave'
 import { blockRoute } from '../editor/demo'
 import {
   clearRoute,
@@ -51,13 +61,18 @@ export function ControlPalette() {
 }
 
 type Button = { label: string; run: () => unknown; active?: boolean; disabled?: boolean }
-type Page = ToolbarSection | 'assets' | 'actors' | 'actor-settings' | 'brush' | 'saved' | 'styles'
+type Page = ToolbarSection | 'assets' | 'events' | 'room' | 'actors' | 'actor-settings' | 'brush' | 'saved' | 'styles'
 
 function PaletteContent() {
   const root = useRef<THREE.Group>(null)
   const gl = useThree((s) => s.gl)
   const [page, setPage] = useState<Page>('build')
-  const [hidden, setHidden] = useState(false)
+  // Collapsed / closed and recenter requests are shared with the wrist Menu (xr/paletteUI.ts).
+  const hidden = usePaletteUI((s) => s.hidden)
+  const closed = usePaletteUI((s) => s.closed)
+  const setHidden = setPaletteHidden
+  const recenter = usePaletteUI((s) => s.recenter)
+  useAssetLibrary((s) => s.version)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('Point and trigger / pinch to choose. Open Guide anytime.')
   const guideOpen = useGuide((s) => s.open)
@@ -71,6 +86,7 @@ function PaletteContent() {
   }, [voice.lastTranscript, voice.lastResult, voice.lastError])
   const [savePage, setSavePage] = useState(0)
   const [assetPage, setAssetPage] = useState(0)
+  const [eventPage, setEventPage] = useState(0)
   const [destinationPage, setDestinationPage] = useState(0)
   const [history, setHistory] = useState(getHistoryState)
   const request = useSyncExternalStore(subscribeConfirmation, getConfirmation, getConfirmation)
@@ -91,6 +107,9 @@ function PaletteContent() {
     if (actor && await requestConfirmation({ type: 'DELETE', message: 'Delete ' + actor.name + '?' })) worldActions.removeActor(actor.id)
   }
   const editor = useEditor()
+  const mocap = useMocap()
+  const placing = usePlacement((s) => s.status === 'choosing')
+  const spatial = useSpatial((s) => s.status)
   const snap = editor.snap
   const inAR = useXR((s) => s.mode === 'immersive-ar')
   const status = useNav((s) => s.status)
@@ -101,16 +120,27 @@ function PaletteContent() {
   const vectors = useMemo(() => ({ position: new THREE.Vector3(), direction: new THREE.Vector3(), yaw: new THREE.Quaternion(), euler: new THREE.Euler(0, 0, 0, 'YXZ') }), [])
 
   useEffect(() => subscribeHistory(setHistory), [])
-  useEffect(() => { if (request) setHidden(false) }, [request])
+  // A confirmation always shows: reopen the palette in front of you if it was closed.
+  useEffect(() => { if (!request) return; if (usePaletteUI.getState().closed) summonPalette(); else setHidden(false) }, [request])
+  useEffect(() => { if (recenter) positioned.current = false }, [recenter])
   useEffect(() => { worldActions.listSavedWorlds() }, [])
   useFrame(() => {
-    if (!root.current || positioned.current) return
+    if (!root.current) return
+    if (positioned.current) {
+      // Let the wrist Menu know where it is (to decide between closing it and bringing it to you).
+      root.current.getWorldPosition(paletteAnchor.position)
+      paletteAnchor.placed = !usePaletteUI.getState().closed
+      return
+    }
     const camera = gl.xr.getCamera()
     camera.getWorldPosition(vectors.position)
     camera.getWorldQuaternion(vectors.yaw)
     vectors.euler.setFromQuaternion(vectors.yaw, 'YXZ')
     vectors.yaw.setFromEuler(new THREE.Euler(0, vectors.euler.y, 0))
-    vectors.direction.set(-0.55, -0.08, -1.05).applyQuaternion(vectors.yaw)
+    // Session start: off to your left. Summoned from the wrist: straight ahead (left of the guide if it's open).
+    if (usePaletteUI.getState().spot === 'front') vectors.direction.set(useGuide.getState().open ? -0.5 : 0, -0.1, -0.85)
+    else vectors.direction.set(-0.55, -0.08, -1.05)
+    vectors.direction.applyQuaternion(vectors.yaw)
     root.current.position.copy(vectors.position).add(vectors.direction)
     root.current.quaternion.copy(vectors.yaw)
     positioned.current = true
@@ -127,11 +157,13 @@ function PaletteContent() {
   }
 
   const primaryTab =
-    page === 'assets' || page === 'actors' || page === 'actor-settings' || page === 'brush' || page === 'styles'
+    page === 'assets' || page === 'events' || page === 'actors' || page === 'actor-settings' || page === 'brush'
       ? 'build'
       : page === 'saved'
         ? 'save'
-        : (page as ToolbarSection)
+        : page === 'styles' || page === 'room'
+          ? 'view'
+          : (page as ToolbarSection)
 
   let buttons: Button[] = []
   if (page === 'build') {
@@ -144,6 +176,7 @@ function PaletteContent() {
     buttons.push(
       { label: snap ? 'Align to Grid · On' : 'Align to Grid', active: snap, run: () => useEditor.getState().set({ snap: !snap }) },
       { label: 'Object catalog…', run: () => { setAssetPage(0); setPage('assets') } },
+      { label: 'Event objects…', run: () => { setEventPage(0); setPage('events') } },
       { label: 'Actors…', run: () => setPage('actors') },
       { label: 'Materials…', run: () => setPage('brush') },
     )
@@ -242,17 +275,24 @@ function PaletteContent() {
         run: toggleSurface,
       },
       { label: snap ? 'Align to Grid · On' : 'Align to Grid', active: snap, run: () => useEditor.getState().set({ snap: !snap }) },
-      {
-        label: 'Place world (AR)',
-        disabled: !inAR,
-        run: () => usePlacement.getState().startChoosing(),
-      },
+      { label: placing ? 'Cancel placing' : 'Place world (AR)', active: placing, disabled: !inAR, run: togglePlaceCity },
       ...SCALE_IDS.map((id) => ({
         label: SCALE_SHORT[id],
         active: editor.worldScale === id,
         run: () => useEditor.getState().set({ worldScale: id }),
       })),
       { label: 'Advanced: styles…', run: () => setPage('styles') },
+      { label: 'Real room…', run: () => setPage('room') },
+    ]
+  } else if (page === 'room') {
+    // Mixed reality: your real room (Space Setup), plus gestures and motion capture.
+    buttons = [
+      { label: editor.occlusion ? 'Hide behind real · On' : 'Hide behind real', active: editor.occlusion, run: toggleOcclusion },
+      { label: editor.realSurfaces ? 'Real surfaces · On' : 'Real surfaces', active: editor.realSurfaces, run: toggleRealSurfaces },
+      { label: 'Scan room (Space Setup)', disabled: !inAR, run: () => (scanRoom() ? undefined : { ok: false, error: 'Scan room is not available here. Use Settings > Physical Space > Space Setup.' }) },
+      { label: editor.gestures ? 'Hand gestures · On' : 'Hand gestures', active: editor.gestures, run: () => useEditor.getState().set({ gestures: !editor.gestures }) },
+      { label: mocap.enabled ? `Motion capture: ${mocap.status}` : 'Motion capture', active: mocap.enabled && mocap.status === 'live', run: toggleMocap },
+      { label: 'Back to View', run: () => setPage('view') },
     ]
   } else if (page === 'save') {
     buttons = listTemplates().map((template) => ({ label: template.name, run: () => createPaletteWorld(template.id) }))
@@ -261,9 +301,28 @@ function PaletteContent() {
       { label: 'Save as new', run: () => worldActions.saveWorld(activeName) },
       { label: 'Load World…', run: () => { worldActions.listSavedWorlds(); setSavePage(0); setPage('saved') } },
     )
+  } else if (page === 'events') {
+    // Event / venue objects (chairs, tables, booths, stages, signs…) from the universal event catalog.
+    const offset = Math.min(eventPage, Math.ceil(EVENT_CATALOG.length / 6) - 1)
+    buttons = EVENT_CATALOG.slice(offset * 6, offset * 6 + 6).map((item) => ({
+      label: item.label,
+      active: tool === 'event' && editor.eventCatalogId === item.id,
+      run: () => {
+        useEditor.getState().set({ eventCatalogId: item.id })
+        worldActions.setTool('event')
+        setMessage('Aim at the floor and pinch / pull the trigger to place.')
+      },
+    }))
+    buttons.push(
+      { label: 'Rotate −90°', run: () => worldActions.rotateCatalogAsset(-1) },
+      { label: 'Rotate +90°', run: () => worldActions.rotateCatalogAsset(1) },
+      { label: 'Previous objects', disabled: offset === 0, run: () => setEventPage(offset - 1) },
+      { label: 'More objects', disabled: (offset + 1) * 6 >= EVENT_CATALOG.length, run: () => setEventPage(offset + 1) },
+      { label: 'Back to Build', run: () => setPage('build') },
+    )
   } else if (page === 'assets') {
-    const offset = Math.min(assetPage, Math.ceil(ASSETS.length / 6) - 1)
-    buttons = ASSETS.slice(offset * 6, offset * 6 + 6).map((asset) => ({
+    const offset = Math.min(assetPage, Math.ceil(libraryAssets().length / 6) - 1)
+    buttons = libraryAssets().slice(offset * 6, offset * 6 + 6).map((asset) => ({
       label: asset.name,
       active: tool === 'asset' && editor.assetId === asset.id,
       run: () => {
@@ -275,7 +334,7 @@ function PaletteContent() {
       { label: 'Rotate −90°', run: () => worldActions.rotateCatalogAsset(-1) },
       { label: 'Rotate +90°', run: () => worldActions.rotateCatalogAsset(1) },
       { label: 'Previous objects', disabled: offset === 0, run: () => setAssetPage(offset - 1) },
-      { label: 'More objects', disabled: (offset + 1) * 6 >= ASSETS.length, run: () => setAssetPage(offset + 1) },
+      { label: 'More objects', disabled: (offset + 1) * 6 >= libraryAssets().length, run: () => setAssetPage(offset + 1) },
       { label: 'Back to Build', run: () => setPage('build') },
     )
   } else if (page === 'actors') {
@@ -317,7 +376,7 @@ function PaletteContent() {
     ]
   } else if (page === 'saved') {
     const offset = Math.min(savePage, Math.max(0, Math.ceil(saves.length / 6) - 1))
-    buttons = saves.slice(offset * 6, offset * 6 + 6).map((save) => ({ label: save.name, run: () => loadPaletteSave(save.id) }))
+    buttons = saves.slice(offset * 6, offset * 6 + 6).map((save) => ({ label: readSpatial(save.id) ? `${save.name} (anchored)` : save.name, run: () => loadPaletteSave(save.id) }))
     buttons.push(
       { label: 'Previous saves', disabled: offset === 0, run: () => setSavePage(offset - 1) },
       { label: 'Next saves', disabled: (offset + 1) * 6 >= saves.length, run: () => setSavePage(offset + 1) },
@@ -326,6 +385,8 @@ function PaletteContent() {
   }
 
   return <group ref={root} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
+    {!closed && <>
+    <PanelMoveBar target={root} y={0.45} width={0.65} />
     <Tile
       text={voice.isListening ? (voice.lastPartial ? `"${voice.lastPartial}" · pause to run` : 'Listening… speak now') : 'Voice command: tap and speak'}
       y={0.39}
@@ -371,8 +432,9 @@ function PaletteContent() {
         <Tile text="Redo" x={-0.08} y={-0.235} width={0.15} disabled={busy || !history.canRedo} onClick={() => worldActions.redo()} />
         <Tile text={guideOpen ? 'Close guide' : 'Guide'} x={0.08} y={-0.235} width={0.15} active={guideOpen} onClick={() => (guideOpen ? closeGuide() : openGuide('start'))} />
         <Tile text="Recenter" x={0.24} y={-0.235} width={0.15} onClick={() => { positioned.current = false }} />
-        <Tile text={busy ? 'Working…' : page === 'assets' ? `${getAsset(editor.assetId)?.name} · ${Math.round(editor.assetRotation * 180 / Math.PI)}° · Aim at clear ground.` : message} y={-0.31} width={0.65} height={0.065} />
+        <Tile text={busy ? 'Working…' : page === 'assets' ? `${getAsset(editor.assetId)?.name} · ${Math.round(editor.assetRotation * 180 / Math.PI)}° · Aim at clear ground.` : (page === 'save' || page === 'saved') && spatial !== 'idle' ? `Saved spot in this room: ${spatial}. ${message}` : message} y={-0.31} width={0.65} height={0.065} />
       </>}
+    </>}
     </>}
   </group>
 }
@@ -406,7 +468,7 @@ function Tile({ text, x = 0, y, width, height = 0.06, active = false, disabled =
     return map
   }, [text, height, width, active, disabled, hover, onClick != null])
   useEffect(() => () => texture.dispose(), [texture])
-  return <mesh position={[x, y, 0]} onPointerOver={() => setHover(true)} onPointerOut={() => setHover(false)} onPointerDown={(e) => { e.stopPropagation(); if (!disabled) onClick?.() }} onClick={(e) => e.stopPropagation()}>
+  return <mesh position={[x, y, 0]} onPointerOver={() => setHover(true)} onPointerOut={() => setHover(false)} onPointerDown={(e) => { e.stopPropagation(); if (!disabled) { pulse('active', HAPTIC.press); onClick?.() } }} onClick={(e) => e.stopPropagation()}>
     <planeGeometry args={[width, height]} />
     <meshBasicMaterial map={texture} toneMapped={false} side={THREE.DoubleSide} />
   </mesh>

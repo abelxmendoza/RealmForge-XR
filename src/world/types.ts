@@ -11,13 +11,17 @@ export type Vec3 = [x: number, y: number, z: number]
 /** A point on the ground plane: [x, z]. */
 export type Vec2 = [x: number, z: number]
 
-export type ObjectKind = 'wall' | 'building' | 'platform' | 'tree' | 'streetlight' | 'crate' | 'prop'
+export type ObjectKind = 'wall' | 'building' | 'platform' | 'tree' | 'streetlight' | 'crate' | 'pallet' | 'rack' | 'prop'
 
 /** Surface finish. Purely visual; navigation never reads it. */
 export type MaterialId = 'concrete' | 'brick' | 'metal' | 'glass' | 'wood' | 'asphalt' | 'grass'
 export type BuildingStyle = 'tower' | 'office' | 'house' | 'industrial'
 export type TreeStyle = 'pine' | 'round'
 export type RoofType = 'flat' | 'pitched'
+/** Pallets: bare, stacked with boxes, or shrink-wrapped. */
+export type PalletStyle = 'empty' | 'boxes' | 'wrapped'
+/** Pallet racks: bare beams, or a pallet on every level. */
+export type RackStyle = 'empty' | 'loaded'
 
 /**
  * Optional simulation role for event objects. Appearance (kind/catalogId) stays separate
@@ -52,8 +56,8 @@ export interface WorldObject {
   // Optional, visual-only extras (added for worldbuilding; older objects without them still work).
   /** Walls and platforms: surface finish. */
   material?: MaterialId
-  /** Buildings: BuildingStyle. Trees: TreeStyle. */
-  style?: BuildingStyle | TreeStyle
+  /** Buildings: BuildingStyle. Trees: TreeStyle. Pallets: PalletStyle. Racks: RackStyle. */
+  style?: BuildingStyle | TreeStyle | PalletStyle | RackStyle
   /** Buildings only. */
   roof?: RoofType
   /** Overrides the default of whether this object blocks navigation (see blocksNavigation). */
@@ -72,8 +76,8 @@ export interface WorldObject {
   serviceDuration?: number
 }
 
-/** Structures that block by default. Decorations and most props do not, unless `solid` is set. */
-const BLOCKING_KINDS: ReadonlySet<ObjectKind> = new Set(['wall', 'building'])
+/** Structures (and pallets/racks) block by default. Decorations (trees, streetlights, crates) do not, unless `solid` is set. */
+const BLOCKING_KINDS: ReadonlySet<ObjectKind> = new Set(['wall', 'building', 'pallet', 'rack'])
 /** Platforms at or below this height are walkable surfaces (roads, plazas); taller ones block. */
 export const STEP_HEIGHT = 0.3
 
