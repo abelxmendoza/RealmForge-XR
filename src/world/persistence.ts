@@ -1,6 +1,7 @@
 import { actorsForSave } from '../actors/runtime'
 import { flowSnapshot, loadFlowSnapshot } from '../flow/controller'
 import { useFlow } from '../flow/store'
+import { scanForSave, setScan, useScan } from '../scan/store'
 import { useEnvironment } from './environment'
 import { confirmReplace } from './confirmation'
 import { create } from 'zustand'
@@ -88,6 +89,7 @@ export function worldFingerprint(): string {
       visible: r.visible,
     })),
     trafficZones: flow.trafficZones,
+    scan: useScan.getState().scan,
   })
 }
 
@@ -113,9 +115,11 @@ export function installDirtyTracking(): () => void {
   markClean()
   const unsubWorld = useWorld.subscribe(() => refreshDirty())
   const unsubFlow = useFlow.subscribe(() => refreshDirty())
+  const unsubScan = useScan.subscribe((s, prev) => s.version !== prev.version && refreshDirty())
   return () => {
     unsubWorld()
     unsubFlow()
+    unsubScan()
     dirtyListening = false
   }
 }
@@ -167,6 +171,7 @@ export function currentWorldFile(name = useWorldLibrary.getState().activeName): 
       actors: actorsForSave(),
       routes: flow.routes,
       trafficZones: flow.trafficZones,
+      scan: scanForSave(),
     },
     name,
   )
@@ -195,6 +200,7 @@ function applyWorld(world: ParsedWorld, activeId: string | null) {
     useWorld.getState().loadWorld(world)
   })
   loadFlowSnapshot(world.flow ?? { routes: [], trafficZones: [] })
+  setScan(world.scan ?? null)
   clearHistory()
   useEnvironment.getState().setActive(world.environmentId ?? null)
   useWorldLibrary.setState({ activeId, activeName: world.name })
