@@ -1,3 +1,4 @@
+import { worldContentCount } from './content'
 import { create } from 'zustand'
 import type { BuildingStyle, MaterialId } from './types'
 import type { WorldSnapshot } from './store'
@@ -309,7 +310,7 @@ export async function loadEnvironment(id: EnvironmentId | string, opts: LoadEnvi
       return fail(`Environment "${env.name}" produced an invalid world snapshot.`)
     }
 
-    const count = Object.keys(useWorld.getState().objects).length + Object.keys(useWorld.getState().actors).length
+    const count = worldContentCount()
     if (count > 0) {
       const gate = await safeConfirm(
         opts.confirmReplace,

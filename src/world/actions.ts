@@ -1,3 +1,4 @@
+import { worldContentCount } from './content'
 import {
   selectActorKind,
   previewActor,
@@ -80,7 +81,7 @@ export interface ConfirmOptions {
 
 /** How many objects are in the active world (0 = empty sandbox). */
 export function objectCount(): number {
-  return Object.keys(useWorld.getState().objects).length + Object.keys(useWorld.getState().actors).length
+  return worldContentCount()
 }
 
 /**

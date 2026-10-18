@@ -34,6 +34,7 @@ import { FloorTracker } from '../xr/floor'
 import { Occlusion } from '../xr/occlusion'
 import { RoomTracker } from '../xr/roomTracker'
 import { SpatialSync } from '../xr/spatialSave'
+import { ScanLayer } from '../scan/ScanLayer'
 
 export function Scene() {
   const background = useEnvironment((s) => s.appearance.lighting.background)
@@ -114,6 +115,7 @@ export function Scene() {
         >
           <DragCatcher />
           <Ground />
+          <ScanLayer />
           <WarehouseInterior />
           <Obstacles />
           <Route />

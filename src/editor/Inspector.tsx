@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
+import { ScanPanel } from '../scan/ScanPanel'
+import { openScanPanel, useScan } from '../scan/store'
 import { create } from 'zustand'
 import { ActorPanel } from '../actors/ActorPanel'
 import { getAsset } from '../world/assets'
@@ -46,6 +48,13 @@ export const useInspectorPanel = create<{ collapsed: boolean; setCollapsed: (col
 /** Switch to the catalog-object tool and make sure its panel is visible. */
 export function openObjectLibrary() {
   worldActions.setTool('asset')
+  openScanPanel(false)
+  useInspectorPanel.getState().setCollapsed(false)
+}
+
+/** Show the real-world scan panel in the side panel. */
+export function openScanImport() {
+  openScanPanel(true)
   useInspectorPanel.getState().setCollapsed(false)
 }
 
@@ -61,6 +70,12 @@ export function Inspector() {
   const selectedActorId = useWorld((s) => s.selectedActorId)
   const tool = useWorld((s) => s.tool)
   const sim = useAttendee()
+  const scanOpen = useScan((s) => s.panelOpen)
+  const selectedId = selected?.id ?? null
+  // Picking another tool, tab or object hands the side panel back to it.
+  useEffect(() => {
+    if (useScan.getState().panelOpen) openScanPanel(false)
+  }, [tool, section, selectedId, selectedActorId])
 
   if (collapsed) {
     return (
@@ -89,7 +104,7 @@ export function Inspector() {
   return (
     <div className="inspector" data-context={context}>
       <header className="inspector-chrome">
-        <h2 className="inspector-title">{panelHeading(context, tool)}</h2>
+        <h2 className="inspector-title">{scanOpen ? 'Scan' : panelHeading(context, tool)}</h2>
         <button
           type="button"
           className="ghost inspector-toggle"
@@ -102,7 +117,9 @@ export function Inspector() {
       </header>
 
       <div className="inspector-body">
-        {context === 'simulate' ? (
+        {scanOpen ? (
+          <ScanPanel />
+        ) : context === 'simulate' ? (
           <SimulationPanel />
         ) : context === 'save' ? (
           <WorldsPanel />
