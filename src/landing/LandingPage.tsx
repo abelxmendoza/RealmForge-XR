@@ -123,7 +123,8 @@ export default function LandingPage() {
           <nav aria-label="Main navigation">
             <a href="#worlds">The worlds</a>
             <a href="#events">Events & venues</a>
-            <a href="#possibilities">The possibilities</a>
+            <a href="#workflow">How it works</a>
+            <a href="#scans">Import a space</a>
             <a href={GITHUB} target="_blank" rel="noreferrer">
               GitHub <Arrow />
             </a>
@@ -141,7 +142,7 @@ export default function LandingPage() {
         <section className="rf-shell rf-hero" aria-labelledby="hero-heading">
           <div className="rf-hero-copy">
             <p className="rf-eyebrow">
-              <span className="rf-dot" /> A SPATIAL WORLDBUILDING & EVENT SANDBOX
+              <span className="rf-dot" /> WORLDBUILDING · SPATIAL PLANNING · WEBXR
             </p>
             <h1 id="hero-heading">
               Big ideas.
@@ -151,16 +152,16 @@ export default function LandingPage() {
               <span>your space.</span>
             </h1>
             <p className="rf-intro">
-              Lay out a venue, a festival field or a factory floor.{' '}
+              Build a world, or start with a scan of a real space.{' '}
               <br />
-              Place stages, stalls, machines and barriers, start a virtual attendee, and see how the layout shapes the flow.
+              Lay out venues and factory floors, plan multi-stop routes, and watch people and robots navigate your design. Explore it from tabletop to life size.
             </p>
             <div className="rf-hero-actions">
               <a className="rf-button" href={editorHref(selected.id)}>
                 {enterLabel(selected.id)} <Arrow />
               </a>
               <button className="rf-button rf-button-ghost rf-demo-launch" onClick={openDemo}>
-                <i aria-hidden="true">▶</i> Watch the VR demo
+                <i aria-hidden="true">▶</i> Watch the simulated XR demo
               </button>
               <a className="rf-text-link" href="#events">
                 Browse event venues <span aria-hidden="true">↓</span>
@@ -172,7 +173,7 @@ export default function LandingPage() {
               </span>
               <span>
                 Start on desktop. Step into XR.
-                <small>Worlds, venues, and simulation in one forge.</small>
+                <small>Mouse, hands, controllers, or optional voice.</small>
               </span>
             </div>
           </div>
@@ -186,7 +187,7 @@ export default function LandingPage() {
             </div>
             <WorldDiorama world={world} />
             <div className="rf-model-tag">
-              <span className="rf-dot" /> BUILD. STAGE. SIMULATE.
+              <span className="rf-dot" /> BUILD. PLAN. TEST.
             </div>
             <div className="rf-world-picker" aria-label="Preview an environment">
               {LANDING_TEMPLATES.map((item) => (
@@ -206,19 +207,62 @@ export default function LandingPage() {
         <div className="rf-capability-strip">
           <div className="rf-shell">
             <span>
-              <i>01</i> SPATIAL CREATION
+              <i>01</i> 7 STARTING TEMPLATES
             </span>
             <span>
-              <i>02</i> EVENT VENUES
+              <i>02</i> MULTI-STOP ROUTES
             </span>
             <span>
-              <i>03</i> ATTENDEE FLOW
+              <i>03</i> REAL-WORLD SCAN IMPORT
             </span>
             <span>
               <i>04</i> DESKTOP + WEBXR
             </span>
           </div>
         </div>
+
+        <section id="workflow" className="rf-shell rf-workflow" aria-labelledby="workflow-heading">
+          <div className="rf-section-heading">
+            <div>
+              <p className="rf-eyebrow">FROM AN IDEA TO A WORLD IN MOTION</p>
+              <h2 id="workflow-heading">Build. Plan. Test.</h2>
+            </div>
+            <p>Choose a starting point. Give it a route.<br />Change the layout and see what happens.</p>
+          </div>
+          <div className="rf-event-steps">
+            <article>
+              <span>01 / BUILD</span>
+              <h3>Make the space yours.</h3>
+              <p>Start empty, open a template, or import a .glb scan. Place objects, adjust dimensions, and shape the layout.</p>
+            </article>
+            <article>
+              <span>02 / PLAN</span>
+              <h3>Decide where things go.</h3>
+              <p>Add ordered waypoints for robots and actors. Mark traffic zones and destinations, then inspect the route.</p>
+            </article>
+            <article>
+              <span>03 / TEST</span>
+              <h3>Put the plan in motion.</h3>
+              <p>Play or pause movement. Move an obstacle and watch the path adapt while your waypoints stay in order—or see that the route is blocked.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="scans" className="rf-shell rf-scans" aria-labelledby="scans-heading">
+          <div className="rf-scan-copy">
+            <p className="rf-eyebrow">BRING YOUR OWN SPACE / .GLB IMPORT</p>
+            <h2 id="scans-heading">Your real space.<br />Your next layout.</h2>
+            <p>Bring in a phone or LiDAR scan of a room, venue, or factory as a 3D backdrop. Line it up with the grid, measure a known distance to set its scale, and plan on top of it.</p>
+            <p>Hide the ceiling to see inside. Adjust transparency, place equipment and barriers, then explore the same space in XR.</p>
+            <a className="rf-button rf-button-ghost" href={editorHref('empty-event-venue')}>Open editor to import a scan <Arrow /></a>
+            <small>In the editor, choose Build → Import scan. Scan files stay on this device; exported worlds keep the alignment, so another device needs the original .glb file again. Scan surfaces are a visual reference; add solid objects to define navigation obstacles.</small>
+          </div>
+          <div className="rf-scan-steps" aria-label="Scan planning workflow">
+            <article><span>01 / IMPORT</span><h3>Bring in the room.</h3><p>Import a .glb scan. Automatic floor and orientation detection gives you a starting alignment.</p></article>
+            <article><span>02 / ALIGN</span><h3>Get the scale right.</h3><p>Measure, rotate, and shift the scan. Cut away the ceiling for a clear view of the floor.</p></article>
+            <article><span>03 / DESIGN</span><h3>Try the next layout.</h3><p>Add your own objects and routes over the scan, then inspect the plan on screen or in XR.</p></article>
+          </div>
+        </section>
 
         <section id="events" className="rf-shell rf-events" aria-labelledby="events-heading">
           <div className="rf-section-heading">
@@ -266,7 +310,7 @@ export default function LandingPage() {
               ▶
             </span>
             <span>
-              <b>See the whole workflow from inside the headset</b>
+              <b>Preview the workflow from an XR point of view</b>
               <small>48-second simulated POV replay · place booths, start the attendee, watch the route replan</small>
             </span>
             <Arrow />
@@ -317,7 +361,7 @@ export default function LandingPage() {
               <p>
                 Make a place, then put it to the test.
                 <br />
-                RealmForge connects creating with simulating — for worlds and events.
+                Layouts, routes, spatial controls, and saved projects in one workspace.
               </p>
             </div>
             <div className="rf-feature-rows">
@@ -330,8 +374,7 @@ export default function LandingPage() {
                 </h3>
                 <div>
                   <p>
-                    Place buildings, roads, walls, warehouse equipment, and event catalog props. Move, rotate, resize,
-                    and customize with a shared set of tools.
+                    Place buildings, roads, warehouse equipment, festival props, and people. Select and drag objects, adjust dimensions, snap to the grid, duplicate, or undo a change.
                   </p>
                   <span className="rf-feature-tags">
                     OBJECT CATALOG <b>·</b> EVENT PROPS <b>·</b> UNDO / REDO
@@ -339,18 +382,17 @@ export default function LandingPage() {
                 </div>
               </article>
               <article>
-                <span className="rf-feature-number">02 / SIMULATE</span>
+                <span className="rf-feature-number">02 / ROUTES</span>
                 <h3>
                   Give your layout
                   <br />a moving part.
                 </h3>
                 <div>
                   <p>
-                    Send an AGV down its lane, or start a virtual attendee through gates, booths, the stage and exits.
-                    Block a path and watch navigation find a new way through.
+                    Plan multiple stops for a robot or actor, then play or pause its journey. Keep your intended waypoints while navigation finds a detour around edited geometry. Mark one-way lanes, queues, and restricted areas.
                   </p>
                   <span className="rf-feature-tags">
-                    ROBOT ROUTES <b>·</b> ATTENDEE FLOW <b>·</b> TRAFFIC ZONES
+                    WAYPOINTS <b>·</b> LIVE REPLANNING <b>·</b> TRAFFIC ZONES
                   </span>
                 </div>
               </article>
@@ -363,12 +405,27 @@ export default function LandingPage() {
                 </h3>
                 <div>
                   <p>
-                    Build with mouse and keyboard, or enter WebXR for spatial controls. Keep your worlds and venues in
-                    the local library and export them as portable JSON.
+                    Use hands or controllers to grab, rotate, and scale objects in WebXR. Switch from a tabletop model to a life-size view, with a wrist menu and floating controls close at hand.
                   </p>
                   <span className="rf-feature-tags">
-                    DESKTOP <b>·</b> VR / AR CONTROLS <b>·</b> WORLD LIBRARY
+                    HAND GRAB <b>·</b> TABLETOP TO 1:1 <b>·</b> VR / AR
                   </span>
+                </div>
+              </article>
+              <article>
+                <span className="rf-feature-number">04 / VOICE</span>
+                <h3>Say the next<br />move.</h3>
+                <div>
+                  <p>Load a world, choose a tool, create objects, or control routes with supported voice commands. Use “add waypoint here” with your pointer, or type a command in the voice panel.</p>
+                  <span className="rf-feature-tags">OPTIONAL MICROPHONE <b>·</b> TYPED COMMANDS <b>·</b> SPATIAL POINTER</span>
+                </div>
+              </article>
+              <article>
+                <span className="rf-feature-number">05 / KEEP</span>
+                <h3>Pick up where<br />you left off.</h3>
+                <div>
+                  <p>Save and reopen projects in your browser’s world library. Export and import world JSON to carry supported layouts, routes, and settings between devices.</p>
+                  <span className="rf-feature-tags">LOCAL SAVES <b>·</b> JSON IMPORT / EXPORT <b>·</b> UNDO / REDO</span>
                 </div>
               </article>
             </div>
@@ -379,7 +436,7 @@ export default function LandingPage() {
           <img className="rf-final-mark rf-final-logo" src={BRAND.logoLarge} width="168" height="168" alt="" aria-hidden="true" />
           <p className="rf-eyebrow">SHAPE WORLDS. STAGE EVENTS. BRING THEM TO LIFE.</p>
           <h2>
-            Your next venue
+            Your next world
             <br />
             starts here.
           </h2>
@@ -411,7 +468,7 @@ export default function LandingPage() {
       <footer className="rf-footer rf-shell">
         <div>
           <Brand />
-          <p>A spatial worldbuilding, event venue & simulation project.</p>
+          <p>A spatial worldbuilding, layout planning & simulation project.</p>
         </div>
         <div>
           <a href={GITHUB} target="_blank" rel="noreferrer">

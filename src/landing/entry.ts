@@ -69,9 +69,9 @@ export const LANDING_VENUES = [
     shortName: 'Festival',
     number: '03',
     category: 'CONCERTS & FESTIVALS',
-    description: 'An open-air concert site with security gates, a main stage, food stalls, bars and exits. Watch the crowd flow.',
+    description: 'An open-air concert site with security gates, a main stage, food stalls, bars and exits. Follow an illustrative attendee journey.',
     color: '#b197fc',
-    label: 'Festival / crowd flow',
+    label: 'Festival / attendee journey',
   },
 ] as const
 
