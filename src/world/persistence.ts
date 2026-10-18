@@ -1,6 +1,8 @@
+import { worldContentCount } from './content'
 import { actorsForSave } from '../actors/runtime'
 import { flowSnapshot, loadFlowSnapshot } from '../flow/controller'
 import { useFlow } from '../flow/store'
+import { scansForSave, setScans, useScan } from '../scan/store'
 import { useEnvironment } from './environment'
 import { confirmReplace } from './confirmation'
 import { create } from 'zustand'
@@ -88,6 +90,7 @@ export function worldFingerprint(): string {
       visible: r.visible,
     })),
     trafficZones: flow.trafficZones,
+    scans: useScan.getState().scans,
   })
 }
 
@@ -113,9 +116,11 @@ export function installDirtyTracking(): () => void {
   markClean()
   const unsubWorld = useWorld.subscribe(() => refreshDirty())
   const unsubFlow = useFlow.subscribe(() => refreshDirty())
+  const unsubScan = useScan.subscribe((s, prev) => s.version !== prev.version && refreshDirty())
   return () => {
     unsubWorld()
     unsubFlow()
+    unsubScan()
     dirtyListening = false
   }
 }
@@ -167,6 +172,7 @@ export function currentWorldFile(name = useWorldLibrary.getState().activeName): 
       actors: actorsForSave(),
       routes: flow.routes,
       trafficZones: flow.trafficZones,
+      scans: scansForSave(),
     },
     name,
   )
@@ -178,7 +184,7 @@ async function confirmIfNeeded(
   message: string,
   opts: ReplaceOptions,
 ): Promise<{ ok: true } | { ok: false; error: string; cancelled?: boolean }> {
-  const count = Object.keys(useWorld.getState().objects).length + Object.keys(useWorld.getState().actors).length
+  const count = worldContentCount()
   if (count === 0) return { ok: true }
   return safeConfirm(
     opts.confirmReplace ?? confirmReplace,
@@ -195,6 +201,7 @@ function applyWorld(world: ParsedWorld, activeId: string | null) {
     useWorld.getState().loadWorld(world)
   })
   loadFlowSnapshot(world.flow ?? { routes: [], trafficZones: [] })
+  setScans(world.scans ?? (world.scan ? [world.scan] : []))
   clearHistory()
   useEnvironment.getState().setActive(world.environmentId ?? null)
   useWorldLibrary.setState({ activeId, activeName: world.name })

@@ -23,7 +23,8 @@ import {
 } from '../nav/routePlan'
 import { blockRoute } from './demo'
 import { openWorldLibrary } from './WorldLibrary'
-import { openObjectLibrary } from './Inspector'
+import { openObjectLibrary, openScanImport } from './Inspector'
+import { setScan, useScan } from '../scan/store'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 import { useEditor } from './settings'
 import { downloadWorld, importWorld, quickSave, useWorldLibrary } from '../world/persistence'
@@ -87,6 +88,7 @@ export function ToolbarHud() {
   const route = useRoutePlan()
   const [routeMsg, setRouteMsg] = useState<string | null>(null)
   const snap = useEditor((s) => s.snap)
+  const scanOpen = useScan((s) => s.panelOpen)
   const placement = usePlacement((s) => s.status)
   const xrError = useXRSessionMeta((s) => s.lastError)
   const entering = useXRSessionMeta((s) => s.entering)
@@ -143,7 +145,10 @@ export function ToolbarHud() {
   }
 
   const onClearWorld = async () => {
-    if (await confirmReplace('Clear the current world? Unsaved changes will be lost.')) useWorld.getState().reset()
+    if (await confirmReplace('Clear the current world? Unsaved changes will be lost.')) {
+      useWorld.getState().reset()
+      setScan(null)
+    }
   }
 
   const onSave = async () => {
@@ -333,6 +338,18 @@ export function ToolbarHud() {
               }}
             >
               Object library
+            </button>
+            <button
+              type="button"
+              className={scanOpen ? 'on' : ''}
+              aria-pressed={scanOpen}
+              title="Import a 3D scan of a real space (.glb) and plan on top of it"
+              onClick={() => {
+                openScanImport()
+                if (isCompact()) setMenuOpen(false)
+              }}
+            >
+              Property scans
             </button>
           </div>
         )}

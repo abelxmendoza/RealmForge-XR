@@ -1,3 +1,5 @@
+import { calibrateScan, cycleScan, scanControls, showAllScans, soloScan } from '../scan/actions'
+import { openScanPanel, patchScan, removeScan, startMeasuring, useScan } from '../scan/store'
 import { listTemplates } from '../world/library'
 import { ACTOR_CATALOG, ACTOR_KINDS } from '../actors/types'
 import { actorRuntimeRevision, subscribeActorRuntime, getActorRuntime } from '../actors/runtime'
@@ -72,12 +74,26 @@ const VR_TABS: { id: ToolbarSection | 'edit'; label: string }[] = [
   ...TOOLBAR_SECTIONS.slice(1),
 ]
 
-type Page = ToolbarSection | 'edit' | 'assets' | 'events' | 'room' | 'actors' | 'actor-settings' | 'brush' | 'saved' | 'styles'
+type Page = 'scans' | 'scan-align' | 'scan-display' | 'scan-measure' | ToolbarSection | 'edit' | 'assets' | 'events' | 'room' | 'actors' | 'actor-settings' | 'brush' | 'saved' | 'styles'
 
 function PaletteContent() {
   const root = useRef<THREE.Group>(null)
   const gl = useThree((s) => s.gl)
   const [page, setPage] = useState<Page>('build')
+  const [controlPage, setControlPage] = useState(0)
+  const [realDistance, setRealDistance] = useState(1)
+  const property = useScan()
+  const scan = property.scan
+  const inScans = page.startsWith('scan')
+  useEffect(() => { setControlPage(0) }, [page])
+  useEffect(() => { setRealDistance(1) }, [property.activeId])
+  const fileControls = async () => {
+    // Native file pickers / downloads are not reliable while an immersive session owns the display.
+    // Exit explicitly; the same ScanPanel is then visible in the headset's ordinary browser.
+    openScanPanel(true)
+    await gl.xr.getSession()?.end()
+  }
+
   // Collapsed / closed and recenter requests are shared with the wrist Menu (xr/paletteUI.ts).
   const hidden = usePaletteUI((s) => s.hidden)
   const closed = usePaletteUI((s) => s.closed)
@@ -168,7 +184,7 @@ function PaletteContent() {
   }
 
   const primaryTab =
-    page === 'assets' || page === 'events' || page === 'actors' || page === 'actor-settings' || page === 'brush'
+    page.startsWith('scan') || page === 'assets' || page === 'events' || page === 'actors' || page === 'actor-settings' || page === 'brush'
       ? 'build'
       : page === 'saved'
         ? 'save'
@@ -190,7 +206,45 @@ function PaletteContent() {
       { label: 'Event objects…', run: () => { setEventPage(0); setPage('events') } },
       { label: 'Actors…', run: () => setPage('actors') },
       { label: 'Materials…', run: () => setPage('brush') },
+      { label: 'Property scans…', run: () => setPage('scans') },
     )
+  } else if (page === 'scans') {
+    buttons = [
+      { label: 'Next scan section', disabled: !scan, run: cycleScan },
+      { label: scan?.visible ? 'Hide section' : 'Show section', disabled: !scan, run: () => scan && patchScan({ visible: !scan.visible }) },
+      { label: 'Align section…', disabled: !scan, run: () => setPage('scan-align') },
+      { label: 'Display section…', disabled: !scan, run: () => setPage('scan-display') },
+      { label: 'Measure scale…', disabled: !scan?.visible || property.status !== 'ready', run: () => setPage('scan-measure') },
+      { label: 'Only this section', disabled: !scan, run: soloScan },
+      { label: 'Show all sections', disabled: !scan, run: showAllScans },
+      { label: 'Files / names (exit XR)', run: fileControls },
+      { label: 'Remove section', disabled: !scan, run: async () => { if (scan && await requestConfirmation({ type: 'DELETE', message: `Remove “${scan.name}” from this property?` })) removeScan(scan.id) } },
+      { label: 'Back to Build', run: () => setPage('build') },
+    ]
+  } else if (page === 'scan-align') {
+    buttons = [...scanControls().filter((c) => c.id !== 'visibility' && c.id !== 'ceiling'),
+      { label: 'Back to scans', run: () => setPage('scans') }]
+  } else if (page === 'scan-display') {
+    buttons = [
+      ...scanControls().filter((c) => c.id === 'visibility' || c.id === 'ceiling'),
+      { label: 'More transparent', disabled: !scan, run: () => scan && patchScan({ opacity: Math.max(0.1, scan.opacity - 0.1) }) },
+      { label: 'More opaque', disabled: !scan, run: () => scan && patchScan({ opacity: Math.min(1, scan.opacity + 0.1) }) },
+      { label: 'Ceiling cut −0.1 m', disabled: scan?.cutHeight == null, run: () => scan?.cutHeight != null && patchScan({ cutHeight: Math.max(0.5, scan.cutHeight - 0.1) }) },
+      { label: 'Ceiling cut +0.1 m', disabled: scan?.cutHeight == null, run: () => scan?.cutHeight != null && patchScan({ cutHeight: Math.min(12, scan.cutHeight + 0.1) }) },
+      { label: 'Floor / area label', disabled: !scan, run: () => { if (scan) { const labels = ['Ground floor', 'Upstairs', 'Outdoors']; patchScan({ level: labels[(labels.indexOf(scan.level ?? '') + 1) % labels.length] }) } } },
+      { label: 'Back to scans', run: () => setPage('scans') },
+    ]
+  } else if (page === 'scan-measure') {
+    buttons = [
+      { label: 'Pick two points', disabled: !scan?.visible || property.status !== 'ready', active: property.measuring, run: () => { useEditor.getState().set({ rays: true }); startMeasuring() } },
+      { label: 'Real distance −1 m', run: () => setRealDistance((d) => Math.max(0.01, Math.round((d - 1) * 100) / 100)) },
+      { label: 'Real distance +1 m', run: () => setRealDistance((d) => Math.round((d + 1) * 100) / 100) },
+      { label: 'Real distance −0.01 m', run: () => setRealDistance((d) => Math.max(0.01, Math.round((d - 0.01) * 100) / 100)) },
+      { label: 'Real distance +0.01 m', run: () => setRealDistance((d) => Math.round((d + 0.01) * 100) / 100) },
+      { label: `Apply ${realDistance.toFixed(2)} m`, disabled: property.measurePoints.length !== 2, run: () => calibrateScan(realDistance) ? undefined : { ok: false, error: 'Pick two distinct points and set a valid distance.' } },
+      { label: 'Cancel measurement', run: () => startMeasuring(false) },
+      { label: 'Back to scans', run: () => { startMeasuring(false); setPage('scans') } },
+    ]
   } else if (page === 'edit') {
     buttons = ([
       ['rotate-left', 'Rotate left'],
@@ -403,6 +457,17 @@ function PaletteContent() {
     )
   }
 
+  const lastControlPage = Math.max(0, Math.ceil(buttons.length / 8) - 1)
+  const currentControlPage = Math.min(controlPage, lastControlPage)
+  const visibleButtons = buttons.length > 10 ? [
+    ...buttons.slice(currentControlPage * 8, currentControlPage * 8 + 8),
+    { label: 'Previous controls', disabled: currentControlPage === 0, run: () => setControlPage(currentControlPage - 1) },
+    { label: 'More controls', disabled: currentControlPage === lastControlPage, run: () => setControlPage(currentControlPage + 1) },
+  ] : buttons
+  const scanMessage = !scan ? 'Add GLB sections or open a property bundle via Files (exit XR).' :
+    page === 'scan-measure' && property.measuring ? `Pick two scan points: ${property.measurePoints.length}/2. Real distance: ${realDistance.toFixed(2)} m.` :
+    `${scan.name} · ${scan.level || 'Property'} · floor ${scan.offset[1].toFixed(2)} m · ${property.status}. Scans are visual; navigation uses the flat ground plane.`
+
   return <group ref={root} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
     {!closed && <>
     <PanelMoveBar target={root} y={0.45} width={0.65} />
@@ -432,10 +497,10 @@ function PaletteContent() {
             y={0.21}
             width={0.102}
             active={primaryTab === tab.id}
-            onClick={() => setPage(tab.id)}
+            onClick={() => { startMeasuring(false); setPage(tab.id) }}
           />
         ))}
-        {buttons.map((button, i) => (
+        {visibleButtons.map((button, i) => (
           <Tile
             key={page + button.label + i}
             text={button.label}
@@ -451,7 +516,7 @@ function PaletteContent() {
         <Tile text="Redo" x={-0.08} y={-0.235} width={0.15} disabled={busy || !history.canRedo} onClick={() => worldActions.redo()} />
         <Tile text={guideOpen ? 'Close guide' : 'Guide'} x={0.08} y={-0.235} width={0.15} active={guideOpen} onClick={() => (guideOpen ? closeGuide() : openGuide('start'))} />
         <Tile text="Recenter" x={0.24} y={-0.235} width={0.15} onClick={() => { positioned.current = false }} />
-        <Tile text={busy ? 'Working…' : page === 'assets' ? `${getAsset(editor.assetId)?.name} · ${Math.round(editor.assetRotation * 180 / Math.PI)}° · Aim at clear ground.` : (page === 'save' || page === 'saved') && spatial !== 'idle' ? `Saved spot in this room: ${spatial}. ${message}` : message} y={-0.31} width={0.65} height={0.065} />
+        <Tile text={busy ? 'Working…' : inScans ? scanMessage : page === 'assets' ? `${getAsset(editor.assetId)?.name} · ${Math.round(editor.assetRotation * 180 / Math.PI)}° · Aim at clear ground.` : (page === 'save' || page === 'saved') && spatial !== 'idle' ? `Saved spot in this room: ${spatial}. ${message}` : message} y={-0.31} width={0.65} height={0.065} />
       </>}
     </>}
     </>}
