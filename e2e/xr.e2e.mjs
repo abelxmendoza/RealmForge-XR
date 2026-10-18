@@ -230,6 +230,18 @@ test('a confirmation shows in the headset and Confirm answers it', async ({ page
   assert.equal(result.status, 'executed', JSON.stringify(result))
 })
 
+test('a confirmation started from a palette button can be answered (palette busy meanwhile)', async ({ page }) => {
+  await enterVR(page)
+  await lookAtPalette(page)
+  await press(page, 'section:save')
+  // Replacing a non-empty world asks first; the palette stays busy until it's answered.
+  await press(page, 'new:mars-outpost')
+  assert.ok(await state(page, () => !!window.__rf.controlWorldPoint('palette', 'confirm:yes')), 'confirmation is not on the palette')
+  await press(page, 'confirm:yes')
+  await frames(page, 20)
+  assert.equal(await state(page, () => !!window.__rf.controlWorldPoint('palette', 'confirm:yes')), false, 'confirmation still pending')
+})
+
 test('the guide opened in VR can be paged and closed (no desktop modal swallowing presses)', async ({ page }) => {
   await enterVR(page)
   await lookAtPalette(page)

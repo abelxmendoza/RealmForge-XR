@@ -92,7 +92,9 @@ function PaletteContent() {
 
   const onPress = (id: string) => {
     const action = model.actions[id]
-    if (!action || busy) return
+    // While busy, only the confirmation's own buttons work: a busy action is usually the one awaiting that answer
+    // (load / create / overwrite), so blocking them too would leave the palette stuck.
+    if (!action || (busy && !id.startsWith('confirm:'))) return
     let result: unknown
     try {
       result = action()
