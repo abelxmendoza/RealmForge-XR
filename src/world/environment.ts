@@ -147,7 +147,7 @@ export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentConfig> = {
     buildWorld: warehouse,
   },
   'empty-event-venue': {
-    id: 'empty-event-venue', name: 'Empty', description: 'A completely empty board. Add everything yourself.',
+    id: 'empty-event-venue', name: 'Empty Space', description: 'A completely empty board. Add everything yourself.',
     appearance: DEFAULT_APPEARANCE,
     defaults: { buildingStyle: 'industrial', wallMaterial: 'concrete', platformMaterial: 'concrete' },
     buildWorld: emptyEventVenue,

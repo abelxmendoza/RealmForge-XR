@@ -327,6 +327,6 @@ export const PRESETS = [
   { id: 'forge-district', label: 'Forge District (demo city)', build: forgeDistrict },
   { id: 'mars-outpost', label: 'Mars Outpost', build: marsOutpost },
   { id: 'warehouse', label: 'Autonomous Warehouse', build: warehouse },
-  { id: 'empty-event-venue', label: 'Empty', build: emptyEventVenue },
+  { id: 'empty-event-venue', label: 'Empty Space', build: emptyEventVenue },
   { id: 'job-fair', label: 'Job Fair', build: jobFair },
 ] as const

@@ -118,7 +118,7 @@ function Palette() {
 
         <section>
           <h3>Start a new world</h3>
-          <p className="hint">Empty has no content. Job Fair includes registration, employer booths, seating and a stage.</p>
+          <p className="hint">Empty Space has no content. Job Fair includes registration, employer booths, seating and a stage.</p>
           <div className="library-row">
             <input type="text" placeholder={suggested} value={name} maxLength={80} onChange={(e) => setName(e.target.value)} disabled={busy} />
             <span className="hint">Pick a starting point. It's saved to your library straight away.</span>
