@@ -57,7 +57,7 @@ export function ScanPanel() {
       <input
         ref={file}
         type="file"
-        accept=".glb,.gltf,model/gltf-binary,model/gltf+json"
+        accept=".glb,.gltf,.obj,model/gltf-binary,model/gltf+json,text/plain"
         hidden
         onChange={(e) => {
           void choose(e.target.files?.[0])
@@ -69,7 +69,7 @@ export function ScanPanel() {
         <>
           <p className="hint">
             Turn a real room into a 3D backdrop for worldbuilding. Choose how to capture it, export a single
-            <strong> .glb</strong> model, then import it here.
+            <strong> .glb or .obj</strong> mesh, then import it here.
           </p>
           <div className="row" role="group" aria-label="Scan capture method">
             <button type="button" className={captureHelp === 'iphone' ? 'on' : ''} aria-pressed={captureHelp === 'iphone'} onClick={() => setCaptureHelp('iphone')}>
@@ -82,11 +82,11 @@ export function ScanPanel() {
           {captureHelp === 'iphone' ? (
             <p className="hint">
               <strong>iPhone capture:</strong> Scan a room using a 3D scanning app such as Polycam or Scaniverse.
-              Export a textured GLB and select it below. LiDAR is available only on supported iPhone Pro models;
+              Export an OBJ mesh (or GLB, if available) and select it below. OBJ material textures are not imported. LiDAR is available only on supported iPhone Pro models;
               other iPhones may use photo-based reconstruction when supported by the scanning app.
               A normal photo or live camera stream alone is not a 3D scan. For the iPhone 15 (non-Pro), choose Scaniverse photogrammetry mesh mode, not LiDAR or a Gaussian splat.
             </p>
-            <p className="hint"><a href="https://scaniverse.com/support" target="_blank" rel="noreferrer">Scaniverse official capture and export help ↗</a></p>
+            <p className="hint"><a href="https://www.nianticspatial.com/docs/scaniverse/quickstart/" target="_blank" rel="noreferrer">Scaniverse official documentation ↗</a></p>
           ) : (
             <p className="hint">
               <strong>RealSense D455 capture:</strong> Record RGB-D frames on your computer using librealsense,
@@ -96,7 +96,7 @@ export function ScanPanel() {
           )>
           <div className="row">
             <button className="primary" disabled={status === 'loading'} onClick={() => file.current?.click()}>
-              {status === 'loading' ? 'Reading scan…' : 'Import scan (.glb)'}
+              {status === 'loading' ? 'Reading scan…' : 'Import scan (.glb / .obj)'}
             </button>
           </div>
           <p className="hint">RealmForge estimates floor and wall alignment. The file stays on this device. Scanned geometry is visual-only until navigation obstacles are added.</p>
