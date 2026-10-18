@@ -5,20 +5,23 @@
 import type { Tool } from '../world/store'
 import type { ScaleId } from '../scene/worldRoot'
 
-export type ToolbarSection = 'build' | 'edit' | 'plan' | 'simulate' | 'view' | 'save'
+export type ToolbarSection = 'build' | 'plan' | 'simulate' | 'view' | 'save'
 
-export const TOOLBAR_SECTIONS: { id: ToolbarSection; label: string; hint: string }[] = [
-  { id: 'build', label: 'Build', hint: 'Place walls, buildings, and objects' },
-  { id: 'edit', label: 'Edit', hint: 'Select an object, then move, rotate, resize, or remove it' },
-  { id: 'plan', label: 'Plan Routes', hint: 'Set destinations and test path blocking' },
-  { id: 'simulate', label: 'Simulate', hint: 'Run the event attendee walkthrough' },
-  { id: 'view', label: 'View', hint: 'Scale, floor, and XR display options' },
-  { id: 'save', label: 'Save', hint: 'Save, load, import, and export worlds' },
+/**
+ * The editor's core loop is three steps — Build the space, plan Routes, Test it — so those are the
+ * primary tabs. View and Save are secondary (smaller, after the steps). Editing a selection lives in Build.
+ */
+export const TOOLBAR_SECTIONS: { id: ToolbarSection; label: string; hint: string; primary: boolean }[] = [
+  { id: 'build', label: 'Build', hint: 'Place walls, buildings, and objects; select one to move, rotate, or remove it', primary: true },
+  { id: 'plan', label: 'Routes', hint: 'Set destinations and test path blocking', primary: true },
+  { id: 'simulate', label: 'Test', hint: 'Run the event attendee walkthrough', primary: true },
+  { id: 'view', label: 'View', hint: 'Scale, floor, and XR display options', primary: false },
+  { id: 'save', label: 'Save', hint: 'Save, load, import, and export worlds', primary: false },
 ]
 
 /** Placement / selection tools with keyboard digits (1–0). Shortcuts stay in tooltips only. */
 export const TOOLBAR_TOOLS: { id: Tool; label: string; key: string; section: ToolbarSection; tooltip: string }[] = [
-  { id: 'select', label: 'Select', key: '1', section: 'edit', tooltip: 'Select objects (1). Drag a selected object to move it.' },
+  { id: 'select', label: 'Select', key: '1', section: 'build', tooltip: 'Select objects (1). Drag a selected object to move it.' },
   { id: 'wall', label: 'Wall', key: '2', section: 'build', tooltip: 'Drag on empty ground to draw a wall (2). Stays on so you can draw several; press Done placing or 1 to stop.' },
   { id: 'building', label: 'Building', key: '3', section: 'build', tooltip: 'Click empty ground to place a building (3). Stays on so you can place several.' },
   { id: 'goal', label: 'Add Waypoint', key: '4', section: 'plan', tooltip: 'Click empty ground to add a route stop (4). Add several, then Play.' },
