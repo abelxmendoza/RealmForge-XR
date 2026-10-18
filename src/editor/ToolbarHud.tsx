@@ -42,6 +42,7 @@ import {
   useAttendee,
 } from '../sim/attendee'
 import { TOOLBAR_SECTIONS, TOOLBAR_TOOLS, SCALE_LABELS, type ToolbarSection } from './toolbar'
+import { useHudSection } from './hudSectionStore'
 import { xrStore } from '../xr/xrStore'
 
 const STATUS_TEXT = {
@@ -86,7 +87,8 @@ export function ToolbarHud() {
   const mocap = useMocap()
   const attendee = useAttendee()
   const [hist, setHist] = useState({ canUndo: false, canRedo: false })
-  const [section, setSection] = useState<ToolbarSection>('build')
+  const section = useHudSection((s) => s.section)
+  const setSection = useHudSection((s) => s.setSection)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
   const guideOpen = useGuide((s) => s.open)
   const openGuide = useGuide((s) => s.openGuide)
