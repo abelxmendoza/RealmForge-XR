@@ -47,6 +47,37 @@ body,
   -webkit-font-smoothing: antialiased;
 }
 
+/* Let users select and copy UI text (transcripts, status, guide, inspector). */
+.hud,
+.inspector,
+.voice-panel,
+.voice-mic .heard,
+dialog,
+.ctx-menu {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Keep clicks on controls from accidentally selecting labels. */
+button,
+.tool-btn,
+.hud-nav button,
+summary {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+canvas {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 /* Keep DOM chrome above the full-bleed R3F canvas */
 #root > canvas,
 #root canvas {
@@ -1439,9 +1470,17 @@ dialog.controls-guide::backdrop {
 .voice-mic .mic { pointer-events: auto; display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 999px; border: 1px solid var(--rf-line, #4a5568); background: var(--rf-panel, #141a26); color: var(--rf-text, #eee); font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
 .voice-mic .mic:hover:not(:disabled) { border-color: var(--rf-ember, #e07845); }
 .voice-mic .mic.listening { background: linear-gradient(180deg, var(--rf-ember-hot, #ff9a5c), var(--rf-ember, #e07845)); color: #1a100c; border-color: transparent; animation: mic-pulse 1.2s ease-in-out infinite; }
-.voice-mic .heard { margin: 0; max-width: 420px; padding: 4px 10px; border-radius: 8px; background: rgba(0, 0, 0, 0.55); color: var(--rf-text, #eee); font-size: 12px; text-align: center; }
+.voice-mic .heard { pointer-events: auto; margin: 0; max-width: 420px; padding: 4px 10px; border-radius: 8px; background: rgba(0, 0, 0, 0.55); color: var(--rf-text, #eee); font-size: 12px; text-align: center; cursor: text; }
 .voice-mic .heard.error { color: #ffb4b4; }
-.voice-mic .heard.hint { opacity: 0.6; }
+.voice-mic .heard.hint { opacity: 0.6; cursor: default; }
+
+.voice-panel .voice-transcript,
+.voice-panel .voice-result,
+.voice-panel .voice-error {
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+}
 @keyframes mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(224, 120, 69, 0.55); } 50% { box-shadow: 0 0 0 12px rgba(224, 120, 69, 0); } }
 
 .actor-kind-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }

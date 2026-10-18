@@ -28,7 +28,8 @@ export function VoiceMicButton() {
   useEffect(() => {
     const typing = (t: EventTarget | null) => t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement
     const down = (e: KeyboardEvent) => {
-      if (e.code !== 'Space' || e.repeat || typing(e.target)) return
+      // Don't steal Space while typing, or when modifiers are held (copy / shortcuts).
+      if (e.code !== 'Space' || e.repeat || typing(e.target) || e.ctrlKey || e.metaKey || e.altKey) return
       e.preventDefault()
       holding.current = true
       void voice.controller.startListening()
@@ -47,24 +48,37 @@ export function VoiceMicButton() {
   }, [voice.controller])
 
   const heard = voice.lastPartial || voice.lastTranscript
-  const label = busy ? 'Starting…' : voice.isListening ? 'Listening… tap to stop' : 'Voice command'
+  const label = busy
+    ? 'Starting mic…'
+    : voice.isListening
+      ? voice.provider === 'webspeech'
+        ? 'Listening… tap to stop'
+        : 'Listening… tap to stop'
+      : 'Voice command'
   return (
     <div className="voice-mic">
       <button
         className={voice.isListening ? 'mic listening' : 'mic'}
         aria-pressed={voice.isListening}
         aria-label={voice.isListening ? 'Stop listening' : 'Start a voice command'}
-        title="Tap to talk, tap again to run. Or hold Space."
+        title="Tap to talk, tap again to run. Or hold Space. Works with your laptop microphone in Chrome, Edge, or Safari."
         disabled={busy}
         onClick={toggle}
       >
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-          <path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z" />
+          <path
+            fill="currentColor"
+            d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"
+          />
         </svg>
         <span>{label}</span>
       </button>
-      {(heard || voice.lastError) && <p className={voice.lastError ? 'heard error' : 'heard'}>{voice.lastError ?? `“${heard}”`}</p>}
-      {!voice.isListening && !heard && !voice.lastError && <p className="heard hint">Hold Space to talk</p>}
+      {(heard || voice.lastError) && (
+        <p className={voice.lastError && !heard ? 'heard error' : 'heard'} title="Select and copy this text">
+          {heard ? `“${heard}”` : voice.lastError}
+        </p>
+      )}
+      {!voice.isListening && !heard && !voice.lastError && <p className="heard hint">Hold Space to talk · or type in the Voice panel</p>}
     </div>
   )
 }

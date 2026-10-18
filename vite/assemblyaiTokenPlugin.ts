@@ -12,68 +12,86 @@ import type { Plugin } from 'vite'
 
 const TOKEN_URL = 'https://streaming.assemblyai.com/v3/token'
 
+async function handleTokenRequest(
+  req: { url?: string; method?: string },
+  res: {
+    statusCode: number
+    setHeader: (k: string, v: string) => void
+    end: (body: string) => void
+  },
+  next: () => void,
+) {
+  if (!req.url?.startsWith('/api/assemblyai/token')) return next()
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    res.statusCode = 405
+    res.setHeader('Content-Type', 'application/json')
+    res.end(JSON.stringify({ error: 'Method not allowed' }))
+    return
+  }
+
+  // Accept both spellings; the docs use ASSEMBLYAI_API_KEY.
+  const apiKey = process.env.ASSEMBLYAI_API_KEY || process.env.ASSEMBLY_AI_API_KEY
+  if (!apiKey) {
+    res.statusCode = 503
+    res.setHeader('Content-Type', 'application/json')
+    res.end(
+      JSON.stringify({
+        error:
+          'ASSEMBLYAI_API_KEY is not configured on the server. Browser speech still works on Chrome/Edge/Safari, or set the key via dotenvx (npm run env:set -- ASSEMBLYAI_API_KEY <key>).',
+      }),
+    )
+    return
+  }
+
+  try {
+    const url = new URL(TOKEN_URL)
+    url.searchParams.set('expires_in_seconds', '60')
+    url.searchParams.set('max_session_duration_seconds', '300')
+
+    const upstream = await fetch(url, {
+      method: 'GET',
+      headers: { Authorization: apiKey },
+    })
+
+    const body = (await upstream.json()) as { token?: string; error?: string }
+    if (!upstream.ok || !body.token) {
+      res.statusCode = upstream.status || 502
+      res.setHeader('Content-Type', 'application/json')
+      res.end(
+        JSON.stringify({
+          error: body.error || `AssemblyAI token request failed (${upstream.status})`,
+        }),
+      )
+      return
+    }
+
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'application/json')
+    res.setHeader('Cache-Control', 'no-store')
+    res.end(JSON.stringify({ token: body.token, expires_in_seconds: 60 }))
+  } catch (err) {
+    res.statusCode = 502
+    res.setHeader('Content-Type', 'application/json')
+    res.end(
+      JSON.stringify({
+        error: err instanceof Error ? err.message : 'Token proxy failed',
+      }),
+    )
+  }
+}
+
 export function assemblyaiTokenPlugin(): Plugin {
   return {
     name: 'realmforge-assemblyai-token',
     configureServer(server) {
-      server.middlewares.use(async (req, res, next) => {
-        if (!req.url?.startsWith('/api/assemblyai/token')) return next()
-        if (req.method !== 'GET' && req.method !== 'POST') {
-          res.statusCode = 405
-          res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify({ error: 'Method not allowed' }))
-          return
-        }
-
-        // Accept both spellings; the docs use ASSEMBLYAI_API_KEY.
-        const apiKey = process.env.ASSEMBLYAI_API_KEY || process.env.ASSEMBLY_AI_API_KEY
-        if (!apiKey) {
-          res.statusCode = 503
-          res.setHeader('Content-Type', 'application/json')
-          res.end(
-            JSON.stringify({
-              error:
-                'ASSEMBLYAI_API_KEY is not configured on the server. Use mock voice provider or set the key via dotenvx (npm run env:set -- ASSEMBLYAI_API_KEY <key>).',
-            }),
-          )
-          return
-        }
-
-        try {
-          const url = new URL(TOKEN_URL)
-          url.searchParams.set('expires_in_seconds', '60')
-          url.searchParams.set('max_session_duration_seconds', '300')
-
-          const upstream = await fetch(url, {
-            method: 'GET',
-            headers: { Authorization: apiKey },
-          })
-
-          const body = (await upstream.json()) as { token?: string; error?: string }
-          if (!upstream.ok || !body.token) {
-            res.statusCode = upstream.status || 502
-            res.setHeader('Content-Type', 'application/json')
-            res.end(
-              JSON.stringify({
-                error: body.error || `AssemblyAI token request failed (${upstream.status})`,
-              }),
-            )
-            return
-          }
-
-          res.statusCode = 200
-          res.setHeader('Content-Type', 'application/json')
-          res.setHeader('Cache-Control', 'no-store')
-          res.end(JSON.stringify({ token: body.token, expires_in_seconds: 60 }))
-        } catch (err) {
-          res.statusCode = 502
-          res.setHeader('Content-Type', 'application/json')
-          res.end(
-            JSON.stringify({
-              error: err instanceof Error ? err.message : 'Token proxy failed',
-            }),
-          )
-        }
+      server.middlewares.use((req, res, next) => {
+        void handleTokenRequest(req, res, next)
+      })
+    },
+    // Same route for `vite preview` / laptop demos against a built dist.
+    configurePreviewServer(server) {
+      server.middlewares.use((req, res, next) => {
+        void handleTokenRequest(req, res, next)
       })
     },
   }
