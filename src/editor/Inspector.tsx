@@ -185,7 +185,8 @@ function GoalToolPanel() {
   const selectedActorId = useWorld((s) => s.selectedActorId)
   const actor = useWorld((s) => (selectedActorId ? s.actors[selectedActorId] : null))
   const status = useNav((s) => s.status)
-  const destinations = useWorld((s) => Object.values(s.objects).filter((o) => o.destinationRole))
+  const objects = useWorld((s) => s.objects)
+  const destinations = useMemo(() => Object.values(objects).filter((o) => o.destinationRole), [objects])
   return (
     <section>
       <p className="hint">
@@ -234,7 +235,8 @@ function RobotToolPanel() {
   const goal = useWorld((s) => s.goal)
   const status = useNav((s) => s.status)
   const replans = useNav((s) => s.replanCount)
-  const destinations = useWorld((s) => Object.values(s.objects).filter((o) => o.destinationRole))
+  const objects = useWorld((s) => s.objects)
+  const destinations = useMemo(() => Object.values(objects).filter((o) => o.destinationRole), [objects])
   return (
     <section>
       <p className="hint">Click the ground to place the robot start. Navigation updates automatically when the destination or obstacles change.</p>
