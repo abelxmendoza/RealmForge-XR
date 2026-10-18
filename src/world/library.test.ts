@@ -154,8 +154,8 @@ describe('world library', () => {
   })
 
   it('is reachable through worldActions for the XR menu and voice', async () => {
-    // blank + forge/mars/warehouse + empty-event-venue + job-fair
-    expect(worldActions.listTemplates().length).toBe(5)
+    // blank + forge/mars/warehouse + job-fair + factory-floor + music-festival (Empty Space is the blank template)
+    expect(worldActions.listTemplates().length).toBe(7)
     const r = await worldActions.createWorld('From XR', 'warehouse')
     expect(r.ok).toBe(true)
   })

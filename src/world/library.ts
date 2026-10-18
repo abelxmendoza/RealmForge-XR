@@ -1,3 +1,4 @@
+import { worldContentCount } from './content'
 import { useWorld } from './store'
 import { WORLD } from './types'
 import { isEnvironmentId, listEnvironments, loadEnvironment, normalizeEnvironmentId, useEnvironment, type EnvironmentId } from './environment'
@@ -70,7 +71,7 @@ export function nextWorldName(base = 'My world', names: string[] = listSavedWorl
 export async function createWorld(name: string, template: TemplateId = 'blank', opts: CreateWorldOptions = {}): Promise<SaveResult> {
   try {
     const label = cleanName(name, nextWorldName())
-    const count = Object.keys(useWorld.getState().objects).length + Object.keys(useWorld.getState().actors).length
+    const count = worldContentCount()
     if (count > 0) {
       const gate = await safeConfirm(
         opts.confirmReplace ?? sharedConfirm,

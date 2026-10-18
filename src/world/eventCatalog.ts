@@ -5,7 +5,7 @@
 
 import type { SimulationRole, Vec3, WorldObject } from './types'
 
-export type EventCatalogCategory = 'furniture' | 'structure' | 'equipment' | 'wayfinding'
+export type EventCatalogCategory = 'furniture' | 'structure' | 'equipment' | 'wayfinding' | 'industrial' | 'festival'
 
 export interface EventCatalogEntry {
   id: string
@@ -20,7 +20,7 @@ export interface EventCatalogEntry {
   capacity?: number
   serviceDuration?: number
   /** Simple procedural mesh hint for the renderer. */
-  mesh: 'box' | 'cylinder' | 'booth' | 'stage' | 'sign' | 'barrier' | 'desk'
+  mesh: 'box' | 'cylinder' | 'booth' | 'stage' | 'sign' | 'barrier' | 'desk' | 'tent' | 'machine' | 'conveyor' | 'tower'
 }
 
 export const EVENT_CATALOG: EventCatalogEntry[] = [
@@ -227,6 +227,200 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     blocksNavigation: false,
     mesh: 'box',
   },
+  // Industrial: factories and manufacturing floors
+  {
+    id: 'cnc-machine',
+    label: 'CNC machine',
+    category: 'industrial',
+    size: [2.6, 2.2, 1.8],
+    color: '#5b7083',
+    simulationRole: 'service',
+    blocksNavigation: true,
+    capacity: 1,
+    serviceDuration: 3,
+    mesh: 'machine',
+  },
+  {
+    id: 'assembly-conveyor',
+    label: 'Assembly conveyor',
+    category: 'industrial',
+    size: [8, 0.9, 1],
+    color: '#495057',
+    simulationRole: 'obstacle',
+    blocksNavigation: true,
+    mesh: 'conveyor',
+  },
+  {
+    id: 'workbench',
+    label: 'Workbench',
+    category: 'industrial',
+    size: [2, 0.95, 0.8],
+    color: '#a07850',
+    simulationRole: 'service',
+    blocksNavigation: true,
+    capacity: 1,
+    serviceDuration: 2,
+    mesh: 'desk',
+  },
+  {
+    id: 'robot-cell',
+    label: 'Robot cell (fenced)',
+    category: 'industrial',
+    size: [4, 2.2, 4],
+    color: '#f59f00',
+    simulationRole: 'obstacle',
+    blocksNavigation: true,
+    mesh: 'machine',
+  },
+  {
+    id: 'tool-crib',
+    label: 'Tool crib',
+    category: 'industrial',
+    size: [3, 2.4, 2],
+    color: '#868e96',
+    simulationRole: 'service',
+    blocksNavigation: true,
+    capacity: 2,
+    serviceDuration: 2,
+    mesh: 'booth',
+  },
+  {
+    id: 'time-clock',
+    label: 'Time clock / badge reader',
+    category: 'industrial',
+    size: [0.6, 1.6, 0.4],
+    color: '#3d5a80',
+    simulationRole: 'registration',
+    blocksNavigation: true,
+    capacity: 1,
+    serviceDuration: 1,
+    mesh: 'sign',
+  },
+  {
+    id: 'safety-barrier',
+    label: 'Safety barrier',
+    category: 'industrial',
+    size: [2, 1.1, 0.15],
+    color: '#fab005',
+    simulationRole: 'obstacle',
+    blocksNavigation: true,
+    mesh: 'barrier',
+  },
+  // Festival & outdoor: concerts, festivals, fairs
+  {
+    id: 'main-stage',
+    label: 'Main stage',
+    category: 'festival',
+    size: [16, 1.8, 10],
+    color: '#212529',
+    simulationRole: 'stage',
+    blocksNavigation: true,
+    capacity: 2000,
+    serviceDuration: 6,
+    mesh: 'stage',
+  },
+  {
+    id: 'food-stall',
+    label: 'Food stall',
+    category: 'festival',
+    size: [3, 2.6, 2.5],
+    color: '#e07845',
+    simulationRole: 'booth',
+    blocksNavigation: true,
+    capacity: 4,
+    serviceDuration: 3,
+    mesh: 'tent',
+  },
+  {
+    id: 'merch-tent',
+    label: 'Merch tent',
+    category: 'festival',
+    size: [4, 2.8, 3],
+    color: '#7048e8',
+    simulationRole: 'booth',
+    blocksNavigation: true,
+    capacity: 6,
+    serviceDuration: 3,
+    mesh: 'tent',
+  },
+  {
+    id: 'bar-counter',
+    label: 'Bar',
+    category: 'festival',
+    size: [6, 1.2, 1.2],
+    color: '#8d6e63',
+    simulationRole: 'service',
+    blocksNavigation: true,
+    capacity: 8,
+    serviceDuration: 2.5,
+    mesh: 'desk',
+  },
+  {
+    id: 'toilet-block',
+    label: 'Portable toilets',
+    category: 'festival',
+    size: [6, 2.4, 1.5],
+    color: '#4dabf7',
+    simulationRole: 'service',
+    blocksNavigation: true,
+    capacity: 5,
+    serviceDuration: 3,
+    mesh: 'box',
+  },
+  {
+    id: 'security-gate',
+    label: 'Security / ticket gate',
+    category: 'festival',
+    size: [3, 2.4, 1],
+    color: '#2b8a3e',
+    simulationRole: 'registration',
+    blocksNavigation: true,
+    capacity: 4,
+    serviceDuration: 1.5,
+    mesh: 'booth',
+  },
+  {
+    id: 'crowd-barrier',
+    label: 'Crowd barrier',
+    category: 'festival',
+    size: [2.5, 1.2, 0.6],
+    color: '#adb5bd',
+    simulationRole: 'obstacle',
+    blocksNavigation: true,
+    mesh: 'barrier',
+  },
+  {
+    id: 'first-aid-tent',
+    label: 'First aid tent',
+    category: 'festival',
+    size: [3, 2.6, 3],
+    color: '#fa5252',
+    simulationRole: 'service',
+    blocksNavigation: true,
+    capacity: 2,
+    serviceDuration: 2,
+    mesh: 'tent',
+  },
+  {
+    id: 'light-tower',
+    label: 'Light tower',
+    category: 'festival',
+    size: [1.2, 8, 1.2],
+    color: '#495057',
+    simulationRole: 'obstacle',
+    blocksNavigation: true,
+    mesh: 'tower',
+  },
+  {
+    id: 'foh-desk',
+    label: 'Front-of-house mix desk',
+    category: 'festival',
+    size: [4, 1.2, 3],
+    color: '#343a40',
+    simulationRole: 'obstacle',
+    blocksNavigation: true,
+    mesh: 'desk',
+  },
 ]
 
 const BY_ID = Object.fromEntries(EVENT_CATALOG.map((e) => [e.id, e])) as Record<string, EventCatalogEntry>
@@ -244,6 +438,8 @@ export const EVENT_CATALOG_CATEGORIES: { id: EventCatalogCategory; label: string
   { id: 'structure', label: 'Structures' },
   { id: 'equipment', label: 'Equipment' },
   { id: 'wayfinding', label: 'Wayfinding' },
+  { id: 'industrial', label: 'Industrial' },
+  { id: 'festival', label: 'Festival' },
 ]
 
 /** Build a placeable world object from a catalog entry (no id). */

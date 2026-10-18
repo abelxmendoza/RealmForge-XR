@@ -23,7 +23,7 @@ export function SimulationPanel() {
     <section className="sim-panel">
       <h3>Event simulation</h3>
       <p className="hint">
-        One virtual attendee: Entrance → Registration → Booths → Exit. Moving obstacles triggers replan.
+        One virtual attendee: entrance → check-in → booths → stage → a service point → exit, skipping what the world doesn’t have. Moving obstacles triggers a replan.
       </p>
       <div className="row">
         {!status.running || status.phase === 'done' ? (

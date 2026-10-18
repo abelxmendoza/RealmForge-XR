@@ -5,9 +5,10 @@
 
 import { create } from 'zustand'
 import { planPath } from '../nav/astar'
-import { buildGrid } from '../nav/grid'
-import { navObstacles, type SimulationRole, type Vec2, type WorldObject } from '../world/types'
+import { type SimulationRole, type Vec2, type WorldObject } from '../world/types'
 import { useWorld } from '../world/store'
+import { useFlow } from '../flow/store'
+import { buildFlowGrid } from '../flow/validate'
 
 export type AttendeePhase =
   | 'idle'
@@ -38,7 +39,22 @@ export type AttendeeRuntime = {
   serveUntil: number
 }
 
-const DEFAULT_ITINERARY: SimulationRole[] = ['entrance', 'registration', 'booth', 'booth', 'exit']
+/**
+ * Itinerary from what the world contains: in at the entrance, through check-in (registration desk,
+ * ticket gate or time clock), up to two booths or stalls, the stage, one service point (bar, machine,
+ * toilets), then out. Roles the world doesn't have are skipped instead of stalling the walk.
+ */
+export function buildItinerary(objects: Iterable<WorldObject>): SimulationRole[] {
+  const count: Partial<Record<SimulationRole, number>> = {}
+  for (const o of objects) if (o.simulationRole) count[o.simulationRole] = (count[o.simulationRole] ?? 0) + 1
+  const out: SimulationRole[] = ['entrance']
+  if (count.registration) out.push('registration')
+  for (let i = 0; i < Math.min(2, count.booth ?? 0); i++) out.push('booth')
+  if (count.stage) out.push('stage')
+  if (count.service) out.push('service')
+  out.push('exit')
+  return out
+}
 
 let runtime: AttendeeRuntime = {
   pos: [0, 0],
@@ -90,13 +106,15 @@ function footprintGoal(o: WorldObject): Vec2 {
 }
 
 function planTo(goal: Vec2): Vec2[] | null {
-  const grid = buildGrid(navObstacles(useWorld.getState().objects))
+  // Attendees keep out of no-go / restricted traffic zones (backstage, robot cells) as well as solid props.
+  const grid = buildFlowGrid(useWorld.getState().objects, Object.values(useFlow.getState().trafficZones))
   return planPath(grid, runtime.pos, goal)
 }
 
-let itinerary: SimulationRole[] = [...DEFAULT_ITINERARY]
+let itinerary: SimulationRole[] = ['entrance', 'exit']
 let boothVisits = 0
 let unsubWorld: (() => void) | null = null
+let unsubFlow: (() => void) | null = null
 let running = false
 let paused = false
 
@@ -199,11 +217,14 @@ function ensureWorldWatch() {
   unsubWorld = useWorld.subscribe((s, prev) => {
     if (s.geometryVersion !== prev.geometryVersion) replanCurrent()
   })
+  unsubFlow ??= useFlow.subscribe((s, prev) => {
+    if (s.trafficZones !== prev.trafficZones) replanCurrent()
+  })
 }
 
 export function startAttendeeSimulation(customItinerary?: SimulationRole[]) {
   ensureWorldWatch()
-  itinerary = customItinerary?.length ? [...customItinerary] : [...DEFAULT_ITINERARY]
+  itinerary = customItinerary?.length ? [...customItinerary] : buildItinerary(Object.values(useWorld.getState().objects))
   boothVisits = 0
   running = true
   paused = false

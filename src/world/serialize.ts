@@ -6,6 +6,19 @@ import { isAssetId, isDestinationRole } from './assetTypes'
 import { WORLD, type ObjectKind, type Vec2, type Vec3, type WorldObject } from './types'
 import { BUILDING_STYLES, PALLET_STYLES, PLATFORM_MATERIALS, RACK_STYLES, TREE_STYLES, WALL_MATERIALS } from './catalog'
 import type { WorldSnapshot } from './store'
+import type { EnvironmentId } from './environment'
+import type { ScanSettings } from '../scan/store'
+
+/** Environment ids a world file may carry. Kept in step with ENVIRONMENTS by a test (importing it here would be circular). */
+export const ENVIRONMENT_IDS_FOR_FILES: readonly EnvironmentId[] = [
+  'forge-district',
+  'mars-outpost',
+  'warehouse',
+  'empty-event-venue',
+  'job-fair',
+  'factory-floor',
+  'music-festival',
+]
 
 /**
  * Versioned, portable JSON format for a whole world.
@@ -31,7 +44,7 @@ export interface WorldFile {
   name: string
   savedAt: string
   actors?: Actor[]
-  environmentId?: 'forge-district' | 'mars-outpost' | 'warehouse' | 'empty-event-venue' | 'job-fair'
+  environmentId?: EnvironmentId
   objects: WorldObject[]
   robotEnabled?: boolean
   robotStart: Vec2
@@ -40,6 +53,8 @@ export interface WorldFile {
   routes?: PlannedRoute[]
   /** RealmForge Flow — traffic control zones. */
   trafficZones?: TrafficZone[]
+  /** Alignment of an imported 3D scan. The model itself stays on the device that imported it. */
+  scan?: ScanSettings
 }
 
 /** A validated world ready for store.loadWorld(), plus its name. */
@@ -47,6 +62,7 @@ export interface ParsedWorld extends WorldSnapshot {
   environmentId?: WorldFile['environmentId']
   name: string
   flow?: FlowSnapshot
+  scan?: ScanSettings
 }
 
 export type ParseResult = { ok: true; world: ParsedWorld; warnings: string[] } | { ok: false; error: string }
@@ -96,6 +112,7 @@ export function serializeWorld(
     actors?: Actor[] | Record<string, Actor>
     routes?: PlannedRoute[]
     trafficZones?: TrafficZone[]
+    scan?: ScanSettings
   },
   name: string,
   now = new Date(),
@@ -116,6 +133,7 @@ export function serializeWorld(
     goal: world.goal ? [world.goal[0], world.goal[1]] : null,
     ...(routes?.length ? { routes } : {}),
     ...(trafficZones?.length ? { trafficZones } : {}),
+    ...(world.scan ? { scan: structuredClone(world.scan) } : {}),
   }
 }
 
@@ -168,6 +186,48 @@ function pickObject(o: WorldObject): WorldObject {
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+const finiteVec = (v: unknown, n: number): v is number[] => Array.isArray(v) && v.length === n && v.every(finite)
+
+/** Validate scan alignment settings; anything off drops the scan with a warning (the world still loads). */
+function parseScan(v: unknown, warnings: string[]): ScanSettings | undefined {
+  const s = v as Partial<ScanSettings> | null
+  const a = s?.analysis
+  const ok =
+    s && typeof s === 'object' &&
+    typeof s.id === 'string' && /^[a-z0-9-]{1,64}$/.test(s.id) &&
+    typeof s.name === 'string' &&
+    finite(s.bytes) && s.bytes >= 0 &&
+    finite(s.scale) && s.scale > 1e-5 && s.scale < 1000 &&
+    finite(s.rotationY) &&
+    finiteVec(s.offset, 3) &&
+    finite(s.opacity) &&
+    typeof s.visible === 'boolean' &&
+    (s.cutHeight === null || s.cutHeight === undefined || finite(s.cutHeight)) &&
+    a && finite(a.floorY) && finiteVec(a.center, 2) && finiteVec(a.footprint, 2) && finite(a.wallAngle) && finiteVec(a.size, 3) && finite(a.triangles)
+  if (!ok) {
+    warnings.push('Ignored invalid scan settings.')
+    return undefined
+  }
+  return {
+    id: s.id!,
+    name: s.name!.slice(0, 120),
+    bytes: s.bytes!,
+    analysis: {
+      floorY: a!.floorY,
+      center: [a!.center[0], a!.center[1]],
+      footprint: [a!.footprint[0], a!.footprint[1]],
+      wallAngle: a!.wallAngle,
+      size: [a!.size[0], a!.size[1], a!.size[2]],
+      triangles: a!.triangles,
+    },
+    scale: s.scale!,
+    rotationY: s.rotationY!,
+    offset: [s.offset![0], s.offset![1], s.offset![2]],
+    opacity: Math.min(1, Math.max(0.05, s.opacity!)),
+    visible: s.visible!,
+    cutHeight: finite(s.cutHeight) ? s.cutHeight : null,
+  }
+}
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
 
 /** Accepts [x, z] (our format) or [x, y, z]; returns a clamped [x, z] or null. */
@@ -224,9 +284,10 @@ export function parseWorld(input: unknown, newId: (kind: ObjectKind) => string):
   const parsedActors = parseActors(data.actors, seen, () => newWorldId('actor'))
   if (!parsedActors.ok) return parsedActors
   warnings.push(...parsedActors.warnings)
-  const environmentId = typeof data.environmentId === 'string' && ['forge-district', 'mars-outpost', 'warehouse', 'empty-event-venue', 'job-fair'].includes(data.environmentId)
+  const environmentId = typeof data.environmentId === 'string' && ENVIRONMENT_IDS_FOR_FILES.includes(data.environmentId as EnvironmentId)
     ? data.environmentId as WorldFile['environmentId'] : undefined
   const flow = parseFlow(data, warnings)
+  const scan = data.scan === undefined ? undefined : parseScan(data.scan, warnings)
   return {
     ok: true,
     world: {
@@ -238,6 +299,7 @@ export function parseWorld(input: unknown, newId: (kind: ObjectKind) => string):
       ...(parsedActors.actors.length ? { actors: parsedActors.actors } : {}),
       ...(environmentId ? { environmentId } : {}),
       ...(flow ? { flow } : {}),
+      ...(scan ? { scan } : {}),
     },
     warnings,
   }

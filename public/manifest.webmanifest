@@ -1,11 +1,12 @@
 {
   "name": "RealmForge XR",
   "short_name": "RealmForge",
-  "description": "Spatial worldbuilding, event venue and robot navigation sandbox for desktop and WebXR.",
+  "description": "Lay out venues, festivals and factory floors and simulate the traffic through them, on desktop and in WebXR.",
   "id": "/",
   "start_url": "/?editor=1",
   "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#0c1018",
   "theme_color": "#0c1018",
   "icons": [
