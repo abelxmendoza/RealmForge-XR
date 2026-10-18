@@ -37,8 +37,8 @@ import {
   HUD_SECTIONS,
   PLAN_TOOLS,
   SCALE_LABELS,
-  type HudSectionId,
 } from './hudTools'
+import { useHudSection } from './hudSectionStore'
 
 const STATUS_TEXT = {
   idle: 'No destination set',
@@ -75,7 +75,8 @@ export function Hud() {
   const mocap = useMocap()
   const sim = useAttendee()
   const [hist, setHist] = useState({ canUndo: false, canRedo: false })
-  const [section, setSection] = useState<HudSectionId>('build')
+  const section = useHudSection((s) => s.section)
+  const setSection = useHudSection((s) => s.setSection)
   const [saveFeedback, setSaveFeedback] = useState<WorldsMenuFeedback>({ kind: 'idle' })
   const [worldName, setWorldName] = useState(() => useWorldLibrary.getState().activeName)
   const fileInput = useRef<HTMLInputElement>(null)

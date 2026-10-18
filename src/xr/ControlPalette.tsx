@@ -108,6 +108,7 @@ function PaletteContent() {
   let buttons: Button[] = []
   if (page === 'Tools') {
     // Build + Plan + select — mirrors desktop sections with large XR targets.
+    // Same tool IDs as desktop Build / Plan — labels only; no gesture changes.
     buttons = ([
       ['select', 'Select & Move'],
       ['building', 'Place Building'],
@@ -115,6 +116,8 @@ function PaletteContent() {
       ['platform', 'Place Road'],
       ['decor', 'Decoration'],
       ['event', 'Event Object'],
+      ['asset', 'Object Catalog'],
+      ['actor', 'Place Actor'],
       ['robot', 'Place Robot'],
       ['goal', 'Set Destination'],
     ] as const).map(([id, label]) => ({ label, active: tool === id, run: () => worldActions.setTool(id) }))

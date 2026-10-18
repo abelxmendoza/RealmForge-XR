@@ -536,18 +536,74 @@ dialog button.primary:hover:not(:disabled) {
   top: 14px;
   right: 14px;
   z-index: 20;
-  width: min(268px, calc(100vw - 28px));
+  width: min(280px, calc(100vw - 28px));
   max-height: calc(100vh - 28px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--rf-text);
+  font-size: 12.5px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(232, 196, 150, 0.25) transparent;
+}
+
+.inspector-chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--rf-panel);
+  border: 1px solid var(--rf-line);
+  border-radius: var(--rf-radius);
+  box-shadow: var(--rf-shadow);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  flex-shrink: 0;
+}
+
+.inspector-title {
+  margin: 0;
+  font-family: var(--rf-font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.inspector-toggle {
+  min-height: 32px;
+  min-width: 44px;
+  padding: 6px 10px;
+}
+
+.inspector-body {
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  color: var(--rf-text);
-  font-size: 12.5px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(232, 196, 150, 0.25) transparent;
-  animation: rf-rise 520ms var(--rf-ease) 60ms both;
+  min-height: 0;
+  flex: 1;
+  padding-bottom: 2px;
+}
+
+.inspector-collapsed {
+  width: auto;
+  max-width: min(200px, calc(100vw - 28px));
+  overflow: visible;
+}
+
+.inspector-sim-pill {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--rf-ember);
+  background: rgba(224, 120, 69, 0.12);
+  border: 1px solid rgba(224, 120, 69, 0.35);
+  border-radius: var(--rf-radius);
+  flex-shrink: 0;
 }
 
 .inspector section {
