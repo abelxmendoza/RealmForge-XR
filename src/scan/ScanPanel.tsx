@@ -18,6 +18,7 @@ export function ScanPanel() {
   const file = useRef<HTMLInputElement>(null)
   const [note, setNote] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
   const [real, setReal] = useState('')
+  const [captureHelp, setCaptureHelp] = useState<'iphone' | 'realsense'>('iphone')
   const relink = status === 'missing'
 
   const choose = async (f: File | undefined) => {
@@ -67,15 +68,37 @@ export function ScanPanel() {
       {!scan ? (
         <>
           <p className="hint">
-            Plan on top of a real room, hall, factory or field. Scan it with a phone or LiDAR app (Polycam, Scaniverse,
-            RealityScan, Apple RoomPlan) and export a <strong>.glb</strong> file.
+            Turn a real room into a 3D backdrop for worldbuilding. Choose how to capture it, export a single
+            <strong> .glb</strong> model, then import it here.
           </p>
+          <div className="row" role="group" aria-label="Scan capture method">
+            <button type="button" className={captureHelp === 'iphone' ? 'on' : ''} aria-pressed={captureHelp === 'iphone'} onClick={() => setCaptureHelp('iphone')}>
+              iPhone
+            </button>
+            <button type="button" className={captureHelp === 'realsense' ? 'on' : ''} aria-pressed={captureHelp === 'realsense'} onClick={() => setCaptureHelp('realsense')}>
+              RealSense D455
+            </button>
+          </div>
+          {captureHelp === 'iphone' ? (
+            <p className="hint">
+              <strong>iPhone capture:</strong> Scan a room using a 3D scanning app such as Polycam or Scaniverse.
+              Export a textured GLB and select it below. LiDAR is available only on supported iPhone Pro models;
+              other iPhones may use photo-based reconstruction when supported by the scanning app.
+              A normal photo or live camera stream alone is not a 3D scan.
+            </p>
+          ) : (
+            <p className="hint">
+              <strong>RealSense D455 capture:</strong> Record RGB-D frames on your computer using librealsense,
+              reconstruct a room with RTAB-Map or another RGB-D mapping tool, then export a GLB.
+              The browser cannot directly read the D455 through this importer.
+            </p>
+          )>
           <div className="row">
             <button className="primary" disabled={status === 'loading'} onClick={() => file.current?.click()}>
               {status === 'loading' ? 'Reading scan…' : 'Import scan (.glb)'}
             </button>
           </div>
-          <p className="hint">The floor is found and the walls are squared up automatically. The file stays on this device.</p>
+          <p className="hint">RealmForge estimates floor and wall alignment. The file stays on this device. Scanned geometry is visual-only until navigation obstacles are added.</p>
         </>
       ) : (
         <>
