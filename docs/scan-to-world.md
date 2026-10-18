@@ -39,3 +39,22 @@ Hardware confirmed in [Jetson-RealSense-Perception](https://github.com/abelxmend
 ## Privacy and deployment
 
 House scans can reveal room layout and personal possessions. Keep capture local by default, do not upload to a public repository or telemetry, and obtain consent before scanning other people's spaces. Browser IndexedDB storage is per device/browser origin; clearing site data can remove scans. Avoid pushing this branch to production until tested; preview builds can consume Vercel deployment quota.
+
+## Official Scaniverse developer documentation (checked October 2026)
+
+- [Scaniverse Quickstart](https://www.nianticspatial.com/docs/scaniverse/quickstart/) — iPhone 13+ supported; the New Scaniverse experience supports sites, scans, mesh/splat assets and VPS localization. The Classic experience remains for individual scans/local processing.
+- [Scaniverse capture techniques](https://www.nianticspatial.com/docs/scaniverse/techniques/) — overlap and camera pose guidance.
+- [Niantic Spatial SDK downloads](https://www.nianticspatial.com/docs/nsdk/downloads/) — SDKs for Swift, Kotlin, Unity; business account required. **Not a web JavaScript capture SDK**.
+- [NSDK developer tokens](https://www.nianticspatial.com/docs/nsdk/4.1.0/auth_developer_token/) — secrets must not be bundled in public browser code.
+- [Scaniverse 360 camera guide](https://www.nianticspatial.com/docs/scaniverse/360camera/index.html) — business web pipeline supports generated mesh GLB/USDZ; this is a distinct workflow from the Classic app's personal mesh export.
+- [Scaniverse release notes](https://www.nianticspatial.com/capture/scaniverse-release-notes) — the New experience and cloud/team features launched in 2026.
+
+### Standard iPhone 15 (no LiDAR)
+
+Use the **photogrammetry mesh** mode of the Scaniverse app, not LiDAR and not Gaussian splatting. The Classic Scaniverse FAQ documents personal mesh exports including OBJ, FBX, USDZ and LAS. RealmForge now accepts **OBJ directly** (geometry only, no external MTL/texture files) and GLB. If your export is FBX or USDZ, convert to GLB in Blender or another 3D conversion tool.
+
+The New Scaniverse business workflow can generate meshes and may offer GLB exports; features, credits and pricing vary by plan. Do not assume that the personal app's export menu always contains GLB.
+
+### Direct in-browser iPhone camera capture
+
+Not yet implemented. `getUserMedia` can acquire frames but **cannot** reconstruct a room without calibrated camera poses and a photogrammetry/reconstruction pipeline. Do not claim that taking a picture directly produces a 3D world. If added later, ensure explicit permission, local-first handling, storage/consent UX, and server-side processing only with informed opt-in.
