@@ -19,12 +19,9 @@ const lights = (count: number): Piece => ({ spec: { kind: 'streetlight' }, label
 const trees = (count: number, style: 'round' | 'pine' = 'round'): Piece => ({ spec: { kind: 'tree', style }, label: style === 'pine' ? 'pine tree' : 'tree', count })
 const people = (count: number, behaviour: ActorBehaviour = 'wander'): Piece => ({ actor: 'worker', label: 'person', count, behaviour })
 
+// First match wins, so specific scenes ("village square", "residential street") sit above the
+// broad neighbourhood words.
 export const RECIPES: Record<RecipeId, { label: string; words: RegExp; pieces: Piece[] }> = {
-  neighbourhood: {
-    label: 'neighbourhood',
-    words: /\b(neighbou?rhoods?|suburbs?|residential (area|street|block)|village|hamlet|housing estate|cul de sac)\b/,
-    pieces: [road(), houses(6), trees(6), lights(4), people(4)],
-  },
   townSquare: {
     label: 'town square',
     words: /\b(town|city|village|market|public) squares?\b|\bpiazza\b/,
@@ -59,6 +56,11 @@ export const RECIPES: Record<RecipeId, { label: string; words: RegExp; pieces: P
     label: 'street',
     words: /\b(main|high|city|busy|quiet|shopping|residential) streets?\b|\bstreet scene\b|\bboulevard\b|\bavenue\b/,
     pieces: [road(), houses(4), trees(4), lights(4), people(3)],
+  },
+  neighbourhood: {
+    label: 'neighbourhood',
+    words: /\b(neighbou?rhoods?|suburbs?|residential (area|street|block)|village|hamlet|housing estate|cul de sac)\b/,
+    pieces: [road(), houses(6), trees(6), lights(4), people(4)],
   },
 }
 

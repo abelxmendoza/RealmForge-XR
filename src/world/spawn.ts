@@ -5,7 +5,7 @@ import { buildAsset, footprintsOverlap, getAsset } from './assets'
 import type { AssetId } from './assetTypes'
 import { propFromCatalog } from './eventCatalog'
 import { snapAngle, snapFootprint, snapSize } from './snap'
-import { getLastBatch, setLastBatch, targetCenter, type Target } from './targets'
+import { getLastBatch, lastBatchWasActors, setLastBatch, targetCenter, type Target } from './targets'
 
 /**
  * Batch create / move / rotate / resize for voice (and any other caller that speaks in
@@ -250,7 +250,7 @@ export function targetIds(which: 'selected' | 'last'): string[] {
   const w = useWorld.getState()
   const sel = w.selectedId && w.objects[w.selectedId] ? [w.selectedId] : []
   const last = getLastBatch()
-  if (which === 'last') return last.length ? last : sel
+  if (which === 'last') return lastBatchWasActors() ? [] : last.length ? last : sel
   return sel.length ? sel : last.slice(-1)
 }
 

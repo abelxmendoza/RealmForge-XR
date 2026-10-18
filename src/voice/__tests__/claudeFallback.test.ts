@@ -31,6 +31,14 @@ describe('Claude fallback', () => {
     expect(Object.values(useWorld.getState().objects).filter((o) => o.kind === 'building')).toHaveLength(4)
   })
 
+  it('keeps both halves of a compound line from Claude', async () => {
+    vi.stubGlobal('fetch', reply(200, { commands: ['add a road and 4 houses'], note: '' }))
+    await controller.submitTranscript('a cosy lane with some cottages on it')
+    const objs = Object.values(useWorld.getState().objects)
+    expect(objs.filter((o) => o.kind === 'platform')).toHaveLength(1)
+    expect(objs.filter((o) => o.kind === 'building')).toHaveLength(4)
+  })
+
   it('never calls Claude for sentences the keywords understand', async () => {
     const fetch = reply(200, { commands: [], note: '' })
     vi.stubGlobal('fetch', fetch)

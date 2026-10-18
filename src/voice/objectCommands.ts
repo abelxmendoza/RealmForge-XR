@@ -31,13 +31,16 @@ function named(t: string): { target?: Target } {
 }
 
 /** Where the object noun ends and the "where" part begins: "two houses | along the road". */
-const RELATION = /\b(near|next to|by|beside|besides|around|along|alongside|lining|line|between|behind|in front of|on (?:both|either|each|the other) sides?|on (?:one|each) side|facing|close to|at|in|of|surrounding|circling|across from|opposite)\b/
+const RELATION = /\b(near|next to|by|beside|besides|around|along|alongside|lining|line|between|behind|in front of|on (?:both|either|each|the other) sides?|on (?:one|each) side|facing|close to|at|in|(?<!\b(?:couple|lots?|plenty|bunch|dozens?|handful|pair|few|number|loads?|ton|tons)\s)of|surrounding|circling|across from|opposite)\b/
 
 /** "along the road", "in a row", "around the goal", "near the houses", "between the road and the tower". */
 function parsePlacement(rel: string): { placement: Placement; alongRoad?: boolean } {
   const placement: Placement = {}
   let alongRoad: boolean | undefined
-  if (/\b(along|alongside|lining|line|beside|besides|next to|on (?:both|either|each|one|the other) sides?|facing|by|across from|opposite)\b.*\b(roads?|streets?|avenues?)\b|\b(along|alongside|lining)\b/.test(rel)) alongRoad = true
+  const roadSide = /\b(along|alongside|lining|line|beside|besides|next to|on (?:both|either|each|one|the other) sides?|facing|by|across from|opposite)\b.*\b(roads?|streets?|avenues?)\b/.test(rel)
+  // A bare "along" ("trees along both sides") means the road, but "along the wall" means the wall.
+  const other = parseTarget(rel)
+  if (roadSide || (/\b(along|alongside|lining)\b/.test(rel) && !(other && !other.ref))) alongRoad = true
   if (/\bin (a )?(row|line|column)\b|\bside by side\b/.test(rel)) placement.arrange = 'row'
   if (/\b(around|surrounding|circling|in a (circle|ring))\b/.test(rel)) placement.arrange = 'ring'
   const between = /\bbetween (.+?) (?:and|&) (.+)$/.exec(rel)

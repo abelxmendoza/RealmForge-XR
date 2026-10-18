@@ -5,7 +5,7 @@
  */
 
 import { useWorld } from '../world/store'
-import { parseSceneClause } from './sceneCommands'
+import { parseScene, parseSceneClause } from './sceneCommands'
 import type { VoiceCommand } from './types'
 
 export const VOICE_PLAN_URL = '/api/voice/plan'
@@ -56,7 +56,9 @@ export async function askClaude(transcript: string, opts: { url?: string; signal
   const commands: VoiceCommand[] = []
   for (const raw of body.commands.slice(0, 20)) {
     if (typeof raw !== 'string') continue
-    const c = parseSceneClause(raw.toLowerCase().replace(/[^\w\s-]/g, ' ').replace(/\s+/g, ' ').trim())
+    const text = raw.toLowerCase().replace(/[^\w\s,-]/g, ' ').replace(/\s+/g, ' ').trim()
+    // Claude sometimes joins two things in one line ("add a road and 4 houses").
+    const c = parseScene(text) ?? parseSceneClause(text.replace(/,/g, ' ').replace(/\s+/g, ' '))
     if (!c) continue
     understood.push(raw)
     commands.push(...(c.type === 'BATCH' ? c.commands : [c]))

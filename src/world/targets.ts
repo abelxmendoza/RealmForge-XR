@@ -45,6 +45,8 @@ export const setLastActorBatch = (ids: string[]) => {
   lastActorBatch = [...ids]
   lastWasActors = true
 }
+/** True when the newest batch was people or vehicles, so a bare "them" means them. */
+export const lastBatchWasActors = () => lastWasActors && getLastActorBatch().length > 0
 export const getLastBatch = () => lastBatch.filter((id) => useWorld.getState().objects[id])
 export const getLastActorBatch = () => lastActorBatch.filter((id) => useWorld.getState().actors[id])
 
@@ -66,7 +68,7 @@ export function resolveObjects(t: Target = {}): string[] {
   const selected = w.selectedId && w.objects[w.selectedId] ? w.selectedId : null
   const last = getLastBatch()
   if (!isDescribed(t)) {
-    if (t.ref === 'them') return lastWasActors && getLastActorBatch().length ? [] : last.length ? last : selected ? [selected] : []
+    if (t.ref === 'them') return lastBatchWasActors() ? [] : last.length ? last : selected ? [selected] : []
     return selected ? [selected] : last.slice(-1)
   }
   // Insertion order of the record is creation order (ids are never reused).

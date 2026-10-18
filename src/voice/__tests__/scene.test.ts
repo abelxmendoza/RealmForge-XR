@@ -138,4 +138,38 @@ describe('voice scenes', () => {
     expect(ofKind('tree')).toHaveLength(2)
     expect(actors()).toHaveLength(0)
   })
+  it('reads "a couple of" and "lots of" as counts', () => {
+    expect(parseVoiceCommand('add a couple of houses')).toMatchObject({ ok: true, command: { type: 'SPAWN_OBJECTS', count: 2, spec: { kind: 'building' } } })
+    expect(parseVoiceCommand('add lots of trees')).toMatchObject({ ok: true, command: { type: 'SPAWN_OBJECTS', spec: { kind: 'tree' } } })
+  })
+
+  it('puts things along a named object, not the road', () => {
+    const r = parseVoiceCommand('add trees along the wall')
+    expect(r.ok && r.command.type === 'SPAWN_OBJECTS' && r.command.alongRoad).toBeFalsy()
+    expect(r).toMatchObject({ ok: true, command: { placement: { near: { kind: 'wall' } } } })
+  })
+
+  it('picks the specific recipe over the neighbourhood', () => {
+    expect(parseVoiceCommand('build a village square')).toMatchObject({ ok: true, command: { type: 'BATCH', summary: 'town square' } })
+    expect(parseVoiceCommand('build a residential street')).toMatchObject({ ok: true, command: { type: 'BATCH', summary: 'street' } })
+    expect(parseVoiceCommand('build a village')).toMatchObject({ ok: true, command: { type: 'BATCH', summary: 'neighbourhood' } })
+  })
+
+  it('"move them" after adding people moves the people', async () => {
+    await run('add 2 trees')
+    const trees = ofKind('tree').map((t) => [...t.position])
+    await run('add 2 workers')
+    expect((await run('move them 5 meters north')).status).toBe('executed')
+    expect(ofKind('tree').map((t) => [...t.position])).toEqual(trees)
+    expect(actors().every((a) => a.goal !== null)).toBe(true)
+  })
+
+  it('"make it stop" leaves other people alone when none is selected', async () => {
+    await run('add 2 workers walking around')
+    useWorld.getState().selectActor(null)
+    await run('add a tree')
+    const r = await run('make it stop')
+    expect(r.status).not.toBe('executed')
+    expect(actors().every((a) => a.loop)).toBe(true)
+  })
 })

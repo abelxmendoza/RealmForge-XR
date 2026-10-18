@@ -106,7 +106,7 @@ export function runSceneCommand(command: VoiceCommand): SceneOutcome {
     case 'ROTATE_OBJECTS':
     case 'RESIZE_OBJECTS':
     case 'DUPLICATE_OBJECTS': {
-      const actorIds = command.target?.actor ? resolveActors(command.target) : command.which === 'last' && !command.target && !targetIds('last').length ? resolveActors({ ref: 'them' }) : []
+      const actorIds = command.target?.actor ? resolveActors(command.target) : command.which === 'last' && !command.target ? resolveActors({ ref: 'them' }) : []
       if (command.type === 'MOVE_OBJECTS' && actorIds.length) {
         const n = moveActors(actorIds, command)
         return n ? { ok: true, message: `Sent ${thingWord(n, command.target)} ${command.to ? `to the ${command.to}` : command.direction}` } : { ok: false, message: 'No route for them there' }
@@ -156,8 +156,10 @@ export function runSceneCommand(command: VoiceCommand): SceneOutcome {
       return n ? { ok: true, message: `Removed ${thingWord(n, command.target)}` } : { ok: false, message: `There's nothing like that to remove` }
     }
     case 'ACTOR_BEHAVIOUR': {
-      const ids = resolveActors(command.target.ref ? { ref: 'them' } : command.target)
-      const fallback = ids.length ? ids : command.target.ref ? Object.keys(useWorld.getState().actors) : []
+      const ids = resolveActors(command.target.ref ? { ref: command.target.ref } : command.target)
+      // "them" with nothing recent means everyone; "it" needs a selected person.
+      const fallback = ids.length ? ids : command.target.ref === 'them' ? Object.keys(useWorld.getState().actors) : []
+      if (!fallback.length && command.target.ref === 'it' && Object.keys(useWorld.getState().actors).length) return { ok: false, message: 'Select a person first, or say "the people".' }
       if (!fallback.length) return { ok: false, message: 'There are no people or vehicles yet. Try "add a few people walking around".' }
       let n = 0
       if (command.behaviour === 'stop') n = stopActors(fallback)
