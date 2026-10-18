@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { GLTFLoader } from 'three-stdlib'
+import { GLTFLoader, OBJLoader } from 'three-stdlib'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import { WORLD } from '../world/types'
 import { analyzeTriangles, guessUnit } from './analyze'
@@ -28,13 +28,20 @@ export function checkScanFile(name: string, head: Uint8Array, bytes: number): st
     return magic === 'glTF' ? null : 'This .glb file is damaged or isn’t a glTF model.'
   }
   if (lower.endsWith('.gltf')) return null
-  if (/\.(usdz|obj|fbx|ply|e57|las|laz)$/.test(lower)) {
-    return 'That format isn’t supported yet. Export the scan as .glb (Polycam, Scaniverse and RealityScan all offer it).'
+  if (lower.endsWith('.obj')) return bytes > 0 ? null : 'This OBJ file is empty.'
+  if (/\.(usdz|fbx|ply|e57|las|laz)$/.test(lower)) {
+    return 'That format isn’t supported yet. Export a .glb or a single .obj mesh. For USDZ or FBX, convert to GLB using a 3D editor.'
   }
-  return 'Choose a .glb scan file.'
+  return 'Choose a .glb or .obj scan file.'
 }
 
-async function parse(buffer: ArrayBuffer): Promise<THREE.Object3D> {
+async function parse(buffer: ArrayBuffer, name = ''): Promise<THREE.Object3D> {
+  if (name.toLowerCase().endsWith('.obj')) {
+    const decoded = new TextDecoder().decode(buffer)
+    const model = new OBJLoader().parse(decoded)
+    if (!model.children.length) throw new Error('This OBJ has no readable geometry.')
+    return model
+  }
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
   try {
     const gltf = await loader.parseAsync(buffer, '')
@@ -104,7 +111,7 @@ export async function importScanFile(file: File, { relink = false } = {}): Promi
   let root: THREE.Object3D
   try {
     buffer = await file.arrayBuffer()
-    root = await parse(buffer)
+    root = await parse(buffer, file.name)
   } catch (error) {
     return fail(error instanceof Error ? error.message : String(error))
   }
@@ -113,7 +120,7 @@ export async function importScanFile(file: File, { relink = false } = {}): Promi
   if (!tri.length) return fail('This file has no 3D surfaces in it.')
   const unit = guessUnit(analyzeTriangles(tri).size)
   const analysis = analyzeTriangles(tri, unit)
-  const blob = new Blob([buffer], { type: 'model/gltf-binary' })
+  const blob = new Blob([buffer], { type: file.name.toLowerCase().endsWith('.obj') ? 'text/plain' : 'model/gltf-binary' })
 
   const existing = useScan.getState().scan
   const scan: ScanSettings =
@@ -153,7 +160,9 @@ export async function loadScanModel(id: string): Promise<THREE.Object3D | null> 
   if (hit) return hit
   const blob = await getScanBlob(id)
   if (!blob) return null
-  const root = await parse(await blob.arrayBuffer())
+  const scan = useScan.getState().scan
+  const name = scan?.id === id ? scan.name : ''
+  const root = await parse(await blob.arrayBuffer(), name)
   parsed.set(id, root)
   return root
 }
