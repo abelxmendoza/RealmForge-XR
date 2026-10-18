@@ -227,3 +227,73 @@ body { margin: 0; background: #0c1018; }
   .rf-demo-controls input[type='range'] { flex-basis: calc(100% - 60px); }
 }
 @media (max-width: 760px) { .rf-demo-banner { padding: 14px; gap: 12px; } .rf-demo-banner b { font-size: 13px; } }
+
+/* Phone held sideways: a short, wide screen. Keep the two-column desktop layout, scaled to the height. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .rf-shell { width: calc(100% - 48px); }
+  .rf-nav { min-height: 64px; }
+  .rf-nav nav { display: none; }
+  .rf-brand-logo { width: 40px; height: 40px; border-radius: 9px; }
+  .rf-hero { grid-template-columns: 1fr 1fr; min-height: 0; padding-block: 24px 28px; gap: 20px; }
+  .rf-hero h1 { font-size: min(13vh, 8.5vw); letter-spacing: -2.5px; margin-bottom: 14px; }
+  .rf-eyebrow { margin-bottom: 14px; }
+  .rf-intro { font-size: 13px; line-height: 1.6; margin-bottom: 18px; max-width: none; }
+  .rf-intro br { display: none; }
+  .rf-hero-actions { gap: 12px; }
+  .rf-hero-actions .rf-button { min-height: 46px; padding: 11px 16px; gap: 14px; font-size: 13px; }
+  .rf-compatibility, .rf-model-tag { display: none; }
+  .rf-hero-visual { min-height: 0; max-width: none; margin: 0; }
+  .rf-hero-visual > .rf-diorama { width: 100%; margin-left: 0; padding-top: 18px; }
+  .rf-capability-strip > div { display: flex; min-height: 56px; padding-block: 0; }
+  .rf-section-heading { display: flex; margin-bottom: 26px; }
+  .rf-section-heading > p { margin-top: 0; max-width: 46%; }
+  .rf-landing h2 { font-size: 34px; letter-spacing: -1.4px; }
+  .rf-events, .rf-worlds { padding-block: 48px; }
+  .rf-event-steps { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .rf-world-cards { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .rf-venue-cards { grid-template-columns: repeat(2, 1fr); }
+  .rf-card-art { aspect-ratio: 1.3; }
+  .rf-card-art .rf-diorama { width: 115%; margin-left: -7.5%; margin-top: 6%; }
+  .rf-card-copy h3 { font-size: 18px; margin-top: 14px; }
+  .rf-card-copy p { font-size: 12px; }
+  .rf-possibilities-inner { padding-block: 48px 30px; }
+  .rf-feature-rows article { grid-template-columns: 0.6fr 1fr 1.3fr; gap: 18px; padding-block: 22px; }
+  .rf-feature-rows h3 { font-size: 21px; }
+  .rf-final { padding-block: 48px; }
+  .rf-final-logo { width: 96px; height: 96px; border-radius: 22px; }
+  .rf-final h2 { font-size: 44px; letter-spacing: -2px; }
+  .rf-final-actions { flex-direction: row; }
+  .rf-final .rf-button { min-width: 0; }
+
+  /* Replay fills the screen: picture on the left, chapters on the right, controls underneath. */
+  .rf-demo-backdrop { padding: 0; }
+  .rf-demo { width: 100%; height: 100%; max-height: none; border-radius: 0; border: 0; padding: 8px 12px; gap: 6px; overflow: hidden; }
+  .rf-demo-head { align-items: center; }
+  .rf-demo-head h2 { display: none; }
+  .rf-demo-kicker { margin: 0; }
+  .rf-demo-close { width: 32px; height: 32px; font-size: 13px; }
+  .rf-demo-body { flex: 1 1 auto; min-height: 0; grid-template-columns: 1fr 190px; gap: 10px; }
+  .rf-demo-view, .rf-demo-view.is-stereo { aspect-ratio: auto; height: 100%; min-height: 0; overflow: hidden; border-radius: 12px; }
+  .rf-demo-view canvas, .rf-demo-view.is-stereo canvas { aspect-ratio: auto; height: 100%; border-radius: 0; }
+  .rf-demo-lens, .is-stereo .rf-demo-lens { aspect-ratio: auto; bottom: 0; border-radius: inherit; }
+  .rf-demo-caption { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px); margin: 0; font-size: 12px; text-align: center; background: rgba(8, 10, 14, 0.72); }
+  .rf-demo-hud { top: 10px; left: 14px; right: 14px; font-size: 8px; }
+  .rf-demo-sim { top: 28px; right: 14px; font-size: 8px; }
+  .rf-demo-toast { top: 28px; font-size: 10px; }
+  .rf-demo-steps { flex-direction: column; overflow-y: auto; gap: 2px; padding: 0; }
+  .rf-demo-steps button { white-space: normal; padding: 6px 8px; font-size: 11px; }
+  .rf-demo-controls { flex-wrap: nowrap; gap: 10px; }
+  .rf-demo-controls input[type='range'] { flex-basis: auto; }
+  .rf-demo-play { width: 36px; height: 36px; font-size: 12px; }
+  .rf-demo-note, .rf-demo-rotate { display: none; }
+}
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 620px) {
+  .rf-demo-steps { display: none; }
+  .rf-demo-body { grid-template-columns: 1fr; }
+}
+/* Upright phone: suggest turning it for the full-screen replay. */
+.rf-demo-rotate { display: none; }
+@media (orientation: portrait) and (max-width: 600px) {
+  .rf-demo-rotate { display: flex; align-items: center; gap: 8px; margin: 0; color: #c1c6b9; font-size: 12px; }
+  .rf-demo-rotate span { font-size: 18px; color: var(--rf-ember-hot); display: inline-block; transform: rotate(90deg); }
+}

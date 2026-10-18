@@ -149,7 +149,7 @@ export default function LandingPage() {
               <span>your space.</span>
             </h1>
             <p className="rf-intro">
-              Shape a miniature world — or stage an event venue.
+              Shape a miniature world — or stage an event venue.{' '}
               <br />
               Place booths and barriers, start a virtual attendee, and see how the layout shapes the flow.
             </p>

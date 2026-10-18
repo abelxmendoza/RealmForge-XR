@@ -192,6 +192,9 @@ export default function VrDemoReplay({ onClose }: { onClose: () => void }) {
             Try it yourself ↗
           </a>
         </div>
+        <p className="rf-demo-rotate">
+          <span aria-hidden="true">📱</span> Turn your phone sideways for a full-screen view.
+        </p>
         <p className="rf-demo-note">
           Scripted preview rendered in your browser to show the workflow — not a recording from a physical headset.
         </p>
