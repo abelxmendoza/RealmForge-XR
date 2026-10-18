@@ -8,7 +8,7 @@ import { worldActions } from '../world/actions'
 import { confirmReplace, requestConfirmation } from '../world/confirmation'
 import { enterARWithFallback, useXRSessionMeta } from '../xr/session'
 import { usePlacement } from '../xr/placement'
-import { useWorld } from '../world/store'
+import { useWorld, type Tool } from '../world/store'
 import { useNav } from '../nav/navigation'
 import {
   clearRoute,
@@ -63,6 +63,10 @@ const PHASE_LABEL: Record<string, string> = {
   'no-path': 'No path',
 }
 
+/** Phone / small-tablet layout: the menu collapses to its top bar so the world stays visible. */
+const COMPACT_QUERY = '(max-width: 820px), (max-height: 520px)'
+const isCompact = () => typeof window !== 'undefined' && window.matchMedia?.(COMPACT_QUERY).matches === true
+
 function tooltip(base: string, disabledWhy?: string) {
   return disabledWhy ? `${base} — ${disabledWhy}` : base
 }
@@ -95,6 +99,12 @@ export function ToolbarHud() {
   const openGuide = useGuide((s) => s.openGuide)
   const closeGuide = useGuide((s) => s.closeGuide)
   const fileInput = useRef<HTMLInputElement>(null)
+  const [menuOpen, setMenuOpen] = useState(() => !isCompact())
+  /** On small screens, close the menu once a tool is chosen so you can place on the world. */
+  const pickTool = (id: Tool) => {
+    setTool(id)
+    if (isCompact()) setMenuOpen(false)
+  }
   useEffect(() => subscribeHistory((s) => setHist({ canUndo: s.canUndo, canRedo: s.canRedo })), [])
 
   // Follow placement / route tools into their section when the keyboard picks them (1–0).
@@ -137,7 +147,7 @@ export function ToolbarHud() {
   }
 
   return (
-    <div className="hud">
+    <div className={`hud${menuOpen ? '' : ' hud-collapsed'}`}>
       <div className="hud-brand">
         <a
           className="editor-home"
@@ -158,6 +168,16 @@ export function ToolbarHud() {
             {dirty ? <span className="dirty-dot" title="Unsaved changes" /> : null}
           </span>
         </div>
+        <button
+          type="button"
+          className={`hud-menu-toggle${menuOpen ? ' on' : ''}`}
+          aria-expanded={menuOpen}
+          aria-controls="hud-menu"
+          title={menuOpen ? 'Collapse the menu' : 'Show tools and sections'}
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          {menuOpen ? 'Close' : 'Menu'} <span aria-hidden="true">{menuOpen ? '▴' : '▾'}</span>
+        </button>
         <div className="hud-session">
           <button
             type="button"
@@ -204,6 +224,7 @@ export function ToolbarHud() {
         </div>
       </div>
 
+      <div className="hud-menu" id="hud-menu">
       <nav className="hud-panel hud-nav" aria-label="Editor sections">
         <div className="hud-tabs" role="tablist">
           {TOOLBAR_SECTIONS.map((s) => (
@@ -230,7 +251,7 @@ export function ToolbarHud() {
                 key={t.id}
                 type="button"
                 className={`tool-btn${tool === t.id ? ' on' : ''}`}
-                onClick={() => setTool(t.id)}
+                onClick={() => pickTool(t.id)}
                 title={t.tooltip}
                 aria-pressed={tool === t.id}
               >
@@ -256,7 +277,10 @@ export function ToolbarHud() {
               className={tool === 'asset' ? 'on' : ''}
               aria-pressed={tool === 'asset'}
               title="Browse the object catalog in the side panel (8)"
-              onClick={openObjectLibrary}
+              onClick={() => {
+                openObjectLibrary()
+                if (isCompact()) setMenuOpen(false)
+              }}
             >
               Object library
             </button>
@@ -607,6 +631,7 @@ export function ToolbarHud() {
           In VR: wrist <strong>Guide</strong> or panel <strong>Guide</strong> — same help in headset.
         </p>
         <p>Right-click for world actions. Middle-drag pans.</p>
+      </div>
       </div>
     </div>
   )

@@ -964,24 +964,167 @@ dialog button.danger-confirm:hover:not(:disabled) {
   }
 }
 
-@media (max-width: 820px) {
+/* Menu toggle only exists on small screens; on desktop the menu is always open. */
+.hud-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hud .hud-menu-toggle {
+  display: none;
+}
+
+/* Keep in sync with COMPACT_QUERY in ToolbarHud.tsx. */
+@media (max-width: 820px), (max-height: 520px) {
   .hud {
-    max-width: calc(100vw - 28px);
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    max-width: none;
+    max-height: calc(100dvh - 92px);
+    gap: 8px;
+  }
+
+  .hud-brand {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .hud-logo {
+    font-size: 1rem;
+  }
+
+  .hud .hud-menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    min-height: 36px;
+    padding: 6px 12px;
+    font-weight: 600;
+  }
+
+  .hud-session {
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .hud-session::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hud-session button {
+    flex: 1 0 auto;
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .hud-session .hud-vr-alt {
+    display: none;
+  }
+
+  /* Open menu scrolls inside the screen instead of running off the bottom. */
+  .hud-menu {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    gap: 8px;
+  }
+
+  /* An open menu sits above the side panel; collapse it to get back to the panel. */
+  #root > .hud:not(.hud-collapsed) {
+    z-index: 31;
+  }
+
+  .hud:not(.hud-collapsed) .hud-panel {
+    background: var(--rf-panel-solid);
+  }
+
+  .hud-collapsed .hud-menu > .hud-panel,
+  .hud-collapsed .hud-menu > .status {
+    display: none;
+  }
+
+  /* Mouse / keyboard tips don't apply on touch; the Guide button stays in the top bar. */
+  .hud .help {
+    display: none;
+  }
+
+  .hud .tools {
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
   }
 
   .inspector {
     top: auto;
-    bottom: 14px;
-    right: 14px;
-    max-height: 42vh;
-    width: min(280px, calc(100vw - 28px));
+    left: 10px;
+    right: 10px;
+    bottom: 68px;
+    width: auto;
+    max-height: min(40dvh, 340px);
+  }
+
+  .inspector-collapsed {
+    left: auto;
+    max-width: calc(100vw - 20px);
+  }
+
+  .voice-mic {
+    bottom: 12px;
+    flex-direction: column-reverse;
+    max-width: calc(100vw - 20px);
+  }
+
+  .voice-mic .mic {
+    padding: 9px 16px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .voice-mic .heard {
+    max-width: calc(100vw - 20px);
+  }
+
+  .voice-mic .heard.idle {
+    display: none;
   }
 
   .voice-panel {
-    left: 14px;
+    left: 10px;
     right: auto;
-    bottom: calc(14px + min(42vh, 320px) + 8px);
+    bottom: calc(68px + min(40dvh, 340px) + 8px);
     max-height: 28vh;
+  }
+}
+
+/* Phone in landscape: menu on the left, side panel down the right, voice between them. */
+@media (max-height: 520px) and (min-width: 560px) {
+  .hud {
+    right: auto;
+    width: min(380px, 46vw);
+    max-height: calc(100dvh - 20px);
+  }
+
+  .inspector {
+    top: 10px;
+    bottom: 10px;
+    left: auto;
+    right: 10px;
+    width: min(280px, 34vw);
+    max-height: none;
+  }
+
+  .voice-panel {
+    bottom: 68px;
+  }
+
+  /* No room for the voice button beside an open menu; it returns when the menu closes. */
+  body:has(.hud:not(.hud-collapsed)) .voice-mic {
+    display: none;
   }
 }
 
