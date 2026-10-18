@@ -8,9 +8,10 @@ import { parseVoiceCommand } from './commandParser'
 import { executeVoiceCommand, type CommandExecutorOptions, type ExecuteResult } from './commandExecutor'
 import { emitVoiceEvent } from './events'
 import { addMockTranscriptHandler } from './mockProvider'
+import { isWebSpeechAvailable, startWebSpeechSession, type WebSpeechSession } from './webSpeechClient'
 import type { ConfirmHandler, TranscriptResult, VoiceCommand } from './types'
 
-export type VoiceProviderMode = 'assemblyai' | 'mock'
+export type VoiceProviderMode = 'assemblyai' | 'webspeech' | 'mock'
 
 export type VoiceControllerState = {
   enabled: boolean
@@ -32,6 +33,11 @@ export type VoiceControllerOptions = {
   tokenUrl?: string
   /** Prefer mock when AssemblyAI token/mic fails (default true). */
   fallbackToMock?: boolean
+  /**
+   * Prefer browser SpeechRecognition when AssemblyAI fails (default true).
+   * Works on Chrome / Edge / Safari laptops without an AssemblyAI key.
+   */
+  fallbackToWebSpeech?: boolean
 }
 
 type Listener = (state: VoiceControllerState) => void
@@ -50,10 +56,11 @@ export class VoiceController {
   private lastError: string | null = null
   private provider: VoiceProviderMode
   private pendingConfirmation: ExecuteResult | null = null
-  private session: AssemblyAISession | null = null
+  private session: AssemblyAISession | WebSpeechSession | null = null
   private confirm: ConfirmHandler | undefined
   private tokenUrl: string | undefined
   private fallbackToMock: boolean
+  private fallbackToWebSpeech: boolean
   private listeners = new Set<Listener>()
   /** Deduplicate identical final transcripts within a short window. */
   private lastFinalKey: string | null = null
@@ -69,6 +76,7 @@ export class VoiceController {
     this.confirm = opts.confirm
     this.tokenUrl = opts.tokenUrl
     this.fallbackToMock = opts.fallbackToMock ?? true
+    this.fallbackToWebSpeech = opts.fallbackToWebSpeech ?? true
     if (opts.registerMock !== false) this.connectMock()
   }
 
@@ -152,6 +160,11 @@ export class VoiceController {
       return
     }
 
+    if (this.provider === 'webspeech') {
+      await this.startWebSpeech(generation)
+      return
+    }
+
     try {
       const session = await startAssemblyAISession({
         tokenUrl: this.tokenUrl,
@@ -181,18 +194,82 @@ export class VoiceController {
         return
       }
       this.session = session
+      this.provider = 'assemblyai'
       this.isListening = true
       this.emit()
     } catch (err) {
       if (generation !== this.generation) return
       const message = err instanceof Error ? err.message : 'Failed to start listening'
-      this.lastError = message
+      this.isListening = false
+      this.session = null
+
+      if (this.fallbackToWebSpeech && isWebSpeechAvailable()) {
+        this.lastError = null
+        this.emit()
+        await this.startWebSpeech(generation, message)
+        return
+      }
+
+      this.lastError = this.typedFallbackHint(message)
+      if (this.fallbackToMock) {
+        this.provider = 'mock'
+        this.isListening = true
+        this.lastError = `${message} — type a command below, or use Hold Space after fixing the mic`
+      }
+      this.emit()
+    }
+  }
+
+  private typedFallbackHint(message: string): string {
+    return `${message}. You can still type a command in the Voice panel.`
+  }
+
+  private async startWebSpeech(generation: number, priorError?: string): Promise<void> {
+    try {
+      const session = startWebSpeechSession({
+        onTranscript: (r) => {
+          if (generation === this.generation) void this.handleTranscript(r)
+        },
+        onError: (message) => {
+          this.lastError = message
+          this.emit()
+        },
+        onStatus: (status) => {
+          if (generation !== this.generation) return
+          if (status === 'listening') {
+            this.isListening = true
+            this.emit()
+          }
+          if (status === 'stopped') {
+            this.isListening = false
+            this.session = null
+            this.emit()
+          }
+        },
+      })
+      if (generation !== this.generation || !this.enabled) {
+        await session.stop()
+        return
+      }
+      this.session = session
+      this.provider = 'webspeech'
+      this.isListening = true
+      this.lastError = priorError ? `Using device microphone (browser speech). ${priorError}` : null
+      // Clear the advisory once listening is clearly active — keep a short status via lastError only when useful.
+      if (priorError) {
+        // Keep a gentler note so users know which engine is active.
+        this.lastError = 'Listening with your device microphone'
+      }
+      this.emit()
+    } catch (err) {
+      if (generation !== this.generation) return
+      const message = err instanceof Error ? err.message : 'Failed to start browser speech recognition'
+      this.lastError = this.typedFallbackHint(priorError ? `${priorError}. ${message}` : message)
       this.isListening = false
       this.session = null
       if (this.fallbackToMock) {
         this.provider = 'mock'
         this.isListening = true
-        this.lastError = `${message} — fell back to mock provider`
       }
       this.emit()
     }

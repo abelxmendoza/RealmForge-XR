@@ -104,22 +104,63 @@ describe('VoiceController destructive confirms', () => {
 })
 
 describe('connection / mic failure surfaces', () => {
-  it('falls back to mock when AssemblyAI start fails', async () => {
+  it('falls back to mock when AssemblyAI fails and browser speech is unavailable', async () => {
     const c = new VoiceController({
       provider: 'assemblyai',
       fallbackToMock: true,
+      fallbackToWebSpeech: true,
       tokenUrl: '/api/assemblyai/token-missing',
     })
-    // Stub fetch + getUserMedia path: token fetch will fail in node
     const originalFetch = globalThis.fetch
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('network down')) as typeof fetch
 
     await c.startListening()
     expect(c.getState().provider).toBe('mock')
     expect(c.getState().isListening).toBe(true)
-    expect(c.getState().lastError).toMatch(/fell back to mock/i)
+    expect(c.getState().lastError).toMatch(/network down|type a command|mic/i)
 
     globalThis.fetch = originalFetch
+    await c.dispose()
+  })
+
+  it('falls back to browser speech when AssemblyAI fails on a supporting browser', async () => {
+    const start = vi.fn()
+    const stop = vi.fn()
+    class FakeRecognition {
+      continuous = false
+      interimResults = false
+      lang = ''
+      onresult = null
+      onerror = null
+      onend = null
+      start = start
+      stop = stop
+      abort = vi.fn()
+    }
+    const g = globalThis as { SpeechRecognition?: unknown }
+    const previous = g.SpeechRecognition
+    g.SpeechRecognition = FakeRecognition
+
+    const c = new VoiceController({
+      provider: 'assemblyai',
+      fallbackToMock: false,
+      fallbackToWebSpeech: true,
+      tokenUrl: '/api/assemblyai/token-missing',
+    })
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: 'bad key' }),
+    }) as typeof fetch
+
+    await c.startListening()
+    expect(start).toHaveBeenCalled()
+    expect(c.getState().provider).toBe('webspeech')
+    expect(c.getState().isListening).toBe(true)
+
+    globalThis.fetch = originalFetch
+    g.SpeechRecognition = previous
     await c.dispose()
   })
 })

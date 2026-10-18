@@ -1,51 +1,37 @@
-# Demo readiness — October 17, 2026
+# Demo readiness — presentation build
 
-Assessment: **desktop + integrated Quest XR code is on `main`**. Physical headset PASS/FAIL is still owned by Emiliano (checklist below). Stale tunnel URLs are not kept here — start a fresh cloudflared tunnel when testing.
+Assessment: **desktop + Quest XR finishing touches are on this branch / headed to `main`**.
 
-## What’s on `main` now
+## What’s included
 
 | Area | Status |
 | --- | --- |
-| World persistence + undo/redo | Shipped |
-| Environments (Forge / Mars / Warehouse) + Environments menu | Shipped |
-| Quest XR: hand grab, scale presets, wrist menu, Place city, rays/surface | Shipped |
-| Immersive control palette + in-headset confirmation | Shipped |
-| Molten-forge theme (web + VR) | Shipped |
-| User & controls guide (web **Guide** / **?** + VR Guide) | Shipped |
-| AssemblyAI voice (typed fallback + mic path) | Shipped (live mic depends on `.env.keys`) |
-| Multi-actor + voice mic tile | Shipped |
-| `/xr-test/` passthrough probe | Shipped |
+| Six-section toolbar (Build → Save), Select-over-spawn | Shipped |
+| Multi-waypoint robot routes (Play / Pause / Stop) | Shipped |
+| Actor multi-stop planned routes | Shipped |
+| Quest XR: occlusion, real surfaces, spatial save, room scan, floor snap | Shipped |
+| Movable XR control palette + wrist Menu → palette | Shipped |
+| Worlds library, environments, voice (AssemblyAI + laptop Web Speech) | Shipped |
+| Demo script | See `docs/demo-script.md` |
 
-## Automated / desktop validation
+## Automated validation
 
 | Check | Result |
 | --- | --- |
-| `npm test` | PASS (212+ on current main) |
-| `npm run build` | PASS |
-| Desktop tools, save/load, env confirm, undo | PASS (prior sessions + regression suite) |
-| Live AssemblyAI / Quest hardware | NOT TESTED until Emiliano / Agent 4 run them |
+| `npm test` | Run before present |
+| `npm run build` | Run before present |
 
-## Emiliano — Quest hardware checklist
+## Live demo checklist
 
-Follow `docs/quest2-testing.md`. Run against **`main`** via `npm run dev` + tunnel or LAN.
+1. Landing → Enter warehouse / job fair
+2. **Build** a wall + building; click object to **Select** and drag
+3. **Plan Routes** → Add Waypoint ×3 → **Play** → **Pause** → **Resume**
+4. **Enter XR** on Quest → wrist menu → Menu (palette) → Plan Routes
+5. Voice: “save world” / place object (mic needs keys or Web Speech)
+6. Block Path demo, then Clear Route
 
-| # | Check | Result |
-| --- | --- | --- |
-| 1 | Page loads; **Enter AR** (or VR) | |
-| 2 | Place city + scale 1:60 → 1:1 | |
-| 3 | Grab building; robot replan when path blocked | |
-| 4 | Wrist menu + **Guide**; control palette **Guide** | |
-| 5 | Load env confirm (Mars / Warehouse / Forge) | |
-| 6 | Usable FPS at 1:1 Forge; clean exit XR | |
+## Notes
 
-On FAIL: headset + browser version, Space Setup notes, step, expected vs actual, console if available.
-
-## Ownership (remaining)
-
-| Owner | Task |
-| --- | --- |
-| Emiliano | Physical Quest checklist PASS/FAIL on `main`; review branch `Gesture/Refinement-Implementation` (hand/controller refinements — not merged yet) |
-| Abel | Production voice token route if deploying beyond Vite; demo script |
-| Chris | Desktop rehearsal (Guide, env menu, save/load, typed voice) |
-
-Optional: ElevenLabs playback (not implemented). Does not block desktop demo. Stale feature branches besides Gesture were deleted after merge.
+- Prefer `npm run dev` + HTTPS / tunnel for Quest
+- AssemblyAI live mic needs `.env.keys`; Web Speech works on Chromium without it
+- Physical headset PASS/FAIL still owned by the Quest operator

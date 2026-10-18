@@ -11,5 +11,14 @@ export const voiceConfirm = (request: ConfirmationRequest) =>
     message: request.message,
   })
 
-/** Options every voice button uses, so they all share one live AssemblyAI controller. */
-export const VOICE_OPTIONS = { provider: 'assemblyai', fallbackToMock: false, confirm: voiceConfirm } as const
+/**
+ * Shared options for every voice button (HUD mic, Voice panel, VR palette).
+ * Prefer AssemblyAI when the token proxy is configured; fall back to the browser's
+ * SpeechRecognition so laptops still work without a cloud key.
+ */
+export const VOICE_OPTIONS = {
+  provider: 'assemblyai',
+  fallbackToWebSpeech: true,
+  fallbackToMock: false,
+  confirm: voiceConfirm,
+} as const

@@ -4,13 +4,17 @@
  * Auth: fetches a short-lived token from our Vite/dev proxy (`/api/assemblyai/token`).
  * Never reads ASSEMBLYAI_API_KEY in client code.
  *
- * Docs: https://www.assemblyai.com/docs/streaming/authenticate-with-a-temporary-token
+ * Audio: uses the device AudioContext rate (laptops often ignore a forced 16 kHz), then
+ * resamples to 16 kHz PCM16. ScriptProcessor stays for Quest Browser compatibility.
  */
 
 import type { TranscriptResult } from './types'
+import { LinearResampler, float32ToPcm16 } from './pcmResampler'
 
 const WS_BASE = 'wss://streaming.assemblyai.com/v3/ws'
 const SAMPLE_RATE = 16_000
+/** AssemblyAI wants ~50–1000 ms per binary frame; batch to ~100 ms. */
+const CHUNK_SAMPLES = Math.round(SAMPLE_RATE * 0.1)
 
 export type AssemblyAIClientOptions = {
   /** Override token endpoint (default `/api/assemblyai/token`). */
@@ -41,6 +45,24 @@ async function fetchTemporaryToken(tokenUrl: string, signal?: AbortSignal): Prom
   return data.token
 }
 
+function micErrorMessage(err: unknown): string {
+  if (err instanceof DOMException) {
+    if (err.name === 'NotAllowedError') {
+      return 'Microphone permission denied — click the lock icon in the address bar and allow the microphone'
+    }
+    if (err.name === 'NotFoundError') {
+      return 'No microphone found — plug in a mic or check your system sound settings'
+    }
+    if (err.name === 'NotReadableError') {
+      return 'Microphone is busy — close other apps using the mic, then try again'
+    }
+    if (err.name === 'SecurityError') {
+      return 'Microphone blocked — open the app over HTTPS (or localhost) and allow the mic'
+    }
+  }
+  return err instanceof Error ? err.message : 'Failed to start AssemblyAI session'
+}
+
 /**
  * Start microphone capture + AssemblyAI streaming transcription.
  * Caller must invoke `session.stop()` to release mic + socket.
@@ -55,6 +77,7 @@ export async function startAssemblyAISession(
   let audioContext: AudioContext | null = null
   let source: MediaStreamAudioSourceNode | null = null
   let processor: ScriptProcessorNode | null = null
+  let silent: GainNode | null = null
   let ws: WebSocket | null = null
   let stopped = false
   let finishTurn: (() => void) | null = null
@@ -75,8 +98,10 @@ export async function startAssemblyAISession(
     try {
       processor?.disconnect()
       source?.disconnect()
+      silent?.disconnect()
       processor = null
       source = null
+      silent = null
     } catch {
       /* ignore */
     }
@@ -109,9 +134,13 @@ export async function startAssemblyAISession(
 
   try {
     if (!navigator.mediaDevices?.getUserMedia) {
-      throw new Error('Microphone API unavailable in this browser')
+      throw new Error('Microphone API unavailable — use Chrome, Edge, or Safari on HTTPS/localhost')
+    }
+    if (typeof globalThis.isSecureContext === 'boolean' && !globalThis.isSecureContext) {
+      throw new Error('Microphone requires HTTPS or localhost')
     }
 
+    // Token first so we never prompt for the mic when the key/proxy is misconfigured.
     const token = await fetchTemporaryToken(tokenUrl, opts.signal)
     opts.signal?.throwIfAborted()
 
@@ -120,6 +149,7 @@ export async function startAssemblyAISession(
         channelCount: 1,
         echoCancellation: true,
         noiseSuppression: true,
+        autoGainControl: true,
       },
       video: false,
     })
@@ -146,7 +176,10 @@ export async function startAssemblyAISession(
         cleanupOpenListeners()
         resolve()
       }
-      const onAbort = () => { cleanupOpenListeners(); reject(new Error('Listening cancelled')) }
+      const onAbort = () => {
+        cleanupOpenListeners()
+        reject(new Error('Listening cancelled'))
+      }
       const onError = () => {
         cleanupOpenListeners()
         reject(new Error('AssemblyAI WebSocket connection failed'))
@@ -199,61 +232,67 @@ export async function startAssemblyAISession(
       }
     }
 
-    // Audio pipeline: mic → AudioContext @ 16k → PCM16 → WebSocket binary frames
-    audioContext = new AudioContext({ sampleRate: SAMPLE_RATE })
+    // Device sample rate (often 44.1/48 kHz on laptops). Do not force 16 kHz — Safari ignores it
+    // and Firefox can break echo cancellation when the context rate is overridden.
+    audioContext = new AudioContext()
     if (audioContext.state === 'suspended') {
       await audioContext.resume()
     }
+    const resampler = new LinearResampler(audioContext.sampleRate, SAMPLE_RATE)
+    let pending = new Float32Array(0)
+
     source = audioContext.createMediaStreamSource(stream)
-    // ScriptProcessor is deprecated but widely available in Quest browser; keep buffer modest.
     processor = audioContext.createScriptProcessor(4096, 1, 1)
     processor.onaudioprocess = (event) => {
       if (stopped || !ws || ws.readyState !== WebSocket.OPEN) return
       const input = event.inputBuffer.getChannelData(0)
-      const pcm = floatTo16BitPCM(input)
-      ws.send(pcm)
+      const resampled = resampler.process(input)
+      if (!resampled.length) return
+      const merged = new Float32Array(pending.length + resampled.length)
+      merged.set(pending)
+      merged.set(resampled, pending.length)
+      let offset = 0
+      while (merged.length - offset >= CHUNK_SAMPLES) {
+        const chunk = merged.subarray(offset, offset + CHUNK_SAMPLES)
+        ws.send(float32ToPcm16(chunk))
+        offset += CHUNK_SAMPLES
+      }
+      pending = merged.subarray(offset)
     }
+    // Keep the processor in the graph without playing the mic through speakers (laptop feedback).
+    silent = audioContext.createGain()
+    silent.gain.value = 0
     source.connect(processor)
-    processor.connect(audioContext.destination)
+    processor.connect(silent)
+    silent.connect(audioContext.destination)
 
     opts.onStatus?.('listening')
 
     return {
-      stop: () => stopping ??= (async () => {
-        // Release microphone immediately, then drain the final turn before terminating.
-        processor?.disconnect()
-        source?.disconnect()
-        stream?.getTracks().forEach((track) => track.stop())
-        if (!stopped && ws?.readyState === WebSocket.OPEN) {
-          await new Promise<void>((resolve) => {
-            const timer = setTimeout(resolve, 1200)
-            finishTurn = () => { clearTimeout(timer); resolve() }
-            ws!.send(JSON.stringify({ type: 'ForceEndpoint' }))
-          })
-          finishTurn = null
-        }
-        await cleanup()
-      })(),
+      stop: () =>
+        (stopping ??= (async () => {
+          processor?.disconnect()
+          source?.disconnect()
+          silent?.disconnect()
+          stream?.getTracks().forEach((track) => track.stop())
+          if (!stopped && ws?.readyState === WebSocket.OPEN) {
+            await new Promise<void>((resolve) => {
+              const timer = setTimeout(resolve, 1200)
+              finishTurn = () => {
+                clearTimeout(timer)
+                resolve()
+              }
+              ws!.send(JSON.stringify({ type: 'ForceEndpoint' }))
+            })
+            finishTurn = null
+          }
+          await cleanup()
+        })()),
     }
   } catch (err) {
     await cleanup()
-    const message =
-      err instanceof DOMException && err.name === 'NotAllowedError'
-        ? 'Microphone permission denied'
-        : err instanceof Error
-          ? err.message
-          : 'Failed to start AssemblyAI session'
+    const message = micErrorMessage(err)
     opts.onError(message)
     throw new Error(message)
   }
-}
-
-function floatTo16BitPCM(float32: Float32Array): ArrayBuffer {
-  const buffer = new ArrayBuffer(float32.length * 2)
-  const view = new DataView(buffer)
-  for (let i = 0; i < float32.length; i++) {
-    const s = Math.max(-1, Math.min(1, float32[i]!))
-    view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true)
-  }
-  return buffer
 }
