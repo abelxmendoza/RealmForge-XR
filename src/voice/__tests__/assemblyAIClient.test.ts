@@ -94,11 +94,14 @@ describe('AssemblyAI client cleanup', () => {
       disconnect,
     }
 
+    const silent = { connect: vi.fn(), disconnect, gain: { value: 1 } }
     class FakeAudioContext {
       state = 'running'
+      sampleRate = 48000
       destination = {}
       createMediaStreamSource = vi.fn().mockReturnValue(source)
       createScriptProcessor = vi.fn().mockReturnValue(processor)
+      createGain = vi.fn().mockReturnValue(silent)
       resume = vi.fn()
       close = closeCtx
     }
@@ -138,7 +141,7 @@ describe('AssemblyAI client cleanup', () => {
     await expect(
       startAssemblyAISession({ onTranscript: () => {}, onError }),
     ).rejects.toThrow(/Microphone permission denied/)
-    expect(onError).toHaveBeenCalledWith('Microphone permission denied')
+    expect(onError).toHaveBeenCalledWith(expect.stringMatching(/Microphone permission denied/))
   })
 })
 

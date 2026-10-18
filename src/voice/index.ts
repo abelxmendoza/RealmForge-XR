@@ -34,3 +34,5 @@ export {
   addMockTranscriptHandler,
 } from './mockProvider'
 export { startAssemblyAISession, type AssemblyAISession, type AssemblyAIClientOptions } from './assemblyAIClient'
+export { isWebSpeechAvailable, startWebSpeechSession, type WebSpeechSession } from './webSpeechClient'
+export { LinearResampler, float32ToPcm16 } from './pcmResampler'
