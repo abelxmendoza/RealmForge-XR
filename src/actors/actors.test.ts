@@ -1,6 +1,7 @@
 import { beforeEach, expect, it } from 'vitest'
 import { useWorld } from '../world/store'
-import { selectActorKind, placeActor, setActorGoal, updateActor, duplicateActor, removeActor } from './actions'
+import { selectActorKind, placeActor, setActorGoal, appendActorWaypoint, updateActor, duplicateActor, removeActor } from './actions'
+import { actorRoute } from './types'
 import { actorsForSave, getActorRuntime, startActors, tickActors } from './runtime'
 import { parseWorld, serializeWorld } from '../world/serialize'
 import { clearHistory, getHistoryState, installHistory, undo, redo } from '../world/history'
@@ -80,4 +81,25 @@ it('rejects overlaps, invalid settings, blocked goals and oversized files', () =
   const file = serializeWorld(useWorld.getState(), 'Invalid')
   expect(parseWorldFile(JSON.stringify({ ...file, actors: [{ ...file.actors![0], kind: 'unknown' }] })).ok).toBe(false)
   expect(parseWorldFile(JSON.stringify({ ...file, actors: Array(MAX_ACTORS + 1).fill(file.actors![0]) })).ok).toBe(false)
+})
+
+it('lets every actor kind keep a multi-stop planned route and advances on arrival', () => {
+  const ids = [add('worker', -8, -8), add('courier', 0, -8), add('vehicle', 8, -8)]
+  for (const id of ids) {
+    expect(setActorGoal(id, [-8, 8]).ok).toBe(true)
+    expect(appendActorWaypoint(id, [8, 8]).ok).toBe(true)
+    expect(actorRoute(useWorld.getState().actors[id])).toHaveLength(2)
+    expect(useWorld.getState().actors[id].goal).toEqual([-8, 8])
+  }
+  // Drive the first actor to its first stop, then ensure it advances to the second.
+  const first = ids[0]!
+  useWorld.getState().updateActor(first, { speed: 8 })
+  for (let i = 0; i < 400; i++) tickActors(0.1)
+  const actor = useWorld.getState().actors[first]
+  const runtime = getActorRuntime(first)!
+  expect(actorRoute(actor).length).toBeLessThanOrEqual(2)
+  expect(runtime.status === 'moving' || runtime.status === 'arrived').toBe(true)
+  if (actorRoute(actor).length === 1) {
+    expect(actor.goal).toEqual([8, 8])
+  }
 })

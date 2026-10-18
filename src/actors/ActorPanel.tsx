@@ -3,7 +3,8 @@ import { worldActions } from '../world/actions'
 import { useWorld } from '../world/store'
 import { useEditor } from '../editor/settings'
 import { requestConfirmation } from '../world/confirmation'
-import { ACTOR_CATALOG, ACTOR_KINDS, MAX_ACTORS, type Actor } from './types'
+import { getAsset } from '../world/assets'
+import { ACTOR_CATALOG, ACTOR_KINDS, MAX_ACTORS, actorRoute, type Actor } from './types'
 import { actorRuntimeRevision, getActorRuntime, subscribeActorRuntime } from './runtime'
 
 export function ActorPanel() {
@@ -11,13 +12,20 @@ export function ActorPanel() {
   const selectedId = useWorld((s) => s.selectedActorId)
   const tool = useWorld((s) => s.tool)
   const kind = useEditor((s) => s.actorKind)
+  const appendRoute = useEditor((s) => s.actorAppendRoute)
   const message = useEditor((s) => s.actorMessage)
+  const destinations = useWorld((s) => Object.values(s.objects).filter((o) => o.destinationRole))
   const selected = selectedId ? actors[selectedId] : null
   const [name, setName] = useState(selected?.name || '')
   useEffect(() => setName(selected?.name || ''), [selected?.id, selected?.name])
   useSyncExternalStore(subscribeActorRuntime, actorRuntimeRevision, actorRuntimeRevision)
-  const report = (result: { ok: boolean; error?: string }, done = 'Actor updated.') => useEditor.getState().set({ actorMessage: result.ok ? done : result.error || 'Action failed.' })
-  const update = (patch: Partial<Omit<Actor, 'id' | 'kind'>>) => { if (selected) report(worldActions.updateActor(selected.id, patch)) }
+  const report = (result: { ok: boolean; error?: string }, done = 'Actor updated.') =>
+    useEditor.getState().set({ actorMessage: result.ok ? done : result.error || 'Action failed.' })
+  const update = (patch: Partial<Omit<Actor, 'id' | 'kind'>>) => {
+    if (selected) report(worldActions.updateActor(selected.id, patch))
+  }
+  const stops = selected ? actorRoute(selected) : []
+
   return (
     <section>
       <h3>
@@ -26,7 +34,7 @@ export function ActorPanel() {
           {Object.keys(actors).length}/{MAX_ACTORS}
         </small>
       </h3>
-      <p className="hint">Choose a type, then click clear ground to place. Stay in Actors to place several.</p>
+      <p className="hint">Every actor kind can hold a planned multi-stop route. Routes draw in the world for all actors at once.</p>
       <div className="actor-kind-grid">
         {ACTOR_KINDS.map((id) => (
           <button
@@ -54,17 +62,23 @@ export function ActorPanel() {
           }}
         >
           <option value="">Original robot</option>
-          {Object.values(actors).map((actor) => (
-            <option key={actor.id} value={actor.id}>
-              {actor.name}
-            </option>
-          ))}
+          {Object.values(actors).map((actor) => {
+            const status = getActorRuntime(actor.id)?.status || 'idle'
+            const n = actorRoute(actor).length
+            return (
+              <option key={actor.id} value={actor.id}>
+                {actor.name}
+                {n ? ` · ${n} stop${n === 1 ? '' : 's'} · ${status}` : ` · ${status}`}
+              </option>
+            )
+          })}
         </select>
       </label>
       {selected && (
         <>
           <p className="actor-status" role="status">
             Type: {ACTOR_CATALOG[selected.kind].name} · Navigation: {getActorRuntime(selected.id)?.status || 'idle'}
+            {stops.length ? ` · Route: ${stops.length} stop${stops.length === 1 ? '' : 's'}` : ' · No route'}
           </p>
           <label>
             Name
@@ -117,13 +131,51 @@ export function ActorPanel() {
             ))}
           </div>
           <div className="row">
-            <button type="button" className={tool === 'goal' ? 'on' : ''} onClick={() => worldActions.setTool('goal')}>
-              Set destination
+            <button type="button" className={tool === 'goal' && !appendRoute ? 'on' : ''} onClick={() => {
+              useEditor.getState().set({ actorAppendRoute: false })
+              worldActions.setTool('goal')
+            }}>
+              Set route
             </button>
-            <button type="button" onClick={() => report(worldActions.setActorGoal(selected.id, null), 'Actor stopped.')}>
-              Stop
+            <button
+              type="button"
+              className={tool === 'goal' && appendRoute ? 'on' : ''}
+              title="Click ground to add another stop (or hold Shift)"
+              onClick={() => {
+                useEditor.getState().set({ actorAppendRoute: true })
+                worldActions.setTool('goal')
+              }}
+            >
+              Add stop
+            </button>
+            <button type="button" onClick={() => report(worldActions.setActorGoal(selected.id, null), 'Route cleared.')}>
+              Clear route
             </button>
           </div>
+          {destinations.length > 0 && (
+            <>
+              <h3>Send to marker</h3>
+              <ul className="catalog-destinations">
+                {destinations.map((object, i) => (
+                  <li key={object.id}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        report(
+                          appendRoute
+                            ? worldActions.appendActorDestination(selected.id, object.id)
+                            : worldActions.sendActorToDestination(selected.id, object.id),
+                          appendRoute ? 'Stop added from marker.' : 'Actor sent to marker.',
+                        )
+                      }
+                    >
+                      {appendRoute ? 'Add' : 'Go'}: {getAsset(object.assetId || '')?.name || object.destinationRole} {i + 1}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           <div className="row">
             <button type="button" onClick={() => report(worldActions.duplicateActor(selected.id), 'Actor duplicated.')}>
               Duplicate
@@ -142,7 +194,7 @@ export function ActorPanel() {
               Delete
             </button>
           </div>
-          <p className="hint">Use Set destination, then click ground — or send to a catalog destination marker.</p>
+          <p className="hint">Set route replaces stops. Add stop appends (Shift+click also works). Every actor can follow its own plan.</p>
         </>
       )}
       <p className="hint">Actors path around world obstacles. They do not avoid each other yet.</p>
