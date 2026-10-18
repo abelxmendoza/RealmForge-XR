@@ -373,7 +373,7 @@ function Board({ size, onPointerDown, onPointerMove, onPointerOut }: { size: num
   const ground = useGeometry(() => tiledPlane(size, size, 2), [size])
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
   const real = useEditor((s) => s.surface === 'real')
-  const hasVisibleScan = useScan((s) => s.scans.some((scan) => scan.visible))
+  const hasVisibleScan = useScan((s) => s.scans.some((scan) => scan.visible && s.runtime[scan.id]?.status === 'ready'))
   // With the Select tool a hand grab near the board must reach the table edge (the map's grab handle), not
   // the ground, which sits right next to it and would otherwise win the grab. Placement tools still take
   // grabs on the ground (pinch the floor to place).
