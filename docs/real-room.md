@@ -26,8 +26,12 @@ when the browser asks.
 
 ## Wrist menu (slimmed)
 - Row 1: **Rays · Snap · Occl. · Surf.** (lit = on).
-- Row 2: **Center · Panel · Guide · Select**.
+- Row 2: **Center · Menu · Guide · Select**.
 - A framed group adds **Copy · Delete · Clear**.
 - Status line: scale · occlusion source · room size.
 - Everything else (scale presets, real/virtual ground, gestures, mocap, place world, scan room) is on the
   Control Palette's **View** page.
+
+**Menu (wrist), like Guide:** brings the Control Palette up right in front of you, or to the left of the
+guide if the guide is open. If the palette is already in front of you, Menu closes it. If you've walked
+away from it or it's behind you, Menu brings it back instead of closing it.

@@ -7,6 +7,7 @@ import { BrandLogo3D } from './BrandLogo3D'
 import { GUIDE_SECTIONS, getGuideSection, nextGuideSection, prevGuideSection } from '../guide/controlsGuide'
 import { useGuide } from '../guide/guideStore'
 import { PanelMoveBar } from './PanelMoveBar'
+import { usePaletteUI } from './paletteUI'
 
 /**
  * Immersive user guide — same sections as the desktop modal.
@@ -49,7 +50,9 @@ function GuideContent() {
     vectors.euler.setFromQuaternion(vectors.yaw, 'YXZ')
     vectors.yaw.setFromEuler(new THREE.Euler(0, vectors.euler.y, 0))
     // Slightly right of center, comfortable reading distance.
-    vectors.direction.set(0.15, -0.05, -1.15).applyQuaternion(vectors.yaw)
+    // Beside the palette when it was just summoned in front of you, so they don't overlap.
+    const palette = usePaletteUI.getState()
+    vectors.direction.set(!palette.closed && palette.spot === 'front' ? 0.45 : 0.15, -0.05, -1.15).applyQuaternion(vectors.yaw)
     root.current.position.copy(vectors.position).add(vectors.direction)
     root.current.quaternion.copy(vectors.yaw)
     positioned.current = true

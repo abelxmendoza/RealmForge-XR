@@ -29,7 +29,7 @@ import { blockRoute } from '../editor/demo'
 import { usePlacement } from './placement'
 import { createPaletteWorld, deletePaletteSelection, editPaletteSelection, loadPaletteSave, savePaletteWorld } from './paletteActions'
 import { FORGE } from '../theme/forge'
-import { setPaletteHidden, usePaletteUI } from './paletteUI'
+import { paletteAnchor, setPaletteHidden, summonPalette, usePaletteUI } from './paletteUI'
 import { HAPTIC, pulse } from './haptics'
 import { BrandLogo3D } from './BrandLogo3D'
 import { useGuide } from '../guide/guideStore'
@@ -50,6 +50,7 @@ function PaletteContent() {
   const [page, setPage] = useState('Tools')
   // Shown / hidden and page requests are shared with the wrist menu (xr/paletteUI.ts).
   const hidden = usePaletteUI((s) => s.hidden)
+  const closed = usePaletteUI((s) => s.closed)
   const setHidden = setPaletteHidden
   const pageRequest = usePaletteUI((s) => s.request)
   const recenter = usePaletteUI((s) => s.recenter)
@@ -99,19 +100,29 @@ function PaletteContent() {
   const vectors = useMemo(() => ({ position: new THREE.Vector3(), direction: new THREE.Vector3(), yaw: new THREE.Quaternion(), euler: new THREE.Euler(0, 0, 0, 'YXZ') }), [])
 
   useEffect(() => subscribeHistory(setHistory), [])
-  useEffect(() => { if (request) setHidden(false) }, [request])
+  // A confirmation always shows: reopen the palette in front of you if it was closed.
+  useEffect(() => { if (!request) return; if (usePaletteUI.getState().closed) summonPalette(); else setHidden(false) }, [request])
   useEffect(() => { const p = usePaletteUI.getState().page; if (pageRequest && p) setPage(p) }, [pageRequest])
   useEffect(() => { if (recenter) positioned.current = false }, [recenter])
   useEffect(() => { worldActions.listSavedWorlds() }, [])
   // Place once in tracking space, independent of the tabletop and its scale.
   useFrame(() => {
-    if (!root.current || positioned.current) return
+    if (!root.current) return
+    if (positioned.current) {
+      // Let the wrist Menu know where it is (to decide between closing it and bringing it to you).
+      root.current.getWorldPosition(paletteAnchor.position)
+      paletteAnchor.placed = !usePaletteUI.getState().closed
+      return
+    }
     const camera = gl.xr.getCamera()
     camera.getWorldPosition(vectors.position)
     camera.getWorldQuaternion(vectors.yaw)
     vectors.euler.setFromQuaternion(vectors.yaw, 'YXZ')
     vectors.yaw.setFromEuler(new THREE.Euler(0, vectors.euler.y, 0))
-    vectors.direction.set(-0.55, -0.08, -1.05).applyQuaternion(vectors.yaw)
+    // Session start: off to your left. Summoned from the wrist: straight ahead (left of the guide if it's open).
+    if (usePaletteUI.getState().spot === 'front') vectors.direction.set(useGuide.getState().open ? -0.5 : 0, -0.1, -0.85)
+    else vectors.direction.set(-0.55, -0.08, -1.05)
+    vectors.direction.applyQuaternion(vectors.yaw)
     root.current.position.copy(vectors.position).add(vectors.direction)
     root.current.quaternion.copy(vectors.yaw)
     positioned.current = true
@@ -206,6 +217,7 @@ function PaletteContent() {
   }
 
   return <group ref={root} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
+    {!closed && <>
     <PanelMoveBar target={root} y={0.45} width={0.65} />
     <Tile
       text={voice.isListening ? `Listening… ${voice.lastPartial ? `"${voice.lastPartial}" · ` : ''}tap to run` : 'Voice command: tap to talk'}
@@ -233,6 +245,7 @@ function PaletteContent() {
         <Tile text="Recenter" x={0.24} y={-0.235} width={0.15} onClick={() => { positioned.current = false }} />
         <Tile text={busy ? 'Working…' : page === 'Assets' ? `${getAsset(editor.assetId)?.name} · ${Math.round(editor.assetRotation * 180 / Math.PI)}° · Aim at clear ground.` : page === 'Worlds' && spatial !== 'idle' ? `Saved spot in this room: ${spatial}. ${message}` : message} y={-0.31} width={0.65} height={0.065} />
       </>}
+    </>}
     </>}
   </group>
 }

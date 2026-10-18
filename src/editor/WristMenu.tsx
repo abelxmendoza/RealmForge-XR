@@ -157,7 +157,7 @@ function MenuContent() {
   const set = useEditor((s) => s.set)
   const group = useSelection((s) => s.ids.length)
   const tool = useWorld((s) => s.tool)
-  const paletteHidden = usePaletteUI((s) => s.hidden)
+  const paletteOpen = usePaletteUI((s) => !s.closed && !s.hidden)
   const guideOpen = useGuide((s) => s.open)
   const toggleGuide = useGuide((s) => s.toggleGuide)
   const rowY = (i: number) => 0.05 - i * (BTN_H + GAP)
@@ -191,7 +191,7 @@ function MenuContent() {
       <MenuButton position={[col(2, quarter), rowY(0), 0]} width={quarter} label="Occl." active={occlusion} onPress={toggleOcclusion} />
       <MenuButton position={[col(3, quarter), rowY(0), 0]} width={quarter} label="Surf." active={realSurfaces} onPress={toggleRealSurfaces} />
       <MenuButton position={[col(0, quarter), rowY(1), 0]} width={quarter} label="Center" onPress={recenterWorld} />
-      <MenuButton position={[col(1, quarter), rowY(1), 0]} width={quarter} label="Panel" active={!paletteHidden} onPress={togglePalette} />
+      <MenuButton position={[col(1, quarter), rowY(1), 0]} width={quarter} label="Menu" active={paletteOpen} onPress={togglePalette} />
       <MenuButton position={[col(2, quarter), rowY(1), 0]} width={quarter} label="Guide" active={guideOpen} onPress={toggleGuide} />
       <MenuButton position={[col(3, quarter), rowY(1), 0]} width={quarter} label="Select" active={tool === 'select'} onPress={() => useWorld.getState().setTool('select')} />
       {/* Framed group (frame-hands gesture): act on all of it. */}
