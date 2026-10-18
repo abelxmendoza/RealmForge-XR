@@ -6,6 +6,13 @@ Dates are UTC.
 
 ## [Unreleased]
 
+### Added
+
+- Multi-section property scans: named rooms/areas, floor elevation and labels, shared web/XR alignment, visibility/solo, clipping, and two-point scale calibration.
+- Portable `.rfproperty` bundles include original mesh assets for cross-device viewing; imports preserve saved worlds' files through remapped IDs.
+- Backward-compatible single-scan loading, per-section runtime status/dirty tracking, aggregate import limits, and hidden-section GPU cleanup.
+- XR Property scans pages with an explicit exit to browser file controls and pagination for long control lists.
+
 ### Changed
 
 - Editor HUD adapts to the device: **Enter XR** only shows where the browser supports AR or VR (VR-only headsets get VR instead of an error), **Place world** only with AR, and devices without a headset get **Open on Quest** (copies the editor link).

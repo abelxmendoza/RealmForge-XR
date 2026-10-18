@@ -1835,3 +1835,48 @@ dialog.controls-guide::backdrop {
     overflow: hidden;
   }
 }
+
+/* ——— Real-world scan panel ——— */
+.scan-panel h4 {
+  margin: 14px 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--rf-text-muted, #9aa4b2);
+}
+
+.scan-file {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 6px;
+}
+
+.scan-file strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scan-file small {
+  opacity: 0.7;
+}
+
+.scan-nudge button {
+  min-width: 40px;
+}
+
+.scan-alert {
+  padding: 8px 10px;
+  border: 1px solid rgba(240, 164, 106, 0.5);
+  border-radius: 8px;
+  background: rgba(224, 120, 69, 0.1);
+}
+
+.scan-alert p {
+  margin: 0 0 6px;
+}
+
+.scan-error {
+  color: #ffb4b4;
+}

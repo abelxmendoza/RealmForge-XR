@@ -1,3 +1,4 @@
+import { useScan } from '../scan/store'
 import { create } from 'zustand'
 import { worldActions } from '../world/actions'
 import { flowActions } from '../flow/actions'
@@ -155,6 +156,7 @@ export function placeAt(point: Vec2): boolean {
  * at the ground point under the pointer. Reads the tool at press time (never a stale render value).
  */
 export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
+  if (useScan.getState().measuring) return
   const p = groundPoint(e)
   if (!p) return
   const raw: Vec2 = [clampToWorld(p[0]), clampToWorld(p[1])]
@@ -371,6 +373,7 @@ function Board({ size, onPointerDown, onPointerMove, onPointerOut }: { size: num
   const ground = useGeometry(() => tiledPlane(size, size, 2), [size])
   const ratio = SCALE_PRESETS[useEditor((s) => s.worldScale)].ratio
   const real = useEditor((s) => s.surface === 'real')
+  const hasVisibleScan = useScan((s) => s.scans.some((scan) => scan.visible && s.runtime[scan.id]?.status === 'ready'))
   // With the Select tool a hand grab near the board must reach the table edge (the map's grab handle), not
   // the ground, which sits right next to it and would otherwise win the grab. Placement tools still take
   // grabs on the ground (pinch the floor to place).
@@ -386,7 +389,7 @@ function Board({ size, onPointerDown, onPointerMove, onPointerOut }: { size: num
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         geometry={ground}
-        material={real ? SHADOW_GROUND : groundMaterial(appearance.groundColor, appearance.groundTint)}
+        material={real || hasVisibleScan ? SHADOW_GROUND : groundMaterial(appearance.groundColor, appearance.groundTint)}
         receiveShadow
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
