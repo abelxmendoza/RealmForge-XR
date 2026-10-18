@@ -9,6 +9,7 @@ import { BrandLogo3D } from '../xr/BrandLogo3D'
 import { useGuide } from '../guide/guideStore'
 import { useEditor } from './settings'
 import { toggleRays, toggleSurface } from './xrInput'
+import { SCALE_SHORT } from './toolbar'
 
 /** Panel size in metres (real room size, independent of the world scale). */
 const W = 0.16
@@ -157,15 +158,15 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
       <Text position={[0.008, 0.068, 0]} fontSize={0.011} color={FORGE.text} anchorX="center" anchorY="middle" raycast={() => null}>
         RealmForge
       </Text>
-      <MenuButton position={[col(0, third), rowY(0), 0]} width={third} label={`Rays ${rays ? 'on' : 'off'}`} active={rays} onPress={toggleRays} />
-      <MenuButton position={[col(1, third), rowY(0), 0]} width={third} label={`Snap ${snap ? 'on' : 'off'}`} active={snap} onPress={() => set({ snap: !snap })} />
-      <MenuButton position={[col(2, third), rowY(0), 0]} width={third} label={surface === 'real' ? 'Real' : 'Virtual'} active={surface === 'real'} onPress={toggleSurface} />
+      <MenuButton position={[col(0, third), rowY(0), 0]} width={third} label={rays ? 'See-thru' : 'Opaque'} active={rays} onPress={toggleRays} />
+      <MenuButton position={[col(1, third), rowY(0), 0]} width={third} label={snap ? 'Grid on' : 'Free'} active={snap} onPress={() => set({ snap: !snap })} />
+      <MenuButton position={[col(2, third), rowY(0), 0]} width={third} label={surface === 'real' ? 'Real fl.' : 'Virt. fl.'} active={surface === 'real'} onPress={toggleSurface} />
       {SCALE_IDS.map((id, i) => (
         <MenuButton
           key={id}
           position={[col(i, quarter), rowY(1), 0]}
           width={quarter}
-          label={SCALE_PRESETS[id].label.split(' ').pop()!}
+          label={SCALE_SHORT[id]}
           active={worldScale === id}
           onPress={() => set({ worldScale: id })}
         />
@@ -180,7 +181,7 @@ function MenuContent({ extra }: { extra?: ReactNode }) {
       />
       {extra && <group position={[col(0, W), rowY(3), 0]}>{extra}</group>}
       <Text position={[0, rowY(4) + 0.004, 0]} fontSize={0.008} color={FORGE.copper} anchorX="center" anchorY="middle" raycast={() => null}>
-        {`${SCALE_PRESETS[worldScale].label} · Guide opens the help panel`}
+        {`${SCALE_PRESETS[worldScale].label} · Guide opens help`}
       </Text>
     </group>
   )

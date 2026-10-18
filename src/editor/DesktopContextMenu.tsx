@@ -31,12 +31,12 @@ type Item =
   | { kind: 'sep' }
 
 const TOOLS: { id: Tool; label: string }[] = [
-  { id: 'select', label: 'Select / move' },
-  { id: 'wall', label: 'Draw wall' },
+  { id: 'select', label: 'Move' },
+  { id: 'wall', label: 'Wall' },
   { id: 'building', label: 'Building' },
-  { id: 'goal', label: 'Set destination' },
-  { id: 'robot', label: 'Place robot' },
-  { id: 'platform', label: 'Platform / road' },
+  { id: 'goal', label: 'Set Destination' },
+  { id: 'robot', label: 'Place Robot' },
+  { id: 'platform', label: 'Road / Platform' },
   { id: 'decor', label: 'Decoration' },
 ]
 
@@ -195,14 +195,14 @@ export function DesktopContextMenu() {
     {
       kind: 'action',
       id: 'snap',
-      label: snap ? 'Snap grid ✓' : 'Snap grid',
+      label: snap ? 'Align to Grid ✓' : 'Align to Grid',
       shortcut: 'G',
       run: () => useEditor.getState().set({ snap: !useEditor.getState().snap }),
     },
     {
       kind: 'action',
       id: 'block',
-      label: 'Block route (demo)',
+      label: 'Block Path',
       shortcut: 'B',
       run: () => blockRoute(),
     },

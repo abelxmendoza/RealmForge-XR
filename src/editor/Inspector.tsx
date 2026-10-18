@@ -28,6 +28,7 @@ import {
 import { useEditor, type DecorKind } from './settings'
 import { deleteSelected, duplicateSelected } from './Obstacles'
 import { SimulationPanel } from '../sim/SimulationPanel'
+import { requestConfirmation } from '../world/confirmation'
 
 /**
  * Desktop side panel for worldbuilding: exact dimensions and looks for the selected object,
@@ -165,11 +166,18 @@ function ObjectPanel({ o }: { o: WorldObject }) {
         </select>
       </label>
       <div className="row">
-        <button type="button" onClick={duplicateSelected}>
-          D Duplicate
+        <button type="button" title="Duplicate selected object (D)" onClick={duplicateSelected}>
+          Duplicate
         </button>
-        <button type="button" className="danger" onClick={deleteSelected}>
-          Del Delete
+        <button
+          type="button"
+          className="danger"
+          title="Delete selected object (Delete)"
+          onClick={async () => {
+            if (await requestConfirmation({ type: 'DELETE', message: 'Delete the selected object?' })) deleteSelected()
+          }}
+        >
+          Delete
         </button>
       </div>
     </section>
@@ -307,7 +315,7 @@ function WorldPanel() {
 
       <label className="check">
         <input type="checkbox" checked={snap} onChange={(e) => useEditor.getState().set({ snap: e.target.checked })} />
-        Snap to grid (G)
+        Align to Grid
       </label>
     </section>
   )

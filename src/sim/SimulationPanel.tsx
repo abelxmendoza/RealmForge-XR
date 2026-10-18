@@ -40,8 +40,12 @@ export function SimulationPanel() {
         ) : (
           <button onClick={() => pauseAttendeeSimulation()}>Pause</button>
         )}
-        <button onClick={() => resetAttendeeSimulation()} disabled={!status.running && status.phase === 'idle'}>
-          Reset
+        <button
+          onClick={() => resetAttendeeSimulation()}
+          disabled={!status.running && status.phase === 'idle'}
+          title={!status.running && status.phase === 'idle' ? 'Simulation is already idle' : 'Reset the attendee simulation'}
+        >
+          Reset Simulation
         </button>
       </div>
       <div className="sim-status">
