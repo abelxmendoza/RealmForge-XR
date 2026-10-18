@@ -3,6 +3,7 @@ import { Actors } from '../actors/Actors'
 import { ControlPalette } from '../xr/ControlPalette'
 import { ControlsGuidePanel } from '../xr/ControlsGuidePanel'
 import { UILayer } from '../xr/UILayer'
+import { PassThrough } from './PassThrough'
 import { useEffect } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from '@react-three/drei'
@@ -115,9 +116,12 @@ export function Scene() {
           <WarehouseInterior />
           <Obstacles />
           <Route />
-          {robotEnabled && <Robot />}
+          {/* The robot and attendee never block rays or clicks meant for what's behind them. */}
+          <PassThrough>{robotEnabled && <Robot />}</PassThrough>
           <AttendeeRoute />
-          <Attendee />
+          <PassThrough>
+            <Attendee />
+          </PassThrough>
           <Actors />
           {mocapOn && mocapInMap && (
             <group position={[robotStart[0], 0, robotStart[1]]}>
