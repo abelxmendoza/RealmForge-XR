@@ -21,6 +21,7 @@ import { usePlacement } from '../xr/placement'
 import { useEnvironment } from '../world/environment'
 import { propFromCatalog } from '../world/eventCatalog'
 import { restLocalY, settleObject } from '../xr/realSurfaces'
+import { addWaypoint } from '../nav/routePlan'
 
 const MIN_WALL = 0.6
 const MIN_PLATFORM = 0.5
@@ -145,14 +146,29 @@ export function applyGroundTool(e: ThreeEvent<PointerEvent>) {
       w.select(null)
       useSelection.getState().clear()
       return
-    case 'goal':
+    case 'goal': {
       e.stopPropagation()
       if (w.selectedActorId) {
-        const result = worldActions.setActorGoal(w.selectedActorId, raw)
-        useEditor.getState().set({ actorMessage: result.ok ? 'Actor destination set.' : result.error })
-      } else w.setGoal(raw)
-      finishPlacement(null)
+        const append = useEditor.getState().actorAppendRoute || e.nativeEvent.shiftKey
+        const result = append
+          ? worldActions.appendActorWaypoint(w.selectedActorId, raw)
+          : worldActions.setActorGoal(w.selectedActorId, raw)
+        useEditor.getState().set({
+          actorMessage: result.ok
+            ? append
+              ? 'Stop added to actor route.'
+              : 'Actor destination set.'
+            : result.error,
+        })
+        finishPlacement(null)
+        return
+      }
+      // Robot multi-waypoint: stay on Add Waypoint so users can click several stops, then Play.
+      const result = addWaypoint(raw)
+      if (!result.ok) useEditor.getState().set({ actorMessage: result.error })
+      else useEditor.getState().set({ actorMessage: `Waypoint ${result.index + 1} added. Add more, then Play.` })
       return
+    }
     case 'robot':
       e.stopPropagation()
       w.placeRobot(raw)
