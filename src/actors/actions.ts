@@ -155,7 +155,7 @@ export function spawnActors(kind: ActorKind, count: number, center: Vec2, spots:
 
 /**
  * Keep an actor walking a loop through `stops` (voice: "walking around"). Stops the actor can't
- * reach are skipped; with fewer than two reachable stops the actor just stays put.
+ * reach are skipped; with fewer than two reachable stops the actor keeps its old route.
  */
 export function setActorLoop(id: string, stops: Vec2[]): ActorResult {
   const actor = useWorld.getState().actors[id]
@@ -164,7 +164,11 @@ export function setActorLoop(id: string, stops: Vec2[]): ActorResult {
   if (!first.ok) return first
   let added = 0
   for (const stop of stops) if (appendActorWaypoint(id, stop).ok) added++
-  if (added < 2) return { ok: false, error: 'No room for this actor to walk around.' }
+  if (added < 2) {
+    // Leave the actor doing whatever it was doing before.
+    useWorld.getState().updateActor(id, { goal: actor.goal, route: actor.route, loop: actor.loop })
+    return { ok: false, error: 'No room for this actor to walk around.' }
+  }
   useWorld.getState().updateActor(id, { loop: true })
   return { ok: true }
 }

@@ -12,7 +12,7 @@ import { useWorld } from '../world/store'
 import { WORLD, type Vec2 } from '../world/types'
 import { scaleActorSpeed, setActorGoal, setActorLoop, stopActors } from '../actors/actions'
 import { getActorRuntime } from '../actors/runtime'
-import type { ConfirmHandler, VoiceCommand } from './types'
+import type { VoiceCommand } from './types'
 
 export type SceneOutcome = { ok: boolean; message: string }
 
@@ -47,17 +47,19 @@ export function deleteCount(target: Target): number {
   return resolveObjects(target).length + resolveActors(target).length
 }
 
-/** Gate big deletes before a batch starts. Returns false when the person said no. */
-export async function confirmDeletes(commands: VoiceCommand[], confirm: ConfirmHandler | undefined): Promise<boolean> {
-  for (const c of commands) {
+/**
+ * The question to ask before running these commands, or null. Big deletes (more than 3 things)
+ * ask. So does any delete that follows another command in the same batch: earlier clauses can
+ * change what it matches ("make the houses towers and remove the towers"), so it is not counted.
+ */
+export function deleteQuestion(commands: VoiceCommand[]): string | null {
+  for (const [i, c] of commands.entries()) {
     if (c.type !== 'DELETE_OBJECTS') continue
+    if (i > 0) return `Run all of that, including removing ${c.target.label ? `the ${plural(singular(c.target.label))}` : 'things'}?`
     const n = deleteCount(c.target)
-    if (n <= 3) continue
-    if (!confirm) return false
-    const ok = await confirm({ id: `confirm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, action: c, message: `Delete ${thingWord(n, c.target)}?` })
-    if (!ok) return false
+    if (n > 3) return `Delete ${thingWord(n, c.target)}?`
   }
-  return true
+  return null
 }
 
 function moveActors(ids: string[], command: Extract<VoiceCommand, { type: 'MOVE_OBJECTS' }>): number {

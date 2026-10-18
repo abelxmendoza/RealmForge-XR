@@ -35,11 +35,15 @@ export interface Target {
 /** The objects created by the last batch, so "move them" can find them. */
 let lastBatch: string[] = []
 let lastActorBatch: string[] = []
+/** Which batch came last, so a bare "them" means the newest things, not older objects. */
+let lastWasActors = false
 export const setLastBatch = (ids: string[]) => {
   lastBatch = [...ids]
+  lastWasActors = false
 }
 export const setLastActorBatch = (ids: string[]) => {
   lastActorBatch = [...ids]
+  lastWasActors = true
 }
 export const getLastBatch = () => lastBatch.filter((id) => useWorld.getState().objects[id])
 export const getLastActorBatch = () => lastActorBatch.filter((id) => useWorld.getState().actors[id])
@@ -62,7 +66,7 @@ export function resolveObjects(t: Target = {}): string[] {
   const selected = w.selectedId && w.objects[w.selectedId] ? w.selectedId : null
   const last = getLastBatch()
   if (!isDescribed(t)) {
-    if (t.ref === 'them') return last.length ? last : selected ? [selected] : []
+    if (t.ref === 'them') return lastWasActors && getLastActorBatch().length ? [] : last.length ? last : selected ? [selected] : []
     return selected ? [selected] : last.slice(-1)
   }
   // Insertion order of the record is creation order (ids are never reused).
@@ -86,7 +90,7 @@ export function resolveActors(t: Target = {}): string[] {
   if (!t.actor) {
     // "them" / "it" right after adding people means those people.
     if (isDescribed(t)) return []
-    if (t.ref === 'them') return last
+    if (t.ref === 'them') return lastWasActors ? last : []
     const sel = w.selectedActorId && w.actors[w.selectedActorId] ? [w.selectedActorId] : []
     return sel.length ? sel : []
   }

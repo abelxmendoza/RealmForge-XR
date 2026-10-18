@@ -108,4 +108,34 @@ describe('voice scenes', () => {
     await run('make them stop')
     expect(actors().every((a) => a.goal === null && !a.loop)).toBe(true)
   })
+  it('asks, with or without a confirm handler, when a big delete is pending', async () => {
+    await run('add five trees')
+    const r = await run('remove the trees')
+    expect(r.status).toBe('needs_confirmation')
+    expect(ofKind('tree')).toHaveLength(5)
+  })
+
+  it('asks before a delete that earlier clauses could widen', async () => {
+    await run('add 4 houses')
+    let asked = 0
+    const r = await run('make the houses towers and remove the towers', async () => (asked++, false))
+    expect(asked).toBe(1)
+    expect(r.status).toBe('rejected')
+    expect(ofKind('building', 'house')).toHaveLength(4)
+  })
+
+  it('lays out a row when asked', async () => {
+    await run('add 5 crates in a row')
+    const zs = new Set(ofKind('crate').map((c) => c.position[2]))
+    expect(ofKind('crate')).toHaveLength(5)
+    expect(zs.size).toBe(1)
+  })
+
+  it('"them" means the people just added, not older objects', async () => {
+    await run('add 2 trees')
+    await run('add 2 workers')
+    await run('delete them')
+    expect(ofKind('tree')).toHaveLength(2)
+    expect(actors()).toHaveLength(0)
+  })
 })

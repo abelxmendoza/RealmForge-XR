@@ -12,7 +12,7 @@ import {
 } from '../world/actions'
 import { getEnvironment } from '../world/environment'
 import { emitVoiceEvent } from './events'
-import { confirmDeletes, runSceneCommand } from './sceneExecutor'
+import { deleteQuestion, runSceneCommand } from './sceneExecutor'
 import type { ConfirmationRequest, ConfirmHandler, VoiceCommand } from './types'
 import { createWorld, nextWorldName, openWorld } from '../world/library'
 import { listSavedWorlds, useWorldLibrary } from '../world/persistence'
@@ -327,10 +327,10 @@ export async function executeVoiceCommand(
       case 'BATCH': {
         // Big deletes ask first; a BATCH asks before it starts, so the scene stays one undo step.
         const deletes = command.type === 'BATCH' ? command.commands : [command]
-        if (!(await confirmDeletes(deletes, opts.confirm))) {
-          const message = opts.confirm ? 'Cancelled by user.' : 'Confirmation required — no confirm handler connected.'
-          emitVoiceEvent({ type: 'VOICE_COMMAND_REJECTED', command, message })
-          return { status: 'rejected', command, message }
+        const question = deleteQuestion(deletes)
+        if (question) {
+          const gate = await resolveConfirm(command, question, opts.confirm)
+          if (gate.status !== 'confirmed') return gate
         }
         const r = runSceneCommand(command)
         emitVoiceEvent({ type: r.ok ? 'VOICE_COMMAND_EXECUTED' : 'VOICE_COMMAND_REJECTED', command, message: r.message })

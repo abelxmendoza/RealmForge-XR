@@ -214,7 +214,8 @@ export function spawnObjects(spec: SpawnSpec, count: number, placement: Placemen
   const ids: string[] = []
 
   oneUndoStep(() => {
-    for (const c of spiral(center, Math.max(1, step / 2), WORLD.half * 2)) {
+    const spots = placement.arrange ? arranged(placement.arrange, center, requested, step) : spiral(center, Math.max(1, step / 2), WORLD.half * 2)
+    for (const c of spots) {
       if (ids.length >= requested) break
       const snapped = snapFootprint(c, sample.size[0], sample.size[2], 0)
       const o = objectFor(spec, snapped)
