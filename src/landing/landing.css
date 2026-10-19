@@ -342,3 +342,13 @@ body { margin: 0; background: #0c1018; }
 .rf-usecase-grid .rf-credit-action { line-height: 1.7; font-size: 10px; }
 @media (max-width: 600px) { .rf-usecase-grid { grid-template-columns: 1fr; } }
 .rf-hero h1 { font-size: clamp(46px, 5.3vw, 78px); letter-spacing: -2.5px; }
+
+.rf-training-vision { margin-top: 32px; padding: clamp(24px, 4vw, 46px); border: 1px solid var(--rf-line); border-radius: 18px; background: linear-gradient(125deg, #e0784512, #7fa1ff0a); }
+.rf-training-vision h3 { font-size: clamp(28px, 3.3vw, 44px); line-height: 1.15; letter-spacing: -1px; margin: 16px 0; }
+.rf-training-vision > p:not(.rf-eyebrow) { color: var(--rf-muted); line-height: 1.8; max-width: 800px; }
+.rf-training-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; padding: 0; margin: 32px 0 0; list-style: none; }
+.rf-training-steps li { border-top: 2px solid var(--rf-orange); padding-top: 16px; }
+.rf-training-steps strong { display: block; font-size: 15px; margin-bottom: 10px; }
+.rf-training-steps span { display: block; font-size: 12px; line-height: 1.8; color: var(--rf-muted); }
+@media (max-width: 760px) { .rf-training-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 440px) { .rf-training-steps { grid-template-columns: 1fr; } }

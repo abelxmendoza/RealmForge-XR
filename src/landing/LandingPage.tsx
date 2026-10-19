@@ -242,7 +242,7 @@ export default function LandingPage() {
             <article className="rf-credit-card">
               <span className="rf-credit-label">01 / ROBOTICS</span>
               <h3>Build a world.<br />Teach through motion.</h3>
-              <p>Create environments and experiment with robot routes and obstacles. The longer-term goal is to use body-suit demonstrations inside those worlds to support robot learning.</p>
+              <p>Create environments and experiment with robot routes and obstacles. The longer-term goal is to demonstrate tasks through human motion, then train and evaluate robots to perform those tasks autonomously inside the simulated world.</p>
               <span className="rf-credit-action">Today: navigation sandbox · Vision: robot training</span>
             </article>
             <article className="rf-credit-card">
@@ -263,6 +263,18 @@ export default function LandingPage() {
               <p>Explore editable worlds through WebXR and experiment with spatial interaction. Richer gameplay, interactive storytelling and VR simulations are part of the broader vision.</p>
               <span className="rf-credit-action">Today: WebXR exploration · Vision: game experiences</span>
             </article>
+          </div>
+          <div className="rf-training-vision" aria-labelledby="training-heading">
+            <p className="rf-eyebrow">THE ROBOTICS ROADMAP / FUTURE GOAL</p>
+            <h3 id="training-heading">A world to build in.<br />A world robots can learn in.</h3>
+            <p>Create the environment, show the task through body-suit motion, and eventually train robots to work autonomously within it. Evaluate their behavior in simulation before considering transfer to physical hardware.</p>
+            <ol className="rf-training-steps" aria-label="Robot learning roadmap">
+              <li><strong>01 / Build</strong><span>Shape the world, obstacles and task environment.</span></li>
+              <li><strong>02 / Demonstrate</strong><span>Capture human movement and task demonstrations.</span></li>
+              <li><strong>03 / Train</strong><span>Connect a robot-learning system to learn autonomous task behavior.</span></li>
+              <li><strong>04 / Evaluate</strong><span>Measure task success, failures and behavior across simulated scenarios.</span></li>
+            </ol>
+            <p className="rf-credit-note">This is the intended development path. Demonstration recording, policy training and autonomous task evaluation are not implemented yet. Physical-world transfer would require separate validation.</p>
           </div>
           <p className="rf-credit-note">RealmForge is an evolving prototype. Body-suit-driven robot training, production-ready film tools and a complete game engine are goals, not shipped capabilities.</p>
         </section>
