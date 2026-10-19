@@ -453,6 +453,9 @@ export default function LandingPage() {
             {TECHNOLOGY_CREDITS.map((credit) => (
               <a key={credit.name} className="rf-credit-card" href={credit.href} target="_blank" rel="noreferrer" style={{ '--credit-accent': credit.color } as CSSProperties}>
                 <div className="rf-credit-top"><span className={`rf-credit-logo ${credit.logo === 'realsense.webp' ? 'rf-credit-logo-dark' : ''}`}><img src={`/credits/${credit.logo}`} alt="" loading="lazy" width="140" height="44" /></span><Arrow /></div>
+                {credit.logo === 'meta.svg' && (
+                  <img className="rf-credit-product" src="/images/meta-quest-3s.webp" width="960" height="960" loading="lazy" alt="Meta Quest 3S headset with two Touch Plus controllers" />
+                )}
                 <span className="rf-credit-label">{credit.label}</span>
                 <h3>{credit.name}</h3>
                 <p>{credit.detail}</p>

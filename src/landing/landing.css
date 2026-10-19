@@ -333,3 +333,5 @@ body { margin: 0; background: #0c1018; }
 @media (prefers-reduced-motion: reduce) { .rf-credit-card { transition: none; } .rf-credit-card:hover, .rf-credit-card:focus-visible { transform: none; } }
 
 .rf-credit-logo-dark { background: #161b26; }
+
+.rf-credit-product { display: block; width: 100%; height: 180px; object-fit: contain; border-radius: 12px; background: #fff; margin-bottom: 24px; }
