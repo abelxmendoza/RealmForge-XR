@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react'
 import { BRAND } from '../theme/brand'
 import { worldActions } from '../world/actions'
 import { confirmReplace, requestConfirmation } from '../world/confirmation'
-import { detectXRSupport, enterARWithFallback, useXRSessionMeta, useXRSupport } from '../xr/session'
+import { detectXRSupport, enterARWithFallback, enterVRSafely, useXRSessionMeta, useXRSupport } from '../xr/session'
 import { usePlacement } from '../xr/placement'
 import { useWorld, type Tool } from '../world/store'
 import { useNav } from '../nav/navigation'
@@ -210,7 +210,7 @@ export function ToolbarHud() {
               className="primary"
               disabled={entering}
               title={xrSupport.ar ? 'Enter immersive mode with passthrough (AR)' : 'Enter immersive mode (VR)'}
-              onClick={() => void (xrSupport.ar ? enterARWithFallback() : xrStore.enterVR())}
+              onClick={() => void (xrSupport.ar ? enterARWithFallback() : enterVRSafely(() => xrStore.enterVR()))}
             >
               {entering ? 'Entering…' : 'Enter XR'}
             </button>
@@ -220,7 +220,7 @@ export function ToolbarHud() {
               type="button"
               className="ghost hud-vr-alt"
               title="VR only — no camera passthrough. Prefer Enter XR on Quest."
-              onClick={() => void xrStore.enterVR()}
+              onClick={() => void enterVRSafely(() => xrStore.enterVR())}
             >
               VR
             </button>

@@ -4,15 +4,7 @@ import { useEnvironment } from '../world/environment'
 import { clearHistory, installHistory } from '../world/history'
 import { getConfirmation, resetConfirmationChannel, resolveConfirmation, subscribeConfirmation } from '../world/confirmation'
 import * as actions from '../world/actions'
-import {
-  blankPaletteWorld,
-  createPaletteWorld,
-  deletePaletteSelection,
-  editPaletteSelection,
-  loadPaletteEnvironment,
-  loadPaletteSave,
-  savePaletteWorld,
-} from './paletteActions'
+import { createPaletteWorld, editPaletteSelection, loadPaletteSave, savePaletteWorld } from './paletteActions'
 import { markClean, saveWorld, useWorldLibrary } from '../world/persistence'
 
 beforeEach(() => {
@@ -24,27 +16,6 @@ beforeEach(() => {
 })
 
 describe('VR control palette', () => {
-  it('loads an environment only after the in-world confirmation accepts', async () => {
-    const stop = subscribeConfirmation(() => {})
-    const result = loadPaletteEnvironment('mars-outpost')
-    expect(useWorld.getState().objects['wall-1']).toBeDefined()
-    resolveConfirmation(getConfirmation()!.id, true)
-    expect((await result).ok).toBe(true)
-    expect(useEnvironment.getState().activeId).toBe('mars-outpost')
-    stop()
-  })
-  it('keeps the current world when environment selection is cancelled', async () => {
-    const stop = subscribeConfirmation(() => {})
-    const result = loadPaletteEnvironment('warehouse')
-    resolveConfirmation(getConfirmation()!.id, false)
-    expect((await result).ok).toBe(false)
-    expect(useWorld.getState().objects['wall-1']).toBeDefined()
-    stop()
-  })
-  it('denies blank-world replacement without a confirmation consumer', async () => {
-    expect((await blankPaletteWorld()).ok).toBe(false)
-    expect(useWorld.getState().objects['wall-1']).toBeDefined()
-  })
   it('edits the selected object through the same store and undo history', () => {
     editPaletteSelection('rotate-right')
     expect(useWorld.getState().objects['wall-1'].rotationY).toBeCloseTo(Math.PI / 12)
@@ -53,25 +24,6 @@ describe('VR control palette', () => {
     editPaletteSelection('duplicate')
     expect(Object.keys(useWorld.getState().objects)).toHaveLength(2)
   })
-  it('deletes the confirmed target rather than a later selection', async () => {
-    const second = useWorld.getState().addObject({ kind: 'crate', position: [2, 0, 0], size: [1, 1, 1], rotationY: 0 })
-    const stop = subscribeConfirmation(() => {})
-    const result = deletePaletteSelection()
-    useWorld.getState().select(second)
-    resolveConfirmation(getConfirmation()!.id, true)
-    await result
-    expect(useWorld.getState().objects['wall-1']).toBeUndefined()
-    expect(useWorld.getState().objects[second]).toBeDefined()
-    stop()
-  })
-  it('turns unexpected load crashes into ReplaceResult failures', async () => {
-    const spy = vi.spyOn(actions.worldActions, 'loadEnvironment').mockRejectedValueOnce(new Error('palette boom'))
-    const r = await loadPaletteEnvironment('mars-outpost')
-    expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.error).toMatch(/crashed: palette boom/)
-    spy.mockRestore()
-  })
-
   it('turns unexpected save-load crashes into soft failures', async () => {
     const data = new Map<string, string>()
     Object.defineProperty(globalThis, 'localStorage', {

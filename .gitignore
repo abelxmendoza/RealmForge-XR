@@ -6,3 +6,5 @@ dist
 client-errors.log
 .claude/
 *.tsbuildinfo
+e2e/artifacts/
+e2e/.dist/

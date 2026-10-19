@@ -101,7 +101,8 @@ Encrypted dotenvx does **not** make a `VITE_*` key safe for the browser.
 | “Undo” / “Redo” | `UNDO` / `REDO` | History API |
 | “Save world” | `SAVE_WORLD` | `quickSave` / `saveWorld` |
 | “Reset selection” | `CLEAR_SELECTION` | Clears selection |
-| “Delete selected object” | `DELETE_SELECTED` | Deletes selection (**confirm required**) |
+| “Delete it” / “Remove that” / “Get rid of this” / “Delete” | `DELETE_SELECTED` | Deletes the selection or framed group at once (one undo step; say “undo” to restore) |
+| “Delete them” / “Remove those” | `DELETE_SELECTED` (`which: 'last'`) | Deletes everything the last add/duplicate made |
 
 ### Making and moving objects
 
@@ -122,6 +123,7 @@ Parsed by `src/voice/objectCommands.ts`, executed through `src/world/spawn.ts` (
 - **Objects:** tree, pine tree, streetlight, crate, metal crate, house, office, tower/skyscraper, factory/warehouse, brick/glass/wood/metal wall, road, park, platform, and every catalog asset.
 - **Places:** near / by / next to / in / at the robot, goal, center, or “here” (selected object); north/south/east/west, left/right/forward/back; “N meters”.
 - **“it”** = selected object (else the last one added); **“them”** = everything from the last add/duplicate.
+- **Delete** takes only pronouns or “selected”: “delete the tree” is not guessed at. It never asks to confirm (one undo restores it) and buzzes both controllers twice.
 - Objects land on free ground, spaced apart and snapped; solid ones never cover the robot start or goal. If space runs out, it adds what fits and says so.
 
 ### Worlds
@@ -138,6 +140,38 @@ Parsed by `src/voice/objectCommands.ts`, executed through `src/world/spawn.ts` (
 **Unsupported (structured reject):** “Stop navigation” (no safe stop API yet), free-form NL, anything not listed.
 
 Destructive commands without a connected `ConfirmHandler` return `needs_confirmation` and **do not** mutate the world. Core voice logic never calls `window.confirm()`.
+
+### Getting around in the headset
+
+Parsed by `src/voice/uiCommands.ts` before the other rules. They work on desktop too (they drive the same palette
+state), but are meant for VR, where they are the hands-free way back.
+
+| Spoken example | Command | Action |
+| --- | --- | --- |
+| “Go back” / “Previous page” | `UI_BACK` | Palette back one page (opens the palette if it was closed) |
+| “Hide the menu” / “Show the menu” / “Bring the controls back” | `UI_PANEL` (menu) | Close / summon the Control Palette |
+| “Collapse the palette” / “Expand the panel” | `UI_PANEL` (menu) | Fold it to its title bar / unfold it |
+| “Open the guide” / “Close the help” | `UI_PANEL` (guide) | The controls guide |
+| “Hide everything” / “Hide all” / “Show all the windows” | `UI_PANEL` (all) | Every floating panel at once |
+| “Open the object catalog” / “Go to the build page” / “Open the view tab” | `UI_OPEN_PAGE` | Jump to a palette page (short names need “page” or “tab”) |
+| “Exit VR” / “Leave AR” / “Take me out of VR” | `EXIT_XR` | End the immersive session, back to the desktop editor |
+
+“Go back home” and “go home” still mean `GO_HOME` (leave the editor).
+
+### Robot route stops
+
+The robot's route (`src/nav/routePlan.ts`, the palette's Plan Routes page). Places use the same words as making
+objects: the goal, the robot, the center, “it” / “selected”, plus “N meters north / south / east / west / left / right”.
+
+| Spoken example | Command | Action |
+| --- | --- | --- |
+| “Add a waypoint at the goal” / “Place a stop near the robot” | `ROUTE_ADD_WAYPOINT` | Stop at a named place |
+| “Add a waypoint 10 meters north of the robot” | `ROUTE_ADD_WAYPOINT` | Offset from a place |
+| “Add a waypoint” / “Add waypoint here” | `ROUTE_ADD_WAYPOINT` (`here`) | Where you point (else the selected object). While you're drafting a Flow route, it goes to that draft instead |
+| “Remove the last waypoint” / “Undo waypoint” | `ROUTE_REMOVE_LAST` | |
+| “Clear the waypoints” | `ROUTE_CLEAR` | (“clear the selected route” still clears a Flow route) |
+| “Start the route” / “Play route” / “Resume the route” | `ROUTE_PLAY` | Drive the stops in order (“start a route” still starts a Flow draft) |
+| “Pause the route” / “Stop the route” / “Next stop” | `ROUTE_PAUSE` / `ROUTE_STOP` / `ROUTE_NEXT` | |
 
 ## Microphone requirements
 

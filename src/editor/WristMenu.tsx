@@ -1,45 +1,59 @@
-import { switchWorldView } from '../xr/worldView'
-import { createContext, useContext, useEffect, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { Text } from '@react-three/drei'
+import { useFrame, useThree } from '@react-three/fiber'
 import { XRSpace, useXRInputSourceState } from '@react-three/xr'
-import { SCALE_PRESETS, recenterWorld } from '../scene/worldRoot'
+import { recenterWorld, type ScaleId } from '../scene/worldRoot'
+import { switchWorldView } from '../xr/worldView'
 import { FORGE } from '../theme/forge'
-import { BrandLogo3D } from '../xr/BrandLogo3D'
 import { useGuide } from '../guide/guideStore'
 import { useEditor } from './settings'
 import { toggleRays } from './xrInput'
 import { toggleOcclusion, useOcclusion } from '../xr/occlusion'
 import { toggleRealSurfaces } from '../xr/realSurfaces'
 import { useRoom } from '../xr/room'
-import { useWorld } from '../world/store'
 import { useSelection } from './selection'
-import { togglePalette, usePaletteUI } from '../xr/paletteUI'
-import { HAPTIC, pulse } from '../xr/haptics'
+import { useWorld } from '../world/store'
+import { backPage, summonPalette, toggleAllPanels, togglePalette, usePaletteUI } from '../xr/paletteUI'
+import { exitXR } from '../xr/session'
+import { XRPanel, type PanelHandle } from '../xr/panel/XRPanel'
+import type { ButtonItem, PanelSpec } from '../xr/panel/layout'
 import { deleteSelected, duplicateSelected } from './Obstacles'
+import { executeVoiceCommand } from '../voice/commandExecutor'
+import { voiceConfirm, VOICE_OPTIONS } from '../voice/sharedConfirm'
+import { useVoiceCommands } from '../voice/useVoiceCommands'
 
-/** Panel size in metres (real room size, independent of the world scale). */
-const W = 0.16
-const BTN_H = 0.026
-const BTN_D = 0.008
-const GAP = 0.006
-/** How directly the palm (or controller top) must face your head before the menu shows. */
+/** The wrist panel is laid out at 300 CSS px and shown 0.2 m wide: small, but every button is a finger wide. */
+const WIDTH_PX = 300
+const WRIST_MPP = 0.2 / WIDTH_PX
+/** How directly the palm must face your head before the menu shows. */
 const FACING = 0.55
-/** Fingertip press: within this far in front of a button's face (m). Release once it backs off past RELEASE. */
+/**
+ * Controllers: a resting, forward-pointing controller already "faces" you (its grip's up tilts back ~45°),
+ * which used to pop the menu up over the palette all the time. So a controller has to be raised to chest
+ * height and turned clearly toward your face; or press Y to pin the menu open (Y again unpins it).
+ */
+const CONTROLLER_FACING = 0.92
+const CONTROLLER_RAISE = 0.45
+/** Fingertip press: within this far in front of the panel (m). Release once it backs off past RELEASE. */
 const TOUCH = 0.008
 const RELEASE = 0.018
-/** Extra margin around a button's face for the fingertip test (m). */
-const EDGE = 0.003
-/** Ignore repeat presses this soon after one. */
-const PRESS_COOLDOWN_MS = 350
-/** Width of a third-of-the-row button (for buttons passed in from outside, like Mocap). */
-export const WRIST_THIRD = (W - GAP * 2) / 3
-/** Width of a quarter-of-the-row button. */
-export const WRIST_QUARTER = (W - GAP * 3) / 4
+/** Pointer id for fingertip pokes (distinct from XR pointer ids, which are small positive numbers). */
+const TIP_POINTER = -100
 
 /** Where the menu is this frame, so hand gestures can ignore a hand that is using it. */
 export const wristMenuState = { visible: false, position: new THREE.Vector3() }
+
+/**
+ * One frame of the fingertip test against the panel's plane (tip in panel-local metres, face at z = 0).
+ * Presses when the tip reaches the face (within TOUCH in front, up to 3 cm pushed through) over a control;
+ * stays down until the tip leaves the control or backs off past RELEASE (hysteresis), so one poke is one press.
+ */
+export function pokeStep(depth: number, overControl: boolean, wasDown: boolean): { down: boolean; pressed: boolean } {
+  const touching = overControl && depth <= TOUCH && depth >= -0.03
+  if (touching && !wasDown) return { down: true, pressed: true }
+  if (wasDown && (!overControl || depth > RELEASE)) return { down: false, pressed: false }
+  return { down: wasDown, pressed: false }
+}
 
 const palm = new THREE.Vector3()
 const toHead = new THREE.Vector3()
@@ -50,37 +64,9 @@ const tipPos = new THREE.Vector3()
 const local = new THREE.Vector3()
 
 /**
- * One frame of the fingertip test for a button, with the tip in button-local space (face at z = +depth/2).
- * Presses when the tip reaches the face (within TOUCH in front, up to 3 cm pushed through) inside its
- * outline; stays down until the tip leaves the outline or backs off past RELEASE (hysteresis).
- */
-export function pokeStep(tipLocal: THREE.Vector3, width: number, wasDown: boolean): { down: boolean; pressed: boolean } {
-  const inFace = Math.abs(tipLocal.x) <= width / 2 + EDGE && Math.abs(tipLocal.y) <= BTN_H / 2 + EDGE
-  const depth = tipLocal.z - BTN_D / 2 // distance in front of the face (negative = pushed in)
-  const touching = inFace && depth <= TOUCH && depth >= -0.03
-  if (touching && !wasDown) return { down: true, pressed: true }
-  if (wasDown && (!inFace || depth > RELEASE)) return { down: false, pressed: false }
-  return { down: wasDown, pressed: false }
-}
-
-/** A button the fingertip can press: its frame (button-local space, face at z = +depth/2) and size. */
-interface Pokeable {
-  frame: THREE.Object3D
-  width: number
-  press: () => void
-  /** Fingertip is currently pressing it (needs to back off before it can press again). */
-  down: boolean
-}
-const PokeRegistry = createContext<Set<Pokeable> | null>(null)
-
-/**
- * In-XR settings on your left wrist: turn your left palm toward your face and poke the buttons with
- * your right index finger (or press them with the right controller). With controllers, tilt the
- * top of the left controller toward you. Size is in real metres, so it works at every world scale.
- *
- * Fingertip presses are detected here directly from the right index-finger-tip joint (a cyan dot shows
- * it while the menu is open), not through XR pointer events, so they don't depend on touch-pointer
- * thresholds. Controllers (and rays) still press through pointer events.
+ * Quick controls on your left wrist: turn your left palm toward your face (or tilt the top of the left
+ * controller toward you) and poke with your right index finger, or point a ray. It is the way back from
+ * anywhere: Menu, Hide all, Back, Home and Exit are always here, whatever the palette is showing.
  */
 export function WristMenu() {
   const hand = useXRInputSourceState('hand', 'left')
@@ -92,8 +78,11 @@ export function WristMenu() {
   const tip = useRef<THREE.Object3D>(null)
   const tipDot = useRef<THREE.Mesh>(null)
   const panel = useRef<THREE.Group>(null)
+  const handle = useRef<PanelHandle | null>(null)
+  const tipDown = useRef(false)
+  const pinned = useRef(false)
+  const yWas = useRef(false)
   const camera = useThree((s) => s.camera)
-  const registry = useMemo(() => new Set<Pokeable>(), [])
   // Palm normal is the joint's −Y (WebXR hand spec); for a controller use its top (+Y).
   const normalY = hand ? -1 : 1
 
@@ -106,11 +95,21 @@ export function WristMenu() {
     camera.getWorldPosition(headPos)
     palm.set(0, normalY, 0).applyQuaternion(wristQuat)
     toHead.copy(headPos).sub(wristPos).normalize()
-    p.visible = palm.dot(toHead) > FACING
-    wristMenuState.visible = p.visible
-    if (tipDot.current) tipDot.current.visible = p.visible
-    if (!p.visible) {
-      for (const b of registry) b.down = false
+    let visible: boolean
+    if (hand) visible = palm.dot(toHead) > FACING
+    else {
+      // Y (left controller button 5) pins the menu, unless it's busy deleting a held object (editor/Obstacles).
+      const y = !!controller?.inputSource.gamepad?.buttons[5]?.pressed
+      if (y && !yWas.current && !useWorld.getState().dragging) pinned.current = !pinned.current
+      yWas.current = y
+      visible = pinned.current || (palm.dot(toHead) > CONTROLLER_FACING && headPos.y - wristPos.y < CONTROLLER_RAISE)
+    }
+    if (p.visible !== visible) p.visible = visible
+    wristMenuState.visible = visible
+    if (tipDot.current) tipDot.current.visible = visible
+    if (!visible) {
+      if (tipDown.current) handle.current?.release(TIP_POINTER)
+      tipDown.current = false
       return
     }
     // Float just off the palm, a little toward the head, and face you.
@@ -119,22 +118,23 @@ export function WristMenu() {
     p.updateMatrixWorld()
     wristMenuState.position.copy(p.position)
 
-    // Fingertip presses: the right index tip touching a button's front face.
+    // Fingertip presses: the right index tip touching a control on the panel's face.
     const t = tip.current
-    if (!t) return
+    const h = handle.current
+    if (!t || !h) return
     t.getWorldPosition(tipPos)
-    for (const b of registry) {
-      local.copy(tipPos)
-      b.frame.worldToLocal(local)
-      const next = pokeStep(local, b.width, b.down)
-      b.down = next.down
-      if (next.pressed) b.press()
-    }
+    local.copy(tipPos)
+    p.worldToLocal(local)
+    const hit = h.hitLocal(local.x, local.y)
+    const next = pokeStep(local.z, !!hit && !hit.handle, tipDown.current)
+    if (next.pressed && hit) h.press(hit.id, TIP_POINTER)
+    if (tipDown.current && !next.down) h.release(TIP_POINTER)
+    tipDown.current = next.down
   })
 
   if (!space) return null
   return (
-    <PokeRegistry.Provider value={registry}>
+    <>
       <XRSpace space={space} ref={anchor} />
       {tipSpace && (
         <XRSpace space={tipSpace} ref={tip}>
@@ -145,141 +145,119 @@ export function WristMenu() {
         </XRSpace>
       )}
       <group ref={panel} visible={false}>
-        <MenuContent />
+        <WristPanel handle={handle} />
       </group>
-    </PokeRegistry.Provider>
+    </>
   )
 }
 
-function MenuContent() {
+const b = (id: string, label: string, extra: Partial<ButtonItem> = {}): ButtonItem => ({ type: 'button', id, label, ...extra })
+const lit = (on: boolean): Partial<ButtonItem> => (on ? { variant: 'on' } : {})
+
+/** The wrist menu's content (pure, so it is unit-tested). */
+export function wristSpec(s: {
+  rays: boolean
+  snap: boolean
+  occlusion: boolean
+  realSurfaces: boolean
+  paletteOpen: boolean
+  guideOpen: boolean
+  listening: boolean
+  group: number
+  status: string
+  worldScale: ScaleId
+}): PanelSpec {
+  return {
+    width: WIDTH_PX,
+    gap: 6,
+    cards: [
+      {
+        type: 'card',
+        tone: 'brand',
+        padding: 8,
+        gap: 6,
+        blocks: [
+          {
+            type: 'row',
+            items: [
+              { type: 'logo', size: 18 },
+              { type: 'text', text: 'RealmForge', font: 'display', size: 15, weight: 800, flex: 1 },
+              b('exit', 'Exit VR', { variant: 'primary', width: 'auto' }),
+            ],
+          },
+          { type: 'grid', columns: 3, rowHeight: 34, gap: 5, items: [
+            b('menu', 'Menu', { ...lit(s.paletteOpen), align: 'center' }),
+            b('hide-all', 'Hide all', { align: 'center' }),
+            b('guide', 'Guide', { ...lit(s.guideOpen), align: 'center' }),
+            b('back', '‹ Back', { align: 'center' }),
+            b('home', 'Home', { align: 'center' }),
+            b('mic', s.listening ? 'Stop mic' : 'Mic', { ...lit(s.listening), align: 'center' }),
+            b('center', 'Recenter', { align: 'center' }),
+            b('select', 'Select', { align: 'center' }),
+          ] },
+          { type: 'grid', columns: 2, rowHeight: 30, gap: 5, items: [
+            b('view:tabletop', 'Tabletop', { ...lit(s.worldScale === 'tabletop'), align: 'center' }),
+            b('view:enter', 'Enter world', { ...lit(s.worldScale === 'life'), align: 'center' }),
+          ] },
+          { type: 'grid', columns: 4, rowHeight: 30, gap: 5, items: [
+            b('rays', 'Rays', { ...lit(s.rays), align: 'center' }),
+            b('snap', 'Snap', { ...lit(s.snap), align: 'center' }),
+            b('occlusion', 'Occl.', { ...lit(s.occlusion), align: 'center' }),
+            b('surfaces', 'Surf.', { ...lit(s.realSurfaces), align: 'center' }),
+          ] },
+          ...(s.group > 0
+            ? [{ type: 'grid' as const, columns: 3, rowHeight: 30, gap: 5, items: [
+                b('group:copy', 'Copy', { align: 'center' }),
+                b('group:delete', 'Delete', { variant: 'danger', align: 'center' }),
+                b('group:clear', `Clear ${s.group}`, { align: 'center' }),
+              ] }]
+            : []),
+          { type: 'row', items: [{ type: 'text', text: s.status, size: 10.5, color: 'copper', align: 'center', flex: 1 }] },
+        ],
+      },
+    ],
+  }
+}
+
+function WristPanel({ handle }: { handle: { current: PanelHandle | null } }) {
   const { rays, snap, worldScale, occlusion, realSurfaces } = useEditor()
   const occlusionSrc = useOcclusion((s) => s.source)
   const roomPlanes = useRoom((s) => s.planes + s.meshes)
-  const set = useEditor((s) => s.set)
   const group = useSelection((s) => s.ids.length)
-  const tool = useWorld((s) => s.tool)
   const paletteOpen = usePaletteUI((s) => !s.closed && !s.hidden)
   const guideOpen = useGuide((s) => s.open)
-  const toggleGuide = useGuide((s) => s.toggleGuide)
-  const rowY = (i: number) => 0.05 - i * (BTN_H + GAP)
-  const quarter = (W - GAP * 3) / 4
-  const third = (W - GAP * 2) / 3
-  const col = (i: number, w: number) => -W / 2 + w / 2 + i * (w + GAP)
-  // Slim on purpose: quick toggles, world entry and navigation. Extra scales, ground, gestures, mocap, place world and
-  // scan room live on the Control Palette's View page. Lit buttons are on.
-  // Rows: 0 toggles · 1 navigation · 2 world view · (3 framed group) · status line.
-  const statusRow = group > 0 ? 4 : 3
-  const top = 0.082
-  const bottom = rowY(statusRow) - 0.012
-  const scale = SCALE_PRESETS[worldScale].label.split(' ').pop()
-  const status = [scale, `occl ${occlusionSrc === 'none' ? 'no room' : occlusionSrc}`, roomPlanes ? `room ${roomPlanes}` : 'room: not set up'].join(' · ')
-  return (
-    <group>
-      <mesh position={[0, (top + bottom) / 2, -0.004]} raycast={() => null}>
-        <planeGeometry args={[W + 0.02, top - bottom]} />
-        <meshBasicMaterial color={FORGE.panel} transparent opacity={0.9} />
-      </mesh>
-      <mesh position={[0, 0.068, -0.0035]} raycast={() => null}>
-        <planeGeometry args={[0.028, 0.004]} />
-        <meshBasicMaterial color={FORGE.ember} transparent opacity={0.95} />
-      </mesh>
-      <BrandLogo3D position={[-0.042, 0.068, 0]} size={0.016} />
-      <Text position={[0.008, 0.068, 0]} fontSize={0.011} color={FORGE.text} anchorX="center" anchorY="middle" raycast={() => null}>
-        RealmForge
-      </Text>
-      <MenuButton position={[col(0, quarter), rowY(0), 0]} width={quarter} label="Rays" active={rays} onPress={toggleRays} />
-      <MenuButton position={[col(1, quarter), rowY(0), 0]} width={quarter} label="Snap" active={snap} onPress={() => set({ snap: !snap })} />
-      <MenuButton position={[col(2, quarter), rowY(0), 0]} width={quarter} label="Occl." active={occlusion} onPress={toggleOcclusion} />
-      <MenuButton position={[col(3, quarter), rowY(0), 0]} width={quarter} label="Surf." active={realSurfaces} onPress={toggleRealSurfaces} />
-      <MenuButton position={[col(0, quarter), rowY(1), 0]} width={quarter} label="Center" onPress={recenterWorld} />
-      <MenuButton position={[col(1, quarter), rowY(1), 0]} width={quarter} label="Menu" active={paletteOpen} onPress={togglePalette} />
-      <MenuButton position={[col(2, quarter), rowY(1), 0]} width={quarter} label="Guide" active={guideOpen} onPress={toggleGuide} />
-      <MenuButton position={[col(3, quarter), rowY(1), 0]} width={quarter} label="Select" active={tool === 'select'} onPress={() => useWorld.getState().setTool('select')} />
-      <MenuButton position={[col(0, (W - GAP) / 2), rowY(2), 0]} width={(W - GAP) / 2} label="Tabletop" active={worldScale === 'tabletop'} onPress={() => switchWorldView('tabletop')} />
-      <MenuButton position={[col(1, (W - GAP) / 2), rowY(2), 0]} width={(W - GAP) / 2} label="Enter world" active={worldScale === 'life'} onPress={() => switchWorldView('life')} />
-      {/* Framed group (frame-hands gesture): act on all of it. */}
-      {group > 0 && (
-        <>
-          <MenuButton position={[col(0, third), rowY(3), 0]} width={third} label="Copy" onPress={duplicateSelected} />
-          <MenuButton position={[col(1, third), rowY(3), 0]} width={third} label="Delete" onPress={deleteSelected} />
-          <MenuButton position={[col(2, third), rowY(3), 0]} width={third} label={`Clear ${group}`} onPress={() => useSelection.getState().clear()} />
-        </>
-      )}
-      <Text position={[0, rowY(statusRow) + 0.004, 0]} fontSize={0.0072} maxWidth={W} color={FORGE.copper} anchorX="center" anchorY="middle" raycast={() => null}>
-        {status}
-      </Text>
-    </group>
+  const voice = useVoiceCommands(VOICE_OPTIONS)
+  const status = [
+    worldScale === 'life' ? '1:1' : worldScale === 'large' ? '1:4' : worldScale === 'room' ? '1:20' : '1:60',
+    `occl ${occlusionSrc === 'none' ? 'no room' : occlusionSrc}`,
+    roomPlanes ? `room ${roomPlanes}` : 'room: not set up',
+  ].join(' · ')
+
+  const actions: Record<string, () => unknown> = useMemo(
+    () => ({
+      exit: () => exitXR(),
+      menu: togglePalette,
+      'hide-all': toggleAllPanels,
+      guide: () => useGuide.getState().toggleGuide(),
+      mic: () => (voice.isListening ? voice.stopListening() : voice.startListening()),
+      // Back steps the palette back a page; if it's closed, it opens it where you left off.
+      back: () => (usePaletteUI.getState().closed ? summonPalette() : backPage()),
+      home: () => executeVoiceCommand({ type: 'GO_HOME' }, { confirm: voiceConfirm }),
+      center: recenterWorld,
+      select: () => useWorld.getState().setTool('select'),
+      rays: toggleRays,
+      snap: () => useEditor.getState().set({ snap: !useEditor.getState().snap }),
+      occlusion: toggleOcclusion,
+      surfaces: toggleRealSurfaces,
+      'group:copy': duplicateSelected,
+      'group:delete': deleteSelected,
+      'group:clear': () => useSelection.getState().clear(),
+      'view:tabletop': () => switchWorldView('tabletop'),
+      'view:enter': () => switchWorldView('life'),
+    }),
+    [voice],
   )
-}
 
-/**
- * A wrist-menu button. Right-fingertip presses come from WristMenu's own joint test; controller grabs and
- * rays come through pointer events (pointer *down*: XR touch pointers only emit `click` for quick pokes).
- * Both share one cooldown, so a single press can't fire twice.
- */
-export function MenuButton(props: {
-  position?: [number, number, number]
-  width?: number
-  label: string
-  active?: boolean
-  onPress: () => void
-}) {
-  const width = props.width ?? (W - GAP) / 2
-  const registry = useContext(PokeRegistry)
-  const frame = useRef<THREE.Group>(null)
-  const body = useRef<THREE.Mesh>(null)
-  const last = useRef(0)
-  const onPress = useRef(props.onPress)
-  onPress.current = props.onPress
-
-  const press = () => {
-    const now = performance.now()
-    if (now - last.current < PRESS_COOLDOWN_MS) return
-    last.current = now
-    pulse('active', HAPTIC.press)
-    onPress.current()
-  }
-
-  useEffect(() => {
-    if (!registry || !frame.current) return
-    const entry: Pokeable = { frame: frame.current, width, press, down: false }
-    registry.add(entry)
-    return () => {
-      registry.delete(entry)
-    }
-    // press reads refs only, so registering once per size is enough.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [registry, width])
-
-  const onDown = (e: ThreeEvent<PointerEvent>) => {
-    e.stopPropagation()
-    press()
-  }
-  // Brief press feedback: the button sinks for the cooldown.
-  useFrame(() => {
-    if (body.current) body.current.scale.z = performance.now() - last.current < PRESS_COOLDOWN_MS ? 0.4 : 1
-  })
-  return (
-    <group ref={frame} position={props.position}>
-      <mesh ref={body} onPointerDown={onDown}>
-        <boxGeometry args={[width, BTN_H, BTN_D]} />
-        <meshStandardMaterial
-          color={props.active ? FORGE.ember : FORGE.panelMuted}
-          emissive={props.active ? FORGE.emberHot : '#000000'}
-          emissiveIntensity={props.active ? 0.35 : 0}
-        />
-      </mesh>
-      <Text
-        position={[0, 0, BTN_D / 2 + 0.0005]}
-        fontSize={Math.min(0.0095, (width - 0.004) / (props.label.length * 0.58))}
-        maxWidth={width - 0.002}
-        color={props.active ? FORGE.ink : FORGE.text}
-        anchorX="center"
-        anchorY="middle"
-        raycast={() => null}
-      >
-        {props.label}
-      </Text>
-    </group>
-  )
+  const spec = wristSpec({ rays, snap, occlusion, realSurfaces, paletteOpen, guideOpen, listening: voice.isListening, group, status, worldScale })
+  return <XRPanel name="wrist" spec={spec} onPress={(id) => actions[id]?.()} handleRef={handle} metersPerPx={WRIST_MPP} anchor="center" />
 }

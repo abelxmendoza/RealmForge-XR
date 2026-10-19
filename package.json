@@ -11,9 +11,12 @@
     "env:set": "dotenvx set",
     "token:serve": "dotenvx run -- node --experimental-strip-types tools/token-server.ts",
     "mocap:bridge": "node tools/mocap-bridge.ts",
-    "mocap:mock": "node tools/mocap-bridge.ts --mock"
+    "mocap:mock": "node tools/mocap-bridge.ts --mock",
+    "test:xr": "node e2e/xr.e2e.mjs"
   },
   "dependencies": {
+    "@fontsource/bricolage-grotesque": "^5.3.0",
+    "@fontsource/sora": "^5.3.0",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
     "@react-three/handle": "^6.6.32",
@@ -33,6 +36,8 @@
     "@types/ws": "^8.18.2",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "iwer": "^2.6.0",
+    "playwright-core": "^1.64.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
     "vitest": "^5.0.5",

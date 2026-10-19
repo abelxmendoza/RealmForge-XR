@@ -1,9 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { GUIDE_SECTIONS, getGuideSection } from '../guide/controlsGuide'
 import { useGuide } from '../guide/guideStore'
+import { useInXRSession } from '../xr/xrStore'
 
 /**
- * Desktop / Quest Browser DOM guide. Same content as the XR floating panel.
+ * Desktop DOM guide. Same content as the XR floating panel (xr/ControlsGuidePanel.tsx), which is what shows
+ * during an XR session: this modal stays closed then, because a modal <dialog> makes the page inert and that
+ * swallowed every XR press (the guide could be opened in VR but nothing, not even Close, could be pressed).
  * Opens from the HUD "Guide" button; Escape or Close dismisses.
  */
 export function ControlsGuide() {
@@ -13,13 +16,15 @@ export function ControlsGuide() {
   const closeGuide = useGuide((s) => s.closeGuide)
   const dialog = useRef<HTMLDialogElement>(null)
   const section = getGuideSection(sectionId)
+  const inXR = useInXRSession()
 
   useEffect(() => {
     const el = dialog.current
     if (!el) return
-    if (open && !el.open) el.showModal()
-    if (!open && el.open) el.close()
-  }, [open])
+    const show = open && !inXR
+    if (show && !el.open) el.showModal()
+    if (!show && el.open) el.close()
+  }, [open, inXR])
 
   useEffect(() => {
     if (!open) return

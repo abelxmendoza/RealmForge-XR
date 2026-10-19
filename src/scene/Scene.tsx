@@ -3,8 +3,9 @@ import { Actors } from '../actors/Actors'
 import { ControlPalette } from '../xr/ControlPalette'
 import { ControlsGuidePanel } from '../xr/ControlsGuidePanel'
 import { UILayer } from '../xr/UILayer'
+import { XRErrorBoundary } from '../xr/XRErrorBoundary'
 import { PassThrough } from './PassThrough'
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from '@react-three/drei'
 import { useXR } from '@react-three/xr'
@@ -14,6 +15,7 @@ import { useWorld } from '../world/store'
 import { Ground } from '../editor/Ground'
 import { Obstacles } from '../editor/Obstacles'
 import { dragMove, endDrag } from '../editor/drag'
+import { worldPointerTypes } from '../editor/xrInput'
 import { tickDemo } from '../editor/demo'
 import { Robot } from '../agent/Robot'
 import { Attendee, AttendeeRoute } from '../sim/AttendeeView'
@@ -47,6 +49,7 @@ export function Scene() {
   const robotStart = useWorld((s) => s.robotStart)
   const gl = useThree((s) => s.gl)
   const robotEnabled = useWorld((s) => s.robotEnabled !== false)
+  const rays = useEditor((s) => s.rays)
 
   useEffect(() => {
     bindWebXRManager(gl.xr)
@@ -94,17 +97,26 @@ export function Scene() {
       {/* XR menus: wrist menu, Control Palette and controls guide. Always drawn on top (never hidden by
           occlusion, walls or virtual objects) so the toggles stay reachable. */}
       <UILayer>
-        {inXR && <WristMenu />}
-        <ControlPalette />
-        <ControlsGuidePanel />
+        {/* Each menu loads and fails on its own: a slow asset or a crash in one never blanks the world or the others. */}
+        <Suspense fallback={null}>
+          <XRErrorBoundary what="wrist menu">{inXR && <WristMenu />}</XRErrorBoundary>
+          <XRErrorBoundary what="control palette">
+            <ControlPalette />
+          </XRErrorBoundary>
+          <XRErrorBoundary what="guide">
+            <ControlsGuidePanel />
+          </XRErrorBoundary>
+        </Suspense>
       </UILayer>
 
       {/*
         WorldPlacement ("Place city"): identity until you pin the world to a detected table/floor plane,
         then this whole subtree follows that plane (or its anchor). WorldScaler positions the root inside it.
       */}
+      <Suspense fallback={null}>
       <WorldPlacement>
         <group
+          pointerEventsType={worldPointerTypes(rays)}
           ref={(g) => {
             worldRootRef.current = g
           }}
@@ -134,6 +146,7 @@ export function Scene() {
           )}
         </group>
       </WorldPlacement>
+      </Suspense>
     </>
   )
 }

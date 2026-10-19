@@ -34,7 +34,7 @@ export function parseCount(t: string, fallback = 1): number {
 }
 
 /** "3 meters", "five metres", "10 m", "ten units" → metres. */
-function parseDistance(t: string): number | undefined {
+export function parseDistance(t: string): number | undefined {
   const digits = /\b(\d+(?:\.\d+)?)\s*(?:m|meters?|metres?|units?|blocks?|steps?)\b/.exec(t)
   if (digits) return Number(digits[1])
   const words = /\b([a-z]+)\s+(?:meters?|metres?|units?|blocks?|steps?)\b/.exec(t)
@@ -50,7 +50,7 @@ function parseDegrees(t: string): number | undefined {
   return words[m[1]] ?? (m[1] === 'forty' ? 45 : undefined)
 }
 
-function parseDirection(t: string): Direction | undefined {
+export function parseDirection(t: string): Direction | undefined {
   if (/\b(north|forward|forwards|ahead|away|back(?:ward)?s? from me)\b/.test(t)) return 'north'
   if (/\b(south|backward|backwards|back|toward me|towards me|closer)\b/.test(t)) return 'south'
   if (/\b(east|right)\b/.test(t)) return 'east'
@@ -58,7 +58,7 @@ function parseDirection(t: string): Direction | undefined {
   return undefined
 }
 
-function parseAnchor(t: string): AnchorName | undefined {
+export function parseAnchor(t: string): AnchorName | undefined {
   if (/\b(robot|bot)\b/.test(t)) return 'robot'
   if (/\b(goal|destination|flag|target)\b/.test(t)) return 'goal'
   if (/\b(center|centre|middle)\b/.test(t)) return 'center'

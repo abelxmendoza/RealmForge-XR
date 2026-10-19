@@ -76,7 +76,7 @@ describe('parseVoiceCommand — editor', () => {
   it('parses delete / clear selection / start navigation', () => {
     expect(parseVoiceCommand('Delete selected object')).toEqual({
       ok: true,
-      command: { type: 'DELETE_SELECTED' },
+      command: { type: 'DELETE_SELECTED', which: 'selected' },
     })
     expect(parseVoiceCommand('Reset selection')).toEqual({
       ok: true,
@@ -101,5 +101,30 @@ describe('parseVoiceCommand — editor', () => {
 
   it('returns empty for blank input', () => {
     expect(parseVoiceCommand('   ')).toMatchObject({ ok: false, reason: 'empty' })
+  })
+})
+
+describe('parseVoiceCommand — delete', () => {
+  const del = (t: string) => {
+    const r = parseVoiceCommand(t)
+    return r.ok && r.command.type === 'DELETE_SELECTED' ? r.command.which : null
+  }
+
+  it('accepts short, natural phrasings for the selection', () => {
+    for (const t of ['Delete', 'Delete it.', 'remove that', 'Delete this one', 'trash it', 'get rid of it', 'erase the selected object', 'please delete the object', 'remove selected', 'delete the group']) {
+      expect(del(t), t).toBe('selected')
+    }
+  })
+
+  it('"them" means what the last command made', () => {
+    for (const t of ['delete them', 'remove those', 'get rid of them', 'delete everything you made']) {
+      expect(del(t), t).toBe('last')
+    }
+  })
+
+  it('does not guess at named objects, routes or worlds', () => {
+    expect(del('delete the tree')).toBeNull()
+    expect(parseVoiceCommand('delete the selected route')).toEqual({ ok: true, command: { type: 'FLOW_CLEAR_ROUTE' } })
+    expect(del('remove the world')).toBeNull()
   })
 })

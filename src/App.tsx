@@ -24,6 +24,7 @@ import { toggleRealSurfaces } from './xr/realSurfaces'
 import { toolByKey } from './editor/toolbar'
 import { ToolbarHud } from './editor/ToolbarHud'
 import { xrStore } from './xr/xrStore'
+import { XR_TEST_HOOKS } from './testHooks'
 
 export { xrStore }
 
@@ -32,7 +33,12 @@ export default function App() {
   useJsonFileDrop()
   return (
     <>
-      <Canvas shadows="percentage" camera={{ position: [0, 2.0, 0.2], fov: 50 }}>
+      <Canvas
+        shadows="percentage"
+        camera={{ position: [0, 2.0, 0.2], fov: 50 }}
+        // Lets the emulated-headset tests (e2e/) read render stats and XR state (dev and e2e builds only).
+        onCreated={(state) => { if (XR_TEST_HOOKS) (window as unknown as { __r3f?: unknown }).__r3f = state }}
+      >
         <XR store={xrStore}>
           <Scene />
         </XR>
@@ -42,7 +48,7 @@ export default function App() {
       <WorldLibrary />
       <VoicePanel />
       <ControlsGuide />
-      {/* DOM confirm works in Quest Browser WebXR; required so wrist-menu env loads can confirm. */}
+      {/* Desktop confirmations. In a headset the DOM is hidden; the VR palette shows the same request (world/confirmation.ts). */}
       <ConfirmationDialog />
       <DesktopContextMenu />
     </>

@@ -15,7 +15,7 @@ Users are pointed to [Scaniverse](https://scaniverse.com) (free, iPhone and Andr
 
 ## In the headset
 
-Open **Build → Property scans** in the floating control palette. Cycle the selected section, show/hide/solo, adjust position in metres, rotate 5°, adjust scale 1%, opacity, ceiling cut, and floor labels. Long lists paginate above the footer instead of overlapping it.
+Open **Build → Property scans** in the floating control palette. Cycle the selected section, show/hide/solo, adjust position in metres, rotate 5°, adjust scale 1%, opacity, ceiling cut, and floor labels. Each sub-page (Align, Display, Measure) has ‹ Back, and the panel grows to fit its buttons; say “open the property scans” to jump there.
 
 **Measure scale** enables pointer rays: pick two visible scan points, set the actual distance using metre/centimetre buttons, then Apply. Mouse and XR points both convert through `worldRootRef` into property-local metres. Switching section, hiding it, or leaving measurement cancels stale picks. Scene placement and object-grab handlers do not edit objects while measuring.
 

@@ -1,36 +1,12 @@
-import type { XRStore } from '@react-three/xr'
 import { useEditor } from './settings'
 import { usePlacement } from '../xr/placement'
-import { UI_RAY_POINTER } from '../xr/UILayer'
 
 /**
- * XR pointers follow the editor's `rays` setting. Grab and touch pointers always stay on, so you can
- * still grab and poke things; rays add distant pointing (they drive the same pointer editor as the mouse).
- * The HUD button, the X key and the wrist menu all just flip `useEditor().rays`.
+ * What XR pointers may do in the world (the map root in Scene.tsx). Rays always reach the menus; with the
+ * Rays setting off they skip the world, so you edit by grabbing and poking but can still point at a panel
+ * from across the room. Grab and touch pointers always reach the world.
  */
-export function bindRays(store: XRStore) {
-  const apply = (on: boolean) => {
-    // Rays draw in the on-top UI layer, so occlusion never hides the ray you aim at a menu with.
-    store.setHand({ rayPointer: on ? UI_RAY_POINTER : false })
-    store.setController({ rayPointer: on ? UI_RAY_POINTER : false })
-  }
-  apply(useEditor.getState().rays)
-  let pending: ReturnType<typeof setTimeout> | null = null
-  return useEditor.subscribe((s, prev) => {
-    if (s.rays === prev.rays) return
-    // Swapping pointers remounts the hand/controller pointer components. Do it after the current frame
-    // and pointer dispatch (the toggle usually comes from a wrist-menu press, mid-frame, with a pointer down).
-    if (pending) clearTimeout(pending)
-    pending = setTimeout(() => {
-      pending = null
-      try {
-        apply(useEditor.getState().rays)
-      } catch (err) {
-        console.error('Toggling XR rays failed', err)
-      }
-    }, 50)
-  })
-}
+export const worldPointerTypes = (rays: boolean) => (rays ? 'all' : ({ deny: 'ray' } as const))
 
 export const toggleRays = () => useEditor.getState().set({ rays: !useEditor.getState().rays })
 

@@ -15,6 +15,7 @@ export const HAPTIC = {
   grab: [0.45, 30],
   place: [0.6, 45],
   commit: [0.7, 60],
+  delete: [0.9, 35],
 } as const satisfies Record<string, readonly [number, number]>
 
 interface PulseSource {
@@ -40,4 +41,16 @@ export function pulse(target: HapticTarget, [strength, ms]: readonly [number, nu
     const actuator = source.gamepad?.hapticActuators?.[0] as { pulse?: (v: number, d: number) => Promise<boolean> } | undefined
     void actuator?.pulse?.(strength, ms)?.catch?.(() => {})
   }
+}
+
+/** Delete feel: two strong, quick buzzes, so it never reads as a press or a placement. */
+export function pulseDelete(target: HapticTarget = 'both') {
+  pulse(target, HAPTIC.delete)
+  setTimeout(() => pulse(target, HAPTIC.delete), 90)
+}
+
+/** Whether any controller has B or Y held (xr-standard button 5). Hands have no buttons. */
+export function secondaryPressed(sources: Iterable<PulseSource> | undefined): boolean {
+  if (!sources) return false
+  return [...sources].some((s) => !s.hand && !!s.gamepad?.buttons[5]?.pressed)
 }

@@ -271,7 +271,8 @@ describe('Assign + automatic route', () => {
 describe('Voice Flow commands', () => {
   it('parses route planning phrases', () => {
     expect(parseVoiceCommand('Create a new route')).toMatchObject({ ok: true, command: { type: 'FLOW_CREATE_ROUTE' } })
-    expect(parseVoiceCommand('Add waypoint here')).toMatchObject({ ok: true, command: { type: 'FLOW_ADD_WAYPOINT' } })
+    // "add waypoint here" is one command for both route systems: Flow while drafting, else the robot's stops.
+    expect(parseVoiceCommand('Add waypoint here')).toMatchObject({ ok: true, command: { type: 'ROUTE_ADD_WAYPOINT', here: true } })
     expect(parseVoiceCommand('Finish route')).toMatchObject({ ok: true, command: { type: 'FLOW_FINISH_ROUTE' } })
     expect(parseVoiceCommand('Recalculate all routes')).toMatchObject({ ok: true, command: { type: 'FLOW_RECALCULATE' } })
     expect(parseVoiceCommand('Show routes')).toMatchObject({ ok: true, command: { type: 'FLOW_SHOW_ROUTES' } })
@@ -279,6 +280,15 @@ describe('Voice Flow commands', () => {
     expect(parseVoiceCommand('Pause all agents')).toMatchObject({ ok: true, command: { type: 'FLOW_PAUSE' } })
     expect(parseVoiceCommand('Clear the selected route')).toMatchObject({ ok: true, command: { type: 'FLOW_CLEAR_ROUTE' } })
     expect(parseVoiceCommand('route tool')).toMatchObject({ ok: true, command: { type: 'SELECT_TOOL', tool: 'route' } })
+  })
+
+  it('"add waypoint here" goes to the Flow draft while one is open', async () => {
+    useFlow.getState().setPointerTarget([3, 4])
+    await executeVoiceCommand({ type: 'FLOW_CREATE_ROUTE' })
+    const r = await executeVoiceCommand({ type: 'ROUTE_ADD_WAYPOINT', here: true })
+    expect(r.status).toBe('executed')
+    expect(useFlow.getState().draft?.waypoints).toContainEqual([3, 4])
+    await executeVoiceCommand({ type: 'FLOW_CANCEL_ROUTE' })
   })
 
   it('refuses add-waypoint without a pointer target', async () => {

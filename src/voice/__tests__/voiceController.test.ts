@@ -81,7 +81,7 @@ describe('VoiceController + mock provider', () => {
 })
 
 describe('VoiceController destructive confirms', () => {
-  it('does not delete without confirm', async () => {
+  it('deletes by voice without a confirm', async () => {
     useWorld.getState().loadWorld({
       objects: [
         {
@@ -98,8 +98,8 @@ describe('VoiceController destructive confirms', () => {
     })
     useWorld.getState().select('bld-9')
     const r = await controller.submitTranscript('Delete selected object')
-    expect(r?.status).toBe('needs_confirmation')
-    expect(useWorld.getState().objects['bld-9']).toBeTruthy()
+    expect(r?.status).toBe('executed')
+    expect(useWorld.getState().objects['bld-9']).toBeUndefined()
   })
 })
 

@@ -7,61 +7,14 @@ import {
   type TemplateId,
 } from '../world/library'
 import { importWorld, quickSave, saveWorld, type ConfirmReplace, type ReplaceResult, type Result, type SaveResult } from '../world/persistence'
-import { fail, failResult, failSave, guardAsync, guardSync, toErrorMessage } from '../world/errors'
+import { fail, failResult, failSave, guardAsync, guardSync } from '../world/errors'
+import { feedbackFromReplace, feedbackFromSave, isWorldMenuBusy, resetWorldMenuBusy, withBusy, type WorldMenuFeedback } from './worldMenuCore'
 
-export type LibraryMenuFeedback =
-  | { kind: 'idle' }
-  | { kind: 'busy'; action: string }
-  | { kind: 'ok'; message: string }
-  | { kind: 'cancelled' }
-  | { kind: 'error'; message: string }
+export type LibraryMenuFeedback = WorldMenuFeedback
 
-let busy = false
-
-export function isLibraryMenuBusy(): boolean {
-  return busy
-}
-
-export function resetLibraryMenuController() {
-  busy = false
-}
-
-function feedbackFromReplace(result: ReplaceResult, done: string): LibraryMenuFeedback {
-  if (result.ok) {
-    return {
-      kind: 'ok',
-      message: result.warnings.length ? `${done} with ${result.warnings.length} fix(es): ${result.warnings[0]}` : done,
-    }
-  }
-  if (result.cancelled) return { kind: 'cancelled' }
-  return { kind: 'error', message: result.error }
-}
-
-function feedbackFromSave(result: SaveResult, verb = 'Saved'): LibraryMenuFeedback {
-  if (result.ok) return { kind: 'ok', message: `${verb} "${result.value.name}".` }
-  if (result.cancelled) return { kind: 'cancelled' }
-  return { kind: 'error', message: result.error }
-}
-
-async function withBusy<T>(action: string, run: () => Promise<{ result: T; feedback: LibraryMenuFeedback }>) {
-  if (busy) {
-    return {
-      result: fail('Another library action is already running. Wait for it to finish.') as T,
-      feedback: { kind: 'error' as const, message: 'Another library action is already running. Wait for it to finish.' },
-    }
-  }
-  busy = true
-  try {
-    return await run()
-  } catch (error) {
-    return {
-      result: fail(`${action} crashed: ${toErrorMessage(error)}`) as T,
-      feedback: { kind: 'error' as const, message: `${action} crashed: ${toErrorMessage(error)}` },
-    }
-  } finally {
-    busy = false
-  }
-}
+/** Busy is shared with the other world menu (see worldMenuCore.ts). */
+export const isLibraryMenuBusy = isWorldMenuBusy
+export const resetLibraryMenuController = resetWorldMenuBusy
 
 export async function menuCreateWorld(name: string, template: TemplateId = 'blank', confirmReplace?: ConfirmReplace) {
   return withBusy('Create', async () => {

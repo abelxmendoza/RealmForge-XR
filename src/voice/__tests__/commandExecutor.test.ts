@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useWorld } from '../../world/store'
+import { useSelection } from '../../editor/selection'
 import { clearHistory, installHistory, withHistorySuppressed } from '../../world/history'
 import { markClean, useWorldLibrary } from '../../world/persistence'
 import { useEnvironment } from '../../world/environment'
@@ -79,29 +80,41 @@ describe('executeVoiceCommand', () => {
     expect(Object.keys(useWorld.getState().objects).length).toBe(before)
   })
 
-  it('refuses destructive delete without confirm handler', async () => {
+  it('deletes the selection right away, as one undo step', async () => {
     useWorld.getState().select('bld-1')
-    const r = await executeVoiceCommand({ type: 'DELETE_SELECTED' })
-    expect(r.status).toBe('needs_confirmation')
+    const r = await executeVoiceCommand({ type: 'DELETE_SELECTED', which: 'selected' })
+    expect(r.status).toBe('executed')
+    expect(useWorld.getState().objects['bld-1']).toBeUndefined()
+    expect((await executeVoiceCommand({ type: 'UNDO' })).status).toBe('executed')
     expect(useWorld.getState().objects['bld-1']).toBeTruthy()
   })
 
-  it('deletes selected only after confirmation', async () => {
-    useWorld.getState().select('bld-1')
-    const r = await executeVoiceCommand(
-      { type: 'DELETE_SELECTED' },
-      { confirm: async () => true },
-    )
+  it('deletes the framed group together and one undo restores all of it', async () => {
+    const w = useWorld.getState()
+    const a = w.addObject({ kind: 'crate', position: [5, 0, 5], size: [1, 1, 1], rotationY: 0 })
+    const b = w.addObject({ kind: 'crate', position: [7, 0, 5], size: [1, 1, 1], rotationY: 0 })
+    useSelection.getState().setGroup([a, b])
+    const r = await executeVoiceCommand({ type: 'DELETE_SELECTED' })
     expect(r.status).toBe('executed')
-    expect(useWorld.getState().objects['bld-1']).toBeUndefined()
+    expect(useWorld.getState().objects[a]).toBeUndefined()
+    expect(useWorld.getState().objects[b]).toBeUndefined()
+    expect(useSelection.getState().ids).toEqual([])
+    await executeVoiceCommand({ type: 'UNDO' })
+    expect(useWorld.getState().objects[a]).toBeTruthy()
+    expect(useWorld.getState().objects[b]).toBeTruthy()
   })
 
-  it('cancels delete when confirm returns false', async () => {
-    useWorld.getState().select('bld-1')
-    const r = await executeVoiceCommand(
-      { type: 'DELETE_SELECTED' },
-      { confirm: async () => false },
-    )
+  it('"delete them" removes what the last command made', async () => {
+    await executeVoiceCommand({ type: 'SPAWN_OBJECTS', spec: { kind: 'tree' }, label: 'tree', count: 3, placement: {} })
+    const before = Object.keys(useWorld.getState().objects).length
+    const r = await executeVoiceCommand({ type: 'DELETE_SELECTED', which: 'last' })
+    expect(r.status).toBe('executed')
+    expect(Object.keys(useWorld.getState().objects).length).toBe(before - 3)
+  })
+
+  it('rejects delete when nothing is selected', async () => {
+    useWorld.getState().select(null)
+    const r = await executeVoiceCommand({ type: 'DELETE_SELECTED' })
     expect(r.status).toBe('rejected')
     expect(useWorld.getState().objects['bld-1']).toBeTruthy()
   })
@@ -158,8 +171,7 @@ describe('confirmation events', () => {
   it('emits VOICE_CONFIRMATION_REQUIRED', async () => {
     const spy = vi.fn()
     const unsub = subscribeVoiceEvents(spy)
-    useWorld.getState().select('bld-1')
-    await executeVoiceCommand({ type: 'DELETE_SELECTED' })
+    await executeVoiceCommand({ type: 'RESET_WORLD' })
     unsub()
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'VOICE_CONFIRMATION_REQUIRED' }),
