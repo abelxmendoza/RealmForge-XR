@@ -475,6 +475,7 @@ export default function LandingPage() {
             Explore the source <Arrow />
           </a>
           <p>Made for the MOLTEN Hackathon.</p>
+          <p>Voice command transcription powered by <a href="https://www.assemblyai.com/" target="_blank" rel="noreferrer">AssemblyAI <Arrow /></a>.</p>
         </div>
         <p className="rf-hardware-note">
           Immersive features require a compatible WebXR browser. Headset behavior varies; physical Quest validation is
