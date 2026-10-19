@@ -15,7 +15,7 @@ const TECHNOLOGY_CREDITS = [
   { name: 'Niantic Spatial', label: 'SPATIAL TECHNOLOGY', detail: 'The team behind Scaniverse and its spatial mapping tools.', href: 'https://www.nianticspatial.com/', logo: 'niantic.webp', action: 'Explore Niantic Spatial', color: '#7fa1ff' },
   { name: 'Scaniverse for iPhone', label: 'CAPTURE ON iOS', detail: 'Get the Scaniverse iPhone app directly from the Apple App Store.', href: 'https://apps.apple.com/us/app/scaniverse-3d-scanner/id1541433223', logo: 'apple.webp', action: 'View on the App Store', color: '#d7dce6' },
   { name: 'AssemblyAI', label: 'VOICE COMMAND TRANSCRIPTION', detail: 'Streaming speech-to-text powers the voice command transcription in RealmForge XR.', href: 'https://www.assemblyai.com/', logo: 'assemblyai.svg', action: 'Meet AssemblyAI', color: '#a496ff' },
-  { name: 'Intel RealSense / RealSense', label: 'DEPTH CAMERA HARDWARE', detail: 'Explore depth cameras for spatial sensing. Direct capture is not currently integrated.', href: 'https://www.realsenseai.com/stereo-depth-cameras/', logo: 'realsense.webp', action: 'Explore depth cameras', color: '#62c8d0' },
+  { name: 'Intel RealSense / RealSense', label: 'PLANNED CAMERA-BASED MOTION INPUT', detail: 'Our available RealSense depth camera is the planned starting point for pose-based demonstrations. Pose tracking and the RealmForge bridge still need implementation and validation.', href: 'https://www.realsenseai.com/stereo-depth-cameras/', logo: 'realsense.webp', action: 'Explore depth cameras', color: '#62c8d0' },
 ] as const
 
 function Arrow() {
@@ -268,9 +268,9 @@ export default function LandingPage() {
             </article>
             <article className="rf-credit-card">
               <span className="rf-credit-label">02 / MOTION CAPTURE</span>
-              <h3>Your body.<br />Inside the world.</h3>
-              <p>A Rokoko-compatible bridge and debug skeleton lay the groundwork for bringing human movement into the scene. The pipeline has been exercised with synthetic motion; a real suit is still unvalidated.</p>
-              <span className="rf-credit-action">Prototype: mock motion pipeline</span>
+              <h3>Human motion.<br />A camera-first approach.</h3>
+              <p>We have a RealSense depth camera, but no motion-capture suit. Our planned starting point is camera-based pose estimation plus depth to bring visible body movement into the world. This requires tracking software, calibration and a new input bridge; it is not implemented yet. The existing Rokoko-compatible skeleton pipeline has only been exercised with synthetic motion.</p>
+              <span className="rf-credit-action">Planned: RealSense input · Existing: mock skeleton prototype</span>
             </article>
             <article className="rf-credit-card">
               <span className="rf-credit-label">03 / REAL WORLD → SIMULATION</span>
@@ -288,10 +288,10 @@ export default function LandingPage() {
           <div className="rf-training-vision" aria-labelledby="training-heading">
             <p className="rf-eyebrow">THE ROBOTICS ROADMAP / FUTURE GOAL</p>
             <h3 id="training-heading">A world to build in.<br />A world robots can learn in.</h3>
-            <p>Create the environment, show the task through body-suit motion, and eventually train robots to work autonomously within it. Evaluate their behavior in simulation before considering transfer to physical hardware.</p>
+            <p>Create the environment, show the task through camera-based human motion, with optional suit input later, and eventually train robots to work autonomously within it. Evaluate their behavior in simulation before considering transfer to physical hardware.</p>
             <ol className="rf-training-steps" aria-label="Robot learning roadmap">
               <li><strong>01 / Build</strong><span>Shape the world, obstacles and task environment.</span></li>
-              <li><strong>02 / Demonstrate</strong><span>Capture human movement and task demonstrations.</span></li>
+              <li><strong>02 / Demonstrate</strong><span>Estimate visible human motion from RGB-D camera input; record task demonstrations once implemented.</span></li>
               <li><strong>03 / Train</strong><span>Connect a robot-learning system to learn autonomous task behavior.</span></li>
               <li><strong>04 / Evaluate</strong><span>Measure task success, failures and behavior across simulated scenarios.</span></li>
             </ol>
