@@ -130,9 +130,9 @@ export default function LandingPage() {
         <div className="rf-shell rf-nav">
           <Brand />
           <nav aria-label="Main navigation">
-            <a href="#scans">Real-world scans</a>
+            <a href="#vision">The vision</a>
             <a href="#worlds">The worlds</a>
-            <a href="#events">Events & venues</a>
+            <a href="#scans">Import scans</a>
             <a href="#technology">Technology & credits</a>
             <a href={GITHUB} target="_blank" rel="noreferrer">
               GitHub <Arrow />
@@ -151,19 +151,19 @@ export default function LandingPage() {
         <section className="rf-shell rf-hero" aria-labelledby="hero-heading">
           <div className="rf-hero-copy">
             <p className="rf-eyebrow">
-              <span className="rf-dot" /> REAL SPACES. VIRTUAL WORLDS. ONE FORGE.
+              <span className="rf-dot" /> WORLDBUILDING / ROBOTICS / CREATIVE XR
             </p>
             <h1 id="hero-heading">
-              Big ideas.
+              Build worlds.
               <br />
-              Built in
+              Step inside.
               <br />
-              <span>your space.</span>
+              <span>Bring them to life.</span>
             </h1>
             <p className="rf-intro">
-              Bring your scanned rooms, garage or yard into the forge.{' '}
+              Create worlds for robots, stories and interactive experiences.{' '}
               <br />
-              Align mesh sections, plan your layout and explore it in WebXR. Or start with a venue, festival or factory template.
+              Shape an environment, explore it in VR and experiment with motion and simulation. Start from your imagination, a template or a real-world scan.
             </p>
             <div className="rf-hero-actions">
               <a className="rf-button" href={editorHref(selected.id)}>
@@ -172,8 +172,8 @@ export default function LandingPage() {
               <button className="rf-button rf-button-ghost rf-demo-launch" onClick={openDemo}>
                 <i aria-hidden="true">▶</i> Watch the VR demo
               </button>
-              <a className="rf-text-link" href="#scans">
-                Explore the scanning workflow <span aria-hidden="true">↓</span>
+              <a className="rf-text-link" href="#vision">
+                Explore the vision <span aria-hidden="true">↓</span>
               </a>
             </div>
             <div className="rf-compatibility">
@@ -182,7 +182,7 @@ export default function LandingPage() {
               </span>
               <span>
                 Start on desktop. Step into XR.
-                <small>Imported scans, editable worlds and shared spatial tools.</small>
+                <small>Worldbuilding, motion and simulation in one creative space.</small>
               </span>
             </div>
           </div>
@@ -216,19 +216,82 @@ export default function LandingPage() {
         <div className="rf-capability-strip">
           <div className="rf-shell">
             <span>
-              <i>01</i> PROPERTY SCANS
+              <i>01</i> BUILD WORLDS
             </span>
             <span>
-              <i>02</i> EVENT VENUES
+              <i>02</i> HUMAN MOTION
             </span>
             <span>
-              <i>03</i> ATTENDEE FLOW
+              <i>03</i> ROBOT SIMULATION
             </span>
             <span>
-              <i>04</i> DESKTOP + WEBXR
+              <i>04</i> ART + IMMERSIVE XR
             </span>
           </div>
         </div>
+
+        <section id="vision" className="rf-shell rf-technology" aria-labelledby="vision-heading">
+          <div className="rf-section-heading">
+            <div>
+              <p className="rf-eyebrow">ONE WORLD. MANY POSSIBILITIES.</p>
+              <h2 id="vision-heading">A place to create.<br />A space to experiment.</h2>
+            </div>
+            <p>RealmForge began with a question: what if the worlds we build could also be spaces where we demonstrate movement, explore robot behavior and tell stories?</p>
+          </div>
+          <div className="rf-usecase-grid">
+            <article className="rf-credit-card">
+              <span className="rf-credit-label">01 / ROBOTICS</span>
+              <h3>Build a world.<br />Teach through motion.</h3>
+              <p>Create environments and experiment with robot routes and obstacles. The longer-term goal is to use body-suit demonstrations inside those worlds to support robot learning.</p>
+              <span className="rf-credit-action">Today: navigation sandbox · Vision: robot training</span>
+            </article>
+            <article className="rf-credit-card">
+              <span className="rf-credit-label">02 / MOTION CAPTURE</span>
+              <h3>Your body.<br />Inside the world.</h3>
+              <p>A Rokoko-compatible bridge and debug skeleton lay the groundwork for bringing human movement into the scene. The pipeline has been exercised with synthetic motion; a real suit is still unvalidated.</p>
+              <span className="rf-credit-action">Prototype: mock motion pipeline</span>
+            </article>
+            <article className="rf-credit-card">
+              <span className="rf-credit-label">03 / ART & FILM</span>
+              <h3>Stage a scene.<br />Find the story.</h3>
+              <p>Use worldbuilding tools to arrange environments and explore scene ideas. Virtual sets, performance capture and film production workflows are directions for future development.</p>
+              <span className="rf-credit-action">Today: scene layout · Vision: virtual production</span>
+            </article>
+            <article className="rf-credit-card">
+              <span className="rf-credit-label">04 / GAMES & VR</span>
+              <h3>Imagine a space.<br />Step into it.</h3>
+              <p>Explore editable worlds through WebXR and experiment with spatial interaction. Richer gameplay, interactive storytelling and VR simulations are part of the broader vision.</p>
+              <span className="rf-credit-action">Today: WebXR exploration · Vision: game experiences</span>
+            </article>
+          </div>
+          <p className="rf-credit-note">RealmForge is an evolving prototype. Body-suit-driven robot training, production-ready film tools and a complete game engine are goals, not shipped capabilities.</p>
+        </section>
+
+        <section id="worlds" className="rf-shell rf-worlds" aria-labelledby="worlds-heading">
+          <div className="rf-section-heading">
+            <div>
+              <p className="rf-eyebrow">A WORLD OF STARTING POINTS</p>
+              <h2 id="worlds-heading">
+                Where will you
+                <br />
+                take it?
+              </h2>
+            </div>
+            <p>
+              A city. A new frontier. A warehouse or a factory in motion.
+              <br />
+              Start with a template, then make it yours.
+            </p>
+          </div>
+          <div className="rf-world-cards">
+            {LANDING_WORLDS.map((item) => (
+              <TemplateCard key={item.id} item={item} kind="ENVIRONMENT" />
+            ))}
+          </div>
+          <a className="rf-blank-link" href={editorHref()}>
+            Prefer a clean slate? Open the editor and create a blank world. <Arrow />
+          </a>
+        </section>
 
         <section id="scans" className="rf-shell rf-events" aria-labelledby="scans-heading">
           <div className="rf-section-heading">
@@ -267,11 +330,11 @@ export default function LandingPage() {
         <section id="events" className="rf-shell rf-events" aria-labelledby="events-heading">
           <div className="rf-section-heading">
             <div>
-              <p className="rf-eyebrow">EVENTS & VENUES</p>
+              <p className="rf-eyebrow">A WORLDBUILDING EXAMPLE / EVENTS & VENUES</p>
               <h2 id="events-heading">
-                Stage the room.
+                One way to use it.
                 <br />
-                Watch the flow.
+                Stage an event.
               </h2>
             </div>
             <p>
@@ -321,37 +384,11 @@ export default function LandingPage() {
           </p>
         </section>
 
-        <section id="worlds" className="rf-shell rf-worlds" aria-labelledby="worlds-heading">
-          <div className="rf-section-heading">
-            <div>
-              <p className="rf-eyebrow">A WORLD OF STARTING POINTS</p>
-              <h2 id="worlds-heading">
-                Where will you
-                <br />
-                take it?
-              </h2>
-            </div>
-            <p>
-              A city. A new frontier. A warehouse or a factory in motion.
-              <br />
-              Start with a template, then make it yours.
-            </p>
-          </div>
-          <div className="rf-world-cards">
-            {LANDING_WORLDS.map((item) => (
-              <TemplateCard key={item.id} item={item} kind="ENVIRONMENT" />
-            ))}
-          </div>
-          <a className="rf-blank-link" href={editorHref()}>
-            Prefer a clean slate? Open the editor and create a blank world. <Arrow />
-          </a>
-        </section>
-
         <section id="possibilities" className="rf-possibilities">
           <div className="rf-shell rf-possibilities-inner">
             <div className="rf-section-heading">
               <div>
-                <p className="rf-eyebrow">YOUR IDEAS. A LITTLE MORE DIMENSION.</p>
+                <p className="rf-eyebrow">TOOLS YOU CAN EXPLORE TODAY</p>
                 <h2 id="possibilities-heading">
                   Build the scene.
                   <br />
@@ -361,7 +398,7 @@ export default function LandingPage() {
               <p>
                 Make a place, then put it to the test.
                 <br />
-                RealmForge connects imported spaces, worldbuilding and layout simulation.
+                Build scenes, import spaces and try the current navigation sandbox.
               </p>
             </div>
             <div className="rf-feature-rows">
@@ -447,7 +484,7 @@ export default function LandingPage() {
 
         <section className="rf-shell rf-final">
           <img className="rf-final-mark rf-final-logo" src={BRAND.logoLarge} width="168" height="168" alt="" aria-hidden="true" />
-          <p className="rf-eyebrow">SHAPE WORLDS. STAGE EVENTS. BRING THEM TO LIFE.</p>
+          <p className="rf-eyebrow">BUILD WORLDS. EXPLORE MOTION. CREATE WHAT’S NEXT.</p>
           <h2>
             Your next space
             <br />
@@ -481,7 +518,7 @@ export default function LandingPage() {
       <footer className="rf-footer rf-shell">
         <div>
           <Brand />
-          <p>Real-world mesh scans, spatial worldbuilding & layout simulation.</p>
+          <p>A worldbuilding sandbox for robotics, human motion, art and immersive experiences.</p>
         </div>
         <div>
           <a href={GITHUB} target="_blank" rel="noreferrer">
