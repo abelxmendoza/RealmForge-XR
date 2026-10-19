@@ -1,6 +1,6 @@
 # RealmForge XR project landing page
 
-The root URL is a responsive project introduction. It presents the three exploration environments, two event venue templates, shared worldbuilding tools, robot and attendee simulation, spatial controls, and the local world library.
+The root URL introduces a robotics workspace and task-building sandbox. It leads with importing real-world Scaniverse mesh sections, editing the same scene in tabletop and life-size VR, current robot navigation, and the roadmap toward body-suit demonstrations and autonomous task learning. A simplified data-center inspection scenario is identified as the next milestone, not a shipped task. Art, film and gaming remain later possibilities. Existing world and venue templates and branded technology credits remain available.
 
 The interactive hero illustration switches between Forge District, Mars Outpost, Warehouse, Empty Event Venue, and Job Fair; the primary launch link follows the selected template.
 

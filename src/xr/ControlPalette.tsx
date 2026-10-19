@@ -1,3 +1,4 @@
+import { switchWorldView } from './worldView'
 import { calibrateScan, cycleScan, scanControls, showAllScans, soloScan } from '../scan/actions'
 import { openScanPanel, patchScan, removeScan, startMeasuring, useScan } from '../scan/store'
 import { listTemplates } from '../world/library'
@@ -341,6 +342,8 @@ function PaletteContent() {
     )
   } else if (page === 'view') {
     buttons = [
+      { label: 'Tabletop · Edit overview', active: editor.worldScale === 'tabletop', run: () => switchWorldView('tabletop') },
+      { label: selected ? 'Enter world · At selection' : 'Enter world · Life size', active: editor.worldScale === 'life', run: () => switchWorldView('life') },
       { label: editor.rays ? 'See Through · On' : 'See Through Objects', active: editor.rays, run: toggleRays },
       {
         label: editor.surface === 'real' ? 'Floor: Real' : 'Floor: Virtual',
@@ -349,10 +352,10 @@ function PaletteContent() {
       },
       { label: snap ? 'Align to Grid · On' : 'Align to Grid', active: snap, run: () => useEditor.getState().set({ snap: !snap }) },
       { label: placing ? 'Cancel placing' : 'Place world (AR)', active: placing, disabled: !inAR, run: togglePlaceCity },
-      ...SCALE_IDS.map((id) => ({
+      ...SCALE_IDS.filter((id) => id !== 'tabletop' && id !== 'life').map((id) => ({
         label: SCALE_SHORT[id],
         active: editor.worldScale === id,
-        run: () => useEditor.getState().set({ worldScale: id }),
+        run: () => switchWorldView(id),
       })),
       { label: 'Advanced: styles…', run: () => setPage('styles') },
       { label: 'Real room…', run: () => setPage('room') },

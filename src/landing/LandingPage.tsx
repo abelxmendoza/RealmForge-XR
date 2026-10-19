@@ -130,7 +130,7 @@ export default function LandingPage() {
         <div className="rf-shell rf-nav">
           <Brand />
           <nav aria-label="Main navigation">
-            <a href="#vision">The vision</a>
+            <a href="#vision">Robotics vision</a>
             <a href="#worlds">The worlds</a>
             <a href="#scans">Import scans</a>
             <a href="#technology">Technology & credits</a>
@@ -151,7 +151,7 @@ export default function LandingPage() {
         <section className="rf-shell rf-hero" aria-labelledby="hero-heading">
           <div className="rf-hero-copy">
             <p className="rf-eyebrow">
-              <span className="rf-dot" /> WORLDBUILDING / ROBOTICS / CREATIVE XR
+              <span className="rf-dot" /> BUILD ENVIRONMENTS / SIMULATE ROBOT TASKS
             </p>
             <h1 id="hero-heading">
               Build worlds.
@@ -161,9 +161,9 @@ export default function LandingPage() {
               <span>Bring them to life.</span>
             </h1>
             <p className="rf-intro">
-              Create worlds for robots, stories and interactive experiences.{' '}
+              Build simulated workspaces for autonomous robot tasks.{' '}
               <br />
-              Shape an environment, explore it in VR and experiment with motion and simulation. Start from your imagination, a template or a real-world scan.
+              Scan a real environment with Scaniverse and import its meshes, or build from a template. Edit the same world as a tabletop model or explore it at life size in VR.
             </p>
             <div className="rf-hero-actions">
               <a className="rf-button" href={editorHref(selected.id)}>
@@ -234,9 +234,9 @@ export default function LandingPage() {
           <div className="rf-section-heading">
             <div>
               <p className="rf-eyebrow">ONE WORLD. MANY POSSIBILITIES.</p>
-              <h2 id="vision-heading">A place to create.<br />A space to experiment.</h2>
+              <h2 id="vision-heading">Build the workspace.<br />Test the task.</h2>
             </div>
-            <p>RealmForge began with a question: what if the worlds we build could also be spaces where we demonstrate movement, explore robot behavior and tell stories?</p>
+            <p>A robotics simulation and task-building sandbox, working toward human demonstrations and autonomous robot learning. The next milestone: one robot visiting inspection checkpoints in a simplified data-center test area.</p>
           </div>
           <div className="rf-usecase-grid">
             <article className="rf-credit-card">
@@ -252,16 +252,16 @@ export default function LandingPage() {
               <span className="rf-credit-action">Prototype: mock motion pipeline</span>
             </article>
             <article className="rf-credit-card">
-              <span className="rf-credit-label">03 / ART & FILM</span>
-              <h3>Stage a scene.<br />Find the story.</h3>
-              <p>Use worldbuilding tools to arrange environments and explore scene ideas. Virtual sets, performance capture and film production workflows are directions for future development.</p>
-              <span className="rf-credit-action">Today: scene layout · Vision: virtual production</span>
+              <span className="rf-credit-label">03 / REAL WORLD → SIMULATION</span>
+              <h3>Scan the space.<br />Bring it into the world.</h3>
+              <p>Capture a room, workshop or test area in Scaniverse. Import mesh GLB sections, align them and add catalog objects and route checkpoints to create a simulation workspace.</p>
+              <span className="rf-credit-action">Today: mesh import and manual alignment</span>
             </article>
             <article className="rf-credit-card">
-              <span className="rf-credit-label">04 / GAMES & VR</span>
-              <h3>Imagine a space.<br />Step into it.</h3>
-              <p>Explore editable worlds through WebXR and experiment with spatial interaction. Richer gameplay, interactive storytelling and VR simulations are part of the broader vision.</p>
-              <span className="rf-credit-action">Today: WebXR exploration · Vision: game experiences</span>
+              <span className="rf-credit-label">04 / TWO WAYS TO EDIT</span>
+              <h3>Plan from above.<br />Edit from within.</h3>
+              <p>Use the tabletop overview to arrange your world, then enter at life size to inspect and edit from inside. Both views share the same objects, tools and saved world.</p>
+              <span className="rf-credit-action">VR: wrist Enter / Tabletop · View controls</span>
             </article>
           </div>
           <div className="rf-training-vision" aria-labelledby="training-heading">
@@ -276,7 +276,7 @@ export default function LandingPage() {
             </ol>
             <p className="rf-credit-note">This is the intended development path. Demonstration recording, policy training and autonomous task evaluation are not implemented yet. Physical-world transfer would require separate validation.</p>
           </div>
-          <p className="rf-credit-note">RealmForge is an evolving prototype. Body-suit-driven robot training, production-ready film tools and a complete game engine are goals, not shipped capabilities.</p>
+          <p className="rf-credit-note">RealmForge is an evolving prototype. Autonomous policy training remains a future goal. Art, film and gaming are possible later applications; robotics workspaces are the current focus.</p>
         </section>
 
         <section id="worlds" className="rf-shell rf-worlds" aria-labelledby="worlds-heading">
@@ -309,9 +309,9 @@ export default function LandingPage() {
           <div className="rf-section-heading">
             <div>
               <p className="rf-eyebrow">NEW / REAL-WORLD PROPERTY SCANS</p>
-              <h2 id="scans-heading">Your space.<br />A new perspective.</h2>
+              <h2 id="scans-heading">Scan the real world.<br />Build its simulated workspace.</h2>
             </div>
-            <p>Bring rooms, floors and outdoor areas together from separate mesh scans.<br />Arrange your property on screen, then explore the same world in immersive XR.</p>
+            <p>Capture real environments in Scaniverse and import their polygon meshes into RealmForge.<br />Assemble the space, add simulation objects, then edit it on a tabletop or from inside VR.</p>
           </div>
           <div className="rf-event-steps" aria-label="Property scan workflow">
             <article>
@@ -335,7 +335,7 @@ export default function LandingPage() {
             <a className="rf-text-link" href={`${GITHUB}/blob/main/docs/property-scans.md`} target="_blank" rel="noreferrer">Read the scan guide <Arrow /></a>
           </div>
           <p className="rf-event-note">
-            Capture happens in Scaniverse; RealmForge imports the meshes. Alignment is manual. Files stay on your device unless you export and transfer them. Headset file import exits immersive mode. Scanned floors do not add stairs or terrain navigation to the flat-plane simulation. Physical Quest and real Scaniverse-file validation remain ongoing.
+            Capture happens in Scaniverse; RealmForge imports the meshes. Alignment is manual. Files stay on your device unless you export and transfer them. Headset file import exits immersive mode. Imported meshes provide visual geometry; robot navigation still uses the flat plane and explicitly placed solid objects. Automatic scan-to-collision conversion, stairs and terrain navigation are not implemented. Physical Quest and real Scaniverse-file validation remain ongoing.
           </p>
         </section>
 
@@ -410,7 +410,7 @@ export default function LandingPage() {
               <p>
                 Make a place, then put it to the test.
                 <br />
-                Build scenes, import spaces and try the current navigation sandbox.
+                Import real spaces, build robot workspaces and try the current navigation sandbox.
               </p>
             </div>
             <div className="rf-feature-rows">
@@ -530,7 +530,7 @@ export default function LandingPage() {
       <footer className="rf-footer rf-shell">
         <div>
           <Brand />
-          <p>A worldbuilding sandbox for robotics, human motion, art and immersive experiences.</p>
+          <p>A robotics workspace sandbox for real-world scans, scene building and simulated tasks.</p>
         </div>
         <div>
           <a href={GITHUB} target="_blank" rel="noreferrer">

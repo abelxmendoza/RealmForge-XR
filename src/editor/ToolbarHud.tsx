@@ -1,3 +1,4 @@
+import { switchWorldView } from '../xr/worldView'
 /**
  * Editor HUD: the three-step loop (Build / Routes / Test) as primary tabs, then View and Save.
  * On phones the menu opens as a bottom sheet so the world stays visible above it.
@@ -541,7 +542,7 @@ export function ToolbarHud() {
           <div className="row hud-section-actions">
             <label className="field" title="How large the world appears in your room">
               World scale
-              <select value={worldScale} onChange={(e) => useEditor.getState().set({ worldScale: e.target.value as ScaleId })}>
+              <select value={worldScale} onChange={(e) => switchWorldView(e.target.value as ScaleId)}>
                 {SCALE_IDS.map((id) => (
                   <option key={id} value={id}>
                     {SCALE_LABELS[id]}

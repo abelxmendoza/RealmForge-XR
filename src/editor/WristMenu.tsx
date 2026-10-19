@@ -1,3 +1,4 @@
+import { switchWorldView } from '../xr/worldView'
 import { createContext, useContext, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
@@ -164,10 +165,10 @@ function MenuContent() {
   const quarter = (W - GAP * 3) / 4
   const third = (W - GAP * 2) / 3
   const col = (i: number, w: number) => -W / 2 + w / 2 + i * (w + GAP)
-  // Slim on purpose: quick toggles and navigation only. Scale, ground, gestures, mocap, place world and
+  // Slim on purpose: quick toggles, world entry and navigation. Extra scales, ground, gestures, mocap, place world and
   // scan room live on the Control Palette's View page. Lit buttons are on.
-  // Rows: 0 toggles · 1 navigation · (2 framed group) · status line.
-  const statusRow = group > 0 ? 3 : 2
+  // Rows: 0 toggles · 1 navigation · 2 world view · (3 framed group) · status line.
+  const statusRow = group > 0 ? 4 : 3
   const top = 0.082
   const bottom = rowY(statusRow) - 0.012
   const scale = SCALE_PRESETS[worldScale].label.split(' ').pop()
@@ -194,12 +195,14 @@ function MenuContent() {
       <MenuButton position={[col(1, quarter), rowY(1), 0]} width={quarter} label="Menu" active={paletteOpen} onPress={togglePalette} />
       <MenuButton position={[col(2, quarter), rowY(1), 0]} width={quarter} label="Guide" active={guideOpen} onPress={toggleGuide} />
       <MenuButton position={[col(3, quarter), rowY(1), 0]} width={quarter} label="Select" active={tool === 'select'} onPress={() => useWorld.getState().setTool('select')} />
+      <MenuButton position={[col(0, (W - GAP) / 2), rowY(2), 0]} width={(W - GAP) / 2} label="Tabletop" active={worldScale === 'tabletop'} onPress={() => switchWorldView('tabletop')} />
+      <MenuButton position={[col(1, (W - GAP) / 2), rowY(2), 0]} width={(W - GAP) / 2} label="Enter world" active={worldScale === 'life'} onPress={() => switchWorldView('life')} />
       {/* Framed group (frame-hands gesture): act on all of it. */}
       {group > 0 && (
         <>
-          <MenuButton position={[col(0, third), rowY(2), 0]} width={third} label="Copy" onPress={duplicateSelected} />
-          <MenuButton position={[col(1, third), rowY(2), 0]} width={third} label="Delete" onPress={deleteSelected} />
-          <MenuButton position={[col(2, third), rowY(2), 0]} width={third} label={`Clear ${group}`} onPress={() => useSelection.getState().clear()} />
+          <MenuButton position={[col(0, third), rowY(3), 0]} width={third} label="Copy" onPress={duplicateSelected} />
+          <MenuButton position={[col(1, third), rowY(3), 0]} width={third} label="Delete" onPress={deleteSelected} />
+          <MenuButton position={[col(2, third), rowY(3), 0]} width={third} label={`Clear ${group}`} onPress={() => useSelection.getState().clear()} />
         </>
       )}
       <Text position={[0, rowY(statusRow) + 0.004, 0]} fontSize={0.0072} maxWidth={W} color={FORGE.copper} anchorX="center" anchorY="middle" raycast={() => null}>
