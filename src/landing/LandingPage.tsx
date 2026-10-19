@@ -249,6 +249,8 @@ export default function LandingPage() {
           <div className="rf-hero-actions">
             <a className="rf-button" href={editorHref()}>Open editor to import scans <Arrow /></a>
             <a className="rf-text-link" href="https://scaniverse.com" target="_blank" rel="noreferrer">Get Scaniverse <Arrow /></a>
+            <a className="rf-text-link" href="https://apps.apple.com/us/app/scaniverse-3d-scanner/id1541433223" target="_blank" rel="noreferrer">Scaniverse for iPhone <Arrow /></a>
+            <a className="rf-text-link" href="https://www.nianticspatial.com/" target="_blank" rel="noreferrer">Niantic Spatial <Arrow /></a>
             <a className="rf-text-link" href={`${GITHUB}/blob/main/docs/property-scans.md`} target="_blank" rel="noreferrer">Read the scan guide <Arrow /></a>
           </div>
           <p className="rf-event-note">
@@ -265,7 +267,12 @@ export default function LandingPage() {
             <p className="rf-eyebrow">FROM THE BROWSER TO THE HEADSET</p>
             <h2 id="headset-heading">Step inside<br />your next idea.</h2>
             <p>Build on screen, then explore your world in immersive XR with a compatible headset browser. Use the floating palette to adjust your layout and imported scan sections.</p>
-            <a className="rf-button rf-button-ghost" href={editorHref()}>Open RealmForge XR <Arrow /></a>
+            <div className="rf-hero-actions">
+              <a className="rf-button rf-button-ghost" href={editorHref()}>Open RealmForge XR <Arrow /></a>
+              <a className="rf-text-link" href="https://www.meta.com/quest/quest-3s/" target="_blank" rel="noreferrer">Official Meta Quest 3S <Arrow /></a>
+            </div>
+            <p><a className="rf-text-link" href="https://www.realsenseai.com/stereo-depth-cameras/" target="_blank" rel="noreferrer">Intel RealSense / RealSense depth cameras <Arrow /></a></p>
+            <p className="rf-headset-note">Explore depth-camera hardware on the official RealSense site. Direct RealSense capture is not currently integrated into RealmForge XR.</p>
             <p className="rf-headset-note">Meta Quest 3S shown. Physical headset validation is ongoing. RealmForge XR is an independent project and is not affiliated with or endorsed by Meta.</p>
           </div>
         </section>
