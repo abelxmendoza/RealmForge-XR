@@ -300,3 +300,15 @@ body { margin: 0; background: #0c1018; }
   .rf-demo-rotate { display: flex; align-items: center; gap: 8px; margin: 0; color: #c1c6b9; font-size: 12px; }
   .rf-demo-rotate span { font-size: 18px; color: var(--rf-ember-hot); display: inline-block; transform: rotate(90deg); }
 }
+
+/* Headset product feature */
+.rf-headset { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: clamp(28px, 6vw, 80px); padding-block: 48px 72px; }
+.rf-headset figure { margin: 0; min-width: 0; }
+.rf-headset img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; border-radius: 20px; background: #fff; }
+.rf-headset figcaption { margin-top: 12px; color: var(--rf-muted); font-size: 11px; line-height: 1.6; }
+.rf-headset figcaption a { color: inherit; text-decoration: underline; }
+.rf-headset h2 { font-size: clamp(36px, 5vw, 64px); line-height: 1.05; letter-spacing: -2px; margin: 18px 0 24px; }
+.rf-headset p:not(.rf-eyebrow) { color: var(--rf-muted); font-size: 14px; line-height: 1.8; }
+.rf-headset .rf-button { margin-top: 12px; }
+.rf-headset .rf-headset-note { font-size: 11px !important; margin-top: 22px; }
+@media (max-width: 760px) { .rf-headset { grid-template-columns: 1fr; padding-block: 28px 48px; } .rf-headset figure { max-width: 480px; width: 100%; margin-inline: auto; } }

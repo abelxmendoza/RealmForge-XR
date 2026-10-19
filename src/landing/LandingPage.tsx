@@ -256,6 +256,20 @@ export default function LandingPage() {
           </p>
         </section>
 
+        <section className="rf-shell rf-headset" aria-labelledby="headset-heading">
+          <figure>
+            <img src="/images/meta-quest-3s.webp" width="960" height="960" loading="lazy" alt="White Meta Quest 3S headset with two Touch Plus controllers" />
+            <figcaption>Meta Quest 3S · Product photo via <a href="https://www.jbhifi.co.nz/products/meta-quest-3s-256gb" target="_blank" rel="noreferrer">JB Hi-Fi</a></figcaption>
+          </figure>
+          <div>
+            <p className="rf-eyebrow">FROM THE BROWSER TO THE HEADSET</p>
+            <h2 id="headset-heading">Step inside<br />your next idea.</h2>
+            <p>Build on screen, then explore your world in immersive XR with a compatible headset browser. Use the floating palette to adjust your layout and imported scan sections.</p>
+            <a className="rf-button rf-button-ghost" href={editorHref()}>Open RealmForge XR <Arrow /></a>
+            <p className="rf-headset-note">Meta Quest 3S shown. Physical headset validation is ongoing. RealmForge XR is an independent project and is not affiliated with or endorsed by Meta.</p>
+          </div>
+        </section>
+
         <section id="events" className="rf-shell rf-events" aria-labelledby="events-heading">
           <div className="rf-section-heading">
             <div>
