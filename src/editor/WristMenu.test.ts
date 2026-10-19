@@ -23,11 +23,11 @@ describe('wrist menu fingertip presses', () => {
 
 describe('wrist menu content', () => {
   const measure = (text: string, font: FontSpec) => text.length * font.size * 0.56
-  const base = { rays: false, snap: true, occlusion: false, realSurfaces: false, paletteOpen: true, guideOpen: false, listening: false, group: 0, status: '1:60' }
+  const base = { rays: false, snap: true, occlusion: false, realSurfaces: false, paletteOpen: true, guideOpen: false, listening: false, group: 0, status: '1:60', worldScale: 'tabletop' as const }
 
   it('always offers the ways back: Menu, Hide all, Back, Home and Exit VR', () => {
     const ids = layoutPanel(wristSpec(base), measure).hits.map((h) => h.id)
-    expect(ids).toEqual(expect.arrayContaining(['menu', 'hide-all', 'back', 'home', 'exit', 'mic']))
+    expect(ids).toEqual(expect.arrayContaining(['menu', 'hide-all', 'back', 'home', 'exit', 'mic', 'view:tabletop', 'view:enter']))
   })
 
   it('adds the framed-group row only when a group is framed', () => {

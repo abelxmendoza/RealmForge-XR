@@ -1,3 +1,5 @@
+import { switchWorldView } from '../xr/worldView'
+import { useWorld } from '../world/store'
 import { useRef, useState } from 'react'
 import { requestConfirmation } from '../world/confirmation'
 import { importScanFile } from './importScan'
@@ -97,6 +99,14 @@ export function ScanPanel() {
             <button onClick={() => { const ok = calibrateScan(Number(real)); setNote({ error: !ok, text: ok ? 'Scale calibrated.' : 'Enter a valid positive distance.' }) }}>Apply</button></div>}
           <button onClick={() => startMeasuring(false)}>Cancel measurement</button>
         </>}
+        <h4>Build around this scan</h4>
+        <p className="hint">The scan is visual geometry. Add solid walls for robot navigation, then place catalog objects and route waypoints. Edits are shared between tabletop and life-size views.</p>
+        <div className="row">
+          <button onClick={() => { startMeasuring(false); useWorld.getState().setTool('wall'); openScanPanel(false) }}>Trace solid walls</button>
+          <button onClick={() => { startMeasuring(false); useWorld.getState().setTool('asset'); openScanPanel(false) }}>Add catalog objects</button>
+          <button onClick={() => switchWorldView('tabletop')}>Tabletop view</button>
+          <button onClick={() => switchWorldView('life')}>Life-size view</button>
+        </div>
         <h4>Display</h4>
         <label className="field">Opacity {Math.round(scan.opacity * 100)}%<input type="range" min="0.1" max="1" step="0.05" value={scan.opacity} onChange={(e) => patchScan({ opacity: Number(e.target.value) })} /></label>
         {scan.cutHeight !== null && <label className="field">Ceiling cut {scan.cutHeight.toFixed(1)} m above this section’s floor<input type="range" min="0.5" max="12" step="0.1" value={scan.cutHeight} onChange={(e) => patchScan({ cutHeight: Number(e.target.value) })} /></label>}

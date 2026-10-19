@@ -51,6 +51,7 @@ import { usePlacement } from './placement'
 import { toggleRealSurfaces } from './realSurfaces'
 import { scanRoom } from './roomTracker'
 import { exitXR } from './session'
+import { switchWorldView } from './worldView'
 import { calibrateScan, cycleScan, scanControls, showAllScans, soloScan } from '../scan/actions'
 import { openScanPanel, patchScan, removeScan, startMeasuring, useScan } from '../scan/store'
 import { readSpatial } from './spatialSave'
@@ -259,10 +260,14 @@ function pageContent(s: PaletteSnapshot): { items: ButtonItem[]; actions: Record
       break
     }
     case 'view': {
+      // The two ways to work (same world, selection and history): the miniature overview, or inside at life size.
+      add(btn('view:tabletop', 'Tabletop · Edit overview', on(s.worldScale === 'tabletop')), () => switchWorldView('tabletop'))
+      add(btn('view:enter', s.selected ? 'Enter world · At selection' : 'Enter world · Life size', on(s.worldScale === 'life')), () => switchWorldView('life'))
       add(btn('view:rays', s.rays ? 'Rays · On' : 'Rays', on(s.rays)), toggleRays)
       add(btn('view:surface', s.surface === 'real' ? 'Floor: Real' : 'Floor: Virtual', on(s.surface === 'real')), toggleSurface)
       add(btn('snap', s.snap ? 'Align to Grid · On' : 'Align to Grid', on(s.snap)), () => ed().set({ snap: !s.snap }))
-      for (const id of SCALE_IDS) add(btn(`scale:${id}`, SCALE_SHORT[id], on(s.worldScale === id)), () => ed().set({ worldScale: id }))
+      for (const id of SCALE_IDS.filter((v) => v !== 'tabletop' && v !== 'life'))
+        add(btn(`scale:${id}`, SCALE_SHORT[id], on(s.worldScale === id)), () => switchWorldView(id))
       add(btn('view:place', s.placing ? 'Cancel placing' : 'Place world (AR)', { ...on(s.placing), disabled: !s.inAR }), togglePlaceCity)
       add(btn('page:room', 'Real room ›'), () => openPage('room'))
       add(btn('page:styles', 'Styles ›'), () => openPage('styles'))

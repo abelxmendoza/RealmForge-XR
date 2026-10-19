@@ -1,3 +1,4 @@
+import { openScanImport } from './Inspector'
 import { installAutosave } from '../world/autosave'
 import { useWorld } from '../world/store'
 import { startActors } from '../actors/runtime'
@@ -10,13 +11,13 @@ import { loadEnvironment } from '../world/environment'
 import { startMocapClient } from '../mocap/client'
 import { installDevLog } from '../devLog'
 import { installLineRaycastGuard } from '../scene/lineRaycastGuard'
-import type { LandingWorldId } from '../landing/entry'
+import type { EntryWorkflow, LandingWorldId } from '../landing/entry'
 import { loadAssetManifest } from '../world/assetManifest'
 import { openWorldLibrary } from './WorldLibrary'
 import '../style.css'
 
 /** Runs once before mounting the editor; a landing selection initializes a fresh scene. */
-export async function initializeEditor(world?: LandingWorldId) {
+export async function initializeEditor(world?: LandingWorldId, workflow?: EntryWorkflow) {
   installDevLog()
   installLineRaycastGuard()
   // Custom library assets first, so saved/loaded worlds keep their asset ids.
@@ -27,7 +28,7 @@ export async function initializeEditor(world?: LandingWorldId) {
     if (!result.ok) throw new Error(result.error)
   } else {
     // No world picked on the landing page: let the user choose one before they start.
-    openWorldLibrary()
+    if (!workflow) openWorldLibrary()
   }
   if (!world) useWorld.getState().loadWorld({ objects: [], actors: [], robotEnabled: false, robotStart: [0, 0], goal: null })
   startNavigation()
@@ -37,5 +38,6 @@ export async function initializeEditor(world?: LandingWorldId) {
   installDirtyTracking()
   installAutosave()
   startMocapClient()
+  if (workflow === 'scan') openScanImport()
 }
 export default App

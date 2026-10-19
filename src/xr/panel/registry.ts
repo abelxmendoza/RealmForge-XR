@@ -8,6 +8,8 @@ import type { PanelLayout } from './layout'
 export interface RegisteredPanel {
   group: THREE.Object3D
   layout: PanelLayout
+  /** Controls a pointer is over right now (tests wait for the ray to land before pulling the trigger). */
+  hover: string[]
   metersPerPx: number
   /** Height of the panel's top edge above the group origin (m). */
   top: number

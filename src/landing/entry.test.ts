@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { editorHref, LANDING_TEMPLATES, LANDING_VENUES, LANDING_WORLDS, readEntry } from './entry'
+import { editorHref, workflowHref, LANDING_TEMPLATES, LANDING_VENUES, LANDING_WORLDS, readEntry } from './entry'
 
 describe('landing page editor entry', () => {
   it('shows the landing page by default', () => {
@@ -35,5 +35,19 @@ describe('landing page editor entry', () => {
   })
   it('does not load the editor on a malformed entry flag', () => {
     expect(readEntry('?editor=false').editor).toBe(false)
+  })
+})
+
+
+describe('build / real-world scan entry workflows', () => {
+  it.each(['build', 'scan'] as const)('opens the %s workflow directly', (workflow) => {
+    expect(readEntry(workflowHref(workflow))).toEqual({ editor: true, workflow })
+  })
+  it('ignores workflow flags outside the editor and rejects unsupported workflows', () => {
+    expect(readEntry('?workflow=scan')).toEqual({ editor: false })
+    expect(readEntry('?editor=1&workflow=unknown')).toEqual({ editor: true })
+  })
+  it('gives explicit templates precedence over a workflow', () => {
+    expect(readEntry('?editor=1&workflow=scan&world=warehouse')).toEqual({ editor: true, world: 'warehouse' })
   })
 })

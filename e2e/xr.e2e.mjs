@@ -82,9 +82,9 @@ const frames = (page, n = 10) =>
   )
 
 /**
- * Point the right controller's ray at control `id` on panel `panel` and pull the trigger. Under load the
- * emulator can pull the trigger before the new aim reaches the pointer, so a press that never reached the
- * panel is aimed and pulled once more (as a person would). A press the panel saw but refused still fails.
+ * Point the right controller's ray at control `id` on panel `panel`, wait until the panel reports the ray over it,
+ * and pull the trigger. A press that still never reached the panel is aimed and pulled once more (as a person
+ * would). A press the panel saw but refused still fails.
  */
 async function press(page, id, panel = 'palette') {
   for (let attempt = 1; ; attempt++) {
@@ -93,10 +93,15 @@ async function press(page, id, panel = 'palette') {
     const [x, y, z] = target
     await remote(page, 'set_transform', { device: 'controller-right', position: { x: 0.15, y: 1.35, z: -0.15 } })
     await remote(page, 'look_at', { device: 'controller-right', target: { x, y, z } })
-    await frames(page, 8)
+    // Pull the trigger only once the ray is on the control (the emulator can lag the new aim by a few frames).
+    await page
+      .waitForFunction(([p, i]) => window.__rf.panelRegistry.get(p)?.hover.includes(i), [panel, id], { timeout: 4000 })
+      .catch(() => {})
     const before = await page.evaluate(() => window.__rf.pressLog.length)
-    // IWER's select waits on frames; a press that ends the session (Exit VR) never gets them, so don't wait forever.
-    await Promise.race([remote(page, 'select', { device: 'controller-right' }), page.waitForTimeout(3000)])
+    // Hold the trigger 0.6 s (a real pull's length): IWER's default 0.15 s can fit between two frames on a slow
+    // machine, so the app never sees it down. IWER's select waits on frames, and a press that ends the session
+    // (Exit VR) never gets them, so don't wait forever either.
+    await Promise.race([remote(page, 'select', { device: 'controller-right', duration: 0.6 }), page.waitForTimeout(4000)])
     await frames(page, 8)
     const log = await page.evaluate((n) => window.__rf.pressLog.slice(n), before)
     const mine = log.filter((p) => p.panel === panel && p.id === id)

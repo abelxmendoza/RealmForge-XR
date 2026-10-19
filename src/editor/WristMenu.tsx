@@ -2,7 +2,8 @@ import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { XRSpace, useXRInputSourceState } from '@react-three/xr'
-import { recenterWorld } from '../scene/worldRoot'
+import { recenterWorld, type ScaleId } from '../scene/worldRoot'
+import { switchWorldView } from '../xr/worldView'
 import { FORGE } from '../theme/forge'
 import { useGuide } from '../guide/guideStore'
 import { useEditor } from './settings'
@@ -164,6 +165,7 @@ export function wristSpec(s: {
   listening: boolean
   group: number
   status: string
+  worldScale: ScaleId
 }): PanelSpec {
   return {
     width: WIDTH_PX,
@@ -192,6 +194,10 @@ export function wristSpec(s: {
             b('mic', s.listening ? 'Stop mic' : 'Mic', { ...lit(s.listening), align: 'center' }),
             b('center', 'Recenter', { align: 'center' }),
             b('select', 'Select', { align: 'center' }),
+          ] },
+          { type: 'grid', columns: 2, rowHeight: 30, gap: 5, items: [
+            b('view:tabletop', 'Tabletop', { ...lit(s.worldScale === 'tabletop'), align: 'center' }),
+            b('view:enter', 'Enter world', { ...lit(s.worldScale === 'life'), align: 'center' }),
           ] },
           { type: 'grid', columns: 4, rowHeight: 30, gap: 5, items: [
             b('rays', 'Rays', { ...lit(s.rays), align: 'center' }),
@@ -246,10 +252,12 @@ function WristPanel({ handle }: { handle: { current: PanelHandle | null } }) {
       'group:copy': duplicateSelected,
       'group:delete': deleteSelected,
       'group:clear': () => useSelection.getState().clear(),
+      'view:tabletop': () => switchWorldView('tabletop'),
+      'view:enter': () => switchWorldView('life'),
     }),
     [voice],
   )
 
-  const spec = wristSpec({ rays, snap, occlusion, realSurfaces, paletteOpen, guideOpen, listening: voice.isListening, group, status })
+  const spec = wristSpec({ rays, snap, occlusion, realSurfaces, paletteOpen, guideOpen, listening: voice.isListening, group, status, worldScale })
   return <XRPanel name="wrist" spec={spec} onPress={(id) => actions[id]?.()} handleRef={handle} metersPerPx={WRIST_MPP} anchor="center" />
 }

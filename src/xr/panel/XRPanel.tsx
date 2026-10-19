@@ -159,7 +159,7 @@ export function XRPanel({
     <group
       ref={(g) => {
         if (!XR_TEST_HOOKS) return
-        if (g) panelRegistry.set(name, { group: g, layout, metersPerPx, top })
+        if (g) panelRegistry.set(name, { group: g, layout, hover: [...hoverIds], metersPerPx, top })
         else panelRegistry.delete(name)
       }}
     >

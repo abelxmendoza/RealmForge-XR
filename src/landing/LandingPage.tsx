@@ -1,6 +1,6 @@
 import { BRAND } from '../theme/brand'
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
-import { editorHref, LANDING_TEMPLATES, LANDING_VENUES, LANDING_WORLDS, type LandingWorldId } from './entry'
+import { lazy, Suspense, useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { workflowHref, editorHref, LANDING_TEMPLATES, LANDING_VENUES, LANDING_WORLDS, type LandingWorldId } from './entry'
 import { WorldDiorama } from './WorldDiorama'
 import { manualInstallHint, promptInstall, useInstallState } from './install'
 
@@ -8,6 +8,15 @@ const VrDemoReplay = lazy(() => import('./VrDemoReplay'))
 const DEMO_HASH = '#vr-demo'
 
 const GITHUB = 'https://github.com/abelxmendoza/RealmForge-XR'
+
+const TECHNOLOGY_CREDITS = [
+  { name: 'Meta Quest 3S', label: 'IMMERSIVE HARDWARE', detail: 'Explore the headset for browser-based XR. Physical headset validation is ongoing.', href: 'https://www.meta.com/quest/quest-3s/', logo: 'meta.svg', action: 'Explore Quest 3S', color: '#5b9dff' },
+  { name: 'Scaniverse', label: 'REAL-WORLD CAPTURE', detail: 'Capture your space, export mesh GLB sections and bring them into the forge.', href: 'https://scaniverse.com', logo: 'scaniverse.webp', action: 'Discover Scaniverse', color: '#ee866b' },
+  { name: 'Niantic Spatial', label: 'SPATIAL TECHNOLOGY', detail: 'The team behind Scaniverse and its spatial mapping tools.', href: 'https://www.nianticspatial.com/', logo: 'niantic.webp', action: 'Explore Niantic Spatial', color: '#7fa1ff' },
+  { name: 'Scaniverse for iPhone', label: 'CAPTURE ON iOS', detail: 'Get the Scaniverse iPhone app directly from the Apple App Store.', href: 'https://apps.apple.com/us/app/scaniverse-3d-scanner/id1541433223', logo: 'apple.webp', action: 'View on the App Store', color: '#d7dce6' },
+  { name: 'AssemblyAI', label: 'VOICE COMMAND TRANSCRIPTION', detail: 'Streaming speech-to-text powers the voice command transcription in RealmForge XR.', href: 'https://www.assemblyai.com/', logo: 'assemblyai.svg', action: 'Meet AssemblyAI', color: '#a496ff' },
+  { name: 'Intel RealSense / RealSense', label: 'DEPTH CAMERA HARDWARE', detail: 'Explore depth cameras for spatial sensing. Direct capture is not currently integrated.', href: 'https://www.realsenseai.com/stereo-depth-cameras/', logo: 'realsense.webp', action: 'Explore depth cameras', color: '#62c8d0' },
+] as const
 
 function Arrow() {
   return <span aria-hidden="true">↗</span>
@@ -121,9 +130,10 @@ export default function LandingPage() {
         <div className="rf-shell rf-nav">
           <Brand />
           <nav aria-label="Main navigation">
+            <a href="#vision">Robotics vision</a>
             <a href="#worlds">The worlds</a>
-            <a href="#events">Events & venues</a>
-            <a href="#possibilities">The possibilities</a>
+            <a href="#scans">Import scans</a>
+            <a href="#technology">Technology & credits</a>
             <a href={GITHUB} target="_blank" rel="noreferrer">
               GitHub <Arrow />
             </a>
@@ -141,29 +151,28 @@ export default function LandingPage() {
         <section className="rf-shell rf-hero" aria-labelledby="hero-heading">
           <div className="rf-hero-copy">
             <p className="rf-eyebrow">
-              <span className="rf-dot" /> A SPATIAL WORLDBUILDING & EVENT SANDBOX
+              <span className="rf-dot" /> BUILD ENVIRONMENTS / SIMULATE ROBOT TASKS
             </p>
             <h1 id="hero-heading">
-              Big ideas.
+              Build worlds.
               <br />
-              Built in
+              Step inside.
               <br />
-              <span>your space.</span>
+              <span>Bring them to life.</span>
             </h1>
             <p className="rf-intro">
-              Lay out a venue, a festival field or a factory floor.{' '}
+              Build the world you imagine—or bring the real one into simulation.{' '}
               <br />
-              Place stages, stalls, machines and barriers, start a virtual attendee, and see how the layout shapes the flow.
+              Start from a blank world and build in desktop or VR, or scan a real environment and import it. Plan from the tabletop, step inside at life size, and edit the same world both ways.
             </p>
             <div className="rf-hero-actions">
-              <a className="rf-button" href={editorHref(selected.id)}>
-                {enterLabel(selected.id)} <Arrow />
-              </a>
+              <a className="rf-button" href={workflowHref('build')}>Build a world <Arrow /></a>
+              <a className="rf-button rf-button-ghost" href={workflowHref('scan')}>Import a real space <Arrow /></a>
               <button className="rf-button rf-button-ghost rf-demo-launch" onClick={openDemo}>
                 <i aria-hidden="true">▶</i> Watch the VR demo
               </button>
-              <a className="rf-text-link" href="#events">
-                Browse event venues <span aria-hidden="true">↓</span>
+              <a className="rf-text-link" href="#vision">
+                Explore the vision <span aria-hidden="true">↓</span>
               </a>
             </div>
             <div className="rf-compatibility">
@@ -172,7 +181,7 @@ export default function LandingPage() {
               </span>
               <span>
                 Start on desktop. Step into XR.
-                <small>Worlds, venues, and simulation in one forge.</small>
+                <small>Worldbuilding, motion and simulation in one creative space.</small>
               </span>
             </div>
           </div>
@@ -206,28 +215,159 @@ export default function LandingPage() {
         <div className="rf-capability-strip">
           <div className="rf-shell">
             <span>
-              <i>01</i> SPATIAL CREATION
+              <i>01</i> BUILD WORLDS
             </span>
             <span>
-              <i>02</i> EVENT VENUES
+              <i>02</i> HUMAN MOTION
             </span>
             <span>
-              <i>03</i> ATTENDEE FLOW
+              <i>03</i> ROBOT SIMULATION
             </span>
             <span>
-              <i>04</i> DESKTOP + WEBXR
+              <i>04</i> ART + IMMERSIVE XR
             </span>
           </div>
         </div>
 
+        <section className="rf-shell rf-technology" aria-labelledby="starting-heading">
+          <div className="rf-section-heading">
+            <div><p className="rf-eyebrow">TWO STARTING POINTS. ONE EDITABLE WORLD.</p><h2 id="starting-heading">Imagine it.<br />Or bring it with you.</h2></div>
+            <p>Design a future workspace or recreate one that already exists.<br />Both paths lead to the same tabletop and immersive editor.</p>
+          </div>
+          <div className="rf-usecase-grid">
+            <a className="rf-credit-card" href={workflowHref('build')}>
+              <span className="rf-credit-label">01 / BUILD FROM YOUR IDEAS</span>
+              <h3>Build a realm.</h3>
+              <p>Open a blank world, arrange catalog objects, draw walls and plan routes. Use the desktop editor or enter VR to build from above and within.</p>
+              <span className="rf-credit-action">Start a blank world <Arrow /></span>
+            </a>
+            <a className="rf-credit-card" href={workflowHref('scan')}>
+              <span className="rf-credit-label">02 / REAL WORLD → SIMULATED WORLD</span>
+              <h3>Bring in a real space.</h3>
+              <p>Capture an environment in Scaniverse, export mesh GLB sections, then import and align them. Add editable objects, solid obstacles and task routes around the scan.</p>
+              <span className="rf-credit-action">Open scan import <Arrow /></span>
+            </a>
+          </div>
+          <p className="rf-credit-note">Scanning happens in Scaniverse. Imported geometry is a visual starting point; movable objects, navigation obstacles, physical properties and robot-learning tasks still need to be defined. Autonomous policy training is a future goal.</p>
+        </section>
+
+        <section id="vision" className="rf-shell rf-technology" aria-labelledby="vision-heading">
+          <div className="rf-section-heading">
+            <div>
+              <p className="rf-eyebrow">ONE WORLD. MANY POSSIBILITIES.</p>
+              <h2 id="vision-heading">Build the workspace.<br />Test the task.</h2>
+            </div>
+            <p>A robotics simulation and task-building sandbox, working toward human demonstrations and autonomous robot learning. The next milestone: one robot visiting inspection checkpoints in a simplified data-center test area.</p>
+          </div>
+          <div className="rf-usecase-grid">
+            <article className="rf-credit-card">
+              <span className="rf-credit-label">01 / ROBOTICS</span>
+              <h3>Build a world.<br />Teach through motion.</h3>
+              <p>Create environments and experiment with robot routes and obstacles. The longer-term goal is to demonstrate tasks through human motion, then train and evaluate robots to perform those tasks autonomously inside the simulated world.</p>
+              <span className="rf-credit-action">Today: navigation sandbox · Vision: robot training</span>
+            </article>
+            <article className="rf-credit-card">
+              <span className="rf-credit-label">02 / MOTION CAPTURE</span>
+              <h3>Your body.<br />Inside the world.</h3>
+              <p>A Rokoko-compatible bridge and debug skeleton lay the groundwork for bringing human movement into the scene. The pipeline has been exercised with synthetic motion; a real suit is still unvalidated.</p>
+              <span className="rf-credit-action">Prototype: mock motion pipeline</span>
+            </article>
+            <article className="rf-credit-card">
+              <span className="rf-credit-label">03 / REAL WORLD → SIMULATION</span>
+              <h3>Scan the space.<br />Bring it into the world.</h3>
+              <p>Capture a room, workshop or test area in Scaniverse. Import mesh GLB sections, align them and add catalog objects and route checkpoints to create a simulation workspace.</p>
+              <span className="rf-credit-action">Today: mesh import and manual alignment</span>
+            </article>
+            <article className="rf-credit-card">
+              <span className="rf-credit-label">04 / TWO WAYS TO EDIT</span>
+              <h3>Plan from above.<br />Edit from within.</h3>
+              <p>Use the tabletop overview to arrange your world, then enter at life size to inspect and edit from inside. Both views share the same objects, tools and saved world.</p>
+              <span className="rf-credit-action">VR: wrist Enter / Tabletop · View controls</span>
+            </article>
+          </div>
+          <div className="rf-training-vision" aria-labelledby="training-heading">
+            <p className="rf-eyebrow">THE ROBOTICS ROADMAP / FUTURE GOAL</p>
+            <h3 id="training-heading">A world to build in.<br />A world robots can learn in.</h3>
+            <p>Create the environment, show the task through body-suit motion, and eventually train robots to work autonomously within it. Evaluate their behavior in simulation before considering transfer to physical hardware.</p>
+            <ol className="rf-training-steps" aria-label="Robot learning roadmap">
+              <li><strong>01 / Build</strong><span>Shape the world, obstacles and task environment.</span></li>
+              <li><strong>02 / Demonstrate</strong><span>Capture human movement and task demonstrations.</span></li>
+              <li><strong>03 / Train</strong><span>Connect a robot-learning system to learn autonomous task behavior.</span></li>
+              <li><strong>04 / Evaluate</strong><span>Measure task success, failures and behavior across simulated scenarios.</span></li>
+            </ol>
+            <p className="rf-credit-note">This is the intended development path. Demonstration recording, policy training and autonomous task evaluation are not implemented yet. Physical-world transfer would require separate validation.</p>
+          </div>
+          <p className="rf-credit-note">RealmForge is an evolving prototype. Autonomous policy training remains a future goal. Art, film and gaming are possible later applications; robotics workspaces are the current focus.</p>
+        </section>
+
+        <section id="worlds" className="rf-shell rf-worlds" aria-labelledby="worlds-heading">
+          <div className="rf-section-heading">
+            <div>
+              <p className="rf-eyebrow">A WORLD OF STARTING POINTS</p>
+              <h2 id="worlds-heading">
+                Where will you
+                <br />
+                take it?
+              </h2>
+            </div>
+            <p>
+              A city. A new frontier. A warehouse or a factory in motion.
+              <br />
+              Start with a template, then make it yours.
+            </p>
+          </div>
+          <div className="rf-world-cards">
+            {LANDING_WORLDS.map((item) => (
+              <TemplateCard key={item.id} item={item} kind="ENVIRONMENT" />
+            ))}
+          </div>
+          <a className="rf-blank-link" href={editorHref()}>
+            Prefer a clean slate? Open the editor and create a blank world. <Arrow />
+          </a>
+        </section>
+
+        <section id="scans" className="rf-shell rf-events" aria-labelledby="scans-heading">
+          <div className="rf-section-heading">
+            <div>
+              <p className="rf-eyebrow">NEW / REAL-WORLD PROPERTY SCANS</p>
+              <h2 id="scans-heading">Scan the real world.<br />Build its simulated workspace.</h2>
+            </div>
+            <p>Capture real environments in Scaniverse and import their polygon meshes into RealmForge.<br />Assemble the space, add simulation objects, then edit it on a tabletop or from inside VR.</p>
+          </div>
+          <div className="rf-event-steps" aria-label="Property scan workflow">
+            <article>
+              <span>01 / CAPTURE</span>
+              <h3>Scan a section</h3>
+              <p>Capture overlapping rooms or outdoor areas in Scaniverse. Export polygon mesh GLB files; Gaussian splats are not supported.</p>
+            </article>
+            <article>
+              <span>02 / ASSEMBLE</span>
+              <h3>Make it your property</h3>
+              <p>Open Build → Property scans → Add scans (.glb). Name each section, align it manually and calibrate scale with a known distance. Set floor elevations and hide or solo sections.</p>
+            </article>
+            <article>
+              <span>03 / EXPLORE</span>
+              <h3>Take it into XR</h3>
+              <p>Use shared web and headset controls for alignment, opacity and ceiling cuts. Export a property bundle with the original meshes to open it on another device.</p>
+            </article>
+          </div>
+          <div className="rf-hero-actions">
+            <a className="rf-button" href={workflowHref('scan')}>Open scan import <Arrow /></a>
+            <a className="rf-text-link" href={`${GITHUB}/blob/main/docs/property-scans.md`} target="_blank" rel="noreferrer">Read the scan guide <Arrow /></a>
+          </div>
+          <p className="rf-event-note">
+            Capture happens in Scaniverse; RealmForge imports the meshes. Alignment is manual. Files stay on your device unless you export and transfer them. Headset file import exits immersive mode. Imported meshes provide visual geometry; robot navigation still uses the flat plane and explicitly placed solid objects. Automatic scan-to-collision conversion, stairs and terrain navigation are not implemented. Physical Quest and real Scaniverse-file validation remain ongoing.
+          </p>
+        </section>
+
         <section id="events" className="rf-shell rf-events" aria-labelledby="events-heading">
           <div className="rf-section-heading">
             <div>
-              <p className="rf-eyebrow">EVENTS & VENUES</p>
+              <p className="rf-eyebrow">A WORLDBUILDING EXAMPLE / EVENTS & VENUES</p>
               <h2 id="events-heading">
-                Stage the room.
+                One way to use it.
                 <br />
-                Watch the flow.
+                Stage an event.
               </h2>
             </div>
             <p>
@@ -277,37 +417,11 @@ export default function LandingPage() {
           </p>
         </section>
 
-        <section id="worlds" className="rf-shell rf-worlds" aria-labelledby="worlds-heading">
-          <div className="rf-section-heading">
-            <div>
-              <p className="rf-eyebrow">A WORLD OF STARTING POINTS</p>
-              <h2 id="worlds-heading">
-                Where will you
-                <br />
-                take it?
-              </h2>
-            </div>
-            <p>
-              A city. A new frontier. A warehouse or a factory in motion.
-              <br />
-              Start with a template, then make it yours.
-            </p>
-          </div>
-          <div className="rf-world-cards">
-            {LANDING_WORLDS.map((item) => (
-              <TemplateCard key={item.id} item={item} kind="ENVIRONMENT" />
-            ))}
-          </div>
-          <a className="rf-blank-link" href={editorHref()}>
-            Prefer a clean slate? Open the editor and create a blank world. <Arrow />
-          </a>
-        </section>
-
         <section id="possibilities" className="rf-possibilities">
           <div className="rf-shell rf-possibilities-inner">
             <div className="rf-section-heading">
               <div>
-                <p className="rf-eyebrow">YOUR IDEAS. A LITTLE MORE DIMENSION.</p>
+                <p className="rf-eyebrow">TOOLS YOU CAN EXPLORE TODAY</p>
                 <h2 id="possibilities-heading">
                   Build the scene.
                   <br />
@@ -317,7 +431,7 @@ export default function LandingPage() {
               <p>
                 Make a place, then put it to the test.
                 <br />
-                RealmForge connects creating with simulating — for worlds and events.
+                Import real spaces, build robot workspaces and try the current navigation sandbox.
               </p>
             </div>
             <div className="rf-feature-rows">
@@ -364,7 +478,7 @@ export default function LandingPage() {
                 <div>
                   <p>
                     Build with mouse and keyboard, or enter WebXR for spatial controls. Keep your worlds and venues in
-                    the local library and export them as portable JSON.
+                    the local library. Export world JSON, or transfer scans and world data together in a property bundle.
                   </p>
                   <span className="rf-feature-tags">
                     DESKTOP <b>·</b> VR / AR CONTROLS <b>·</b> WORLD LIBRARY
@@ -375,11 +489,37 @@ export default function LandingPage() {
           </div>
         </section>
 
+        <section id="technology" className="rf-shell rf-technology" aria-labelledby="technology-heading">
+          <div className="rf-section-heading">
+            <div>
+              <p className="rf-eyebrow">HARDWARE / TOOLS / ACKNOWLEDGMENTS</p>
+              <h2 id="technology-heading">Good tools.<br />Bigger possibilities.</h2>
+            </div>
+            <p>The technology behind the workflow, and the hardware worth exploring.<br />Meet the builders behind the tools.</p>
+          </div>
+          <div className="rf-credit-grid">
+            {TECHNOLOGY_CREDITS.map((credit) => (
+              <a key={credit.name} className="rf-credit-card" href={credit.href} target="_blank" rel="noreferrer" style={{ '--credit-accent': credit.color } as CSSProperties}>
+                <div className="rf-credit-top"><span className={`rf-credit-logo ${credit.logo === 'realsense.webp' ? 'rf-credit-logo-dark' : ''}`}><img src={`/credits/${credit.logo}`} alt="" loading="lazy" width="140" height="44" /></span><Arrow /></div>
+                {credit.logo === 'meta.svg' && (
+                  <img className="rf-credit-product" src="/images/meta-quest-3s.webp" width="960" height="960" loading="lazy" alt="Meta Quest 3S headset with two Touch Plus controllers" />
+                )}
+                <span className="rf-credit-label">{credit.label}</span>
+                <h3>{credit.name}</h3>
+                <p>{credit.detail}</p>
+                <span className="rf-credit-action">{credit.action} <Arrow /></span>
+              </a>
+            ))}
+          </div>
+          <p className="rf-credit-note">Quest 3S product photo via <a href="https://www.jbhifi.co.nz/products/meta-quest-3s-256gb" target="_blank" rel="noreferrer">JB Hi-Fi</a>.</p>
+          <p className="rf-credit-note">Brand names and logos belong to their respective owners. Credits identify tools and hardware; they do not imply sponsorship, partnership or endorsement.</p>
+        </section>
+
         <section className="rf-shell rf-final">
           <img className="rf-final-mark rf-final-logo" src={BRAND.logoLarge} width="168" height="168" alt="" aria-hidden="true" />
-          <p className="rf-eyebrow">SHAPE WORLDS. STAGE EVENTS. BRING THEM TO LIFE.</p>
+          <p className="rf-eyebrow">BUILD WORLDS. EXPLORE MOTION. CREATE WHAT’S NEXT.</p>
           <h2>
-            Your next venue
+            Your next space
             <br />
             starts here.
           </h2>
@@ -411,7 +551,7 @@ export default function LandingPage() {
       <footer className="rf-footer rf-shell">
         <div>
           <Brand />
-          <p>A spatial worldbuilding, event venue & simulation project.</p>
+          <p>A robotics workspace sandbox for real-world scans, scene building and simulated tasks.</p>
         </div>
         <div>
           <a href={GITHUB} target="_blank" rel="noreferrer">

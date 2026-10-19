@@ -181,10 +181,11 @@ function WorldScaler() {
     } else {
       const head = camera.getWorldPosition(new THREE.Vector3())
       const forward = camera.getWorldDirection(new THREE.Vector3())
-      at = worldPlacement(worldScale, head, forward, useWorld.getState().robotStart, WORLD_ROOT.yaw)
+      at = worldPlacement(worldScale, head, forward, placement.focus ?? useWorld.getState().robotStart, WORLD_ROOT.yaw)
       // Stand on the real floor (unbounded tracking's origin isn't necessarily at floor height).
       at.y = WORLD_ROOT.floorY
     }
+    placement.focus = null
     root.position.copy(at)
     // Keep the yaw from the L gesture / world pull / map grab.
     root.rotation.set(0, WORLD_ROOT.yaw, 0)
