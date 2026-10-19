@@ -121,6 +121,7 @@ export default function LandingPage() {
         <div className="rf-shell rf-nav">
           <Brand />
           <nav aria-label="Main navigation">
+            <a href="#scans">Real-world scans</a>
             <a href="#worlds">The worlds</a>
             <a href="#events">Events & venues</a>
             <a href="#possibilities">The possibilities</a>
@@ -141,7 +142,7 @@ export default function LandingPage() {
         <section className="rf-shell rf-hero" aria-labelledby="hero-heading">
           <div className="rf-hero-copy">
             <p className="rf-eyebrow">
-              <span className="rf-dot" /> A SPATIAL WORLDBUILDING & EVENT SANDBOX
+              <span className="rf-dot" /> REAL SPACES. VIRTUAL WORLDS. ONE FORGE.
             </p>
             <h1 id="hero-heading">
               Big ideas.
@@ -151,9 +152,9 @@ export default function LandingPage() {
               <span>your space.</span>
             </h1>
             <p className="rf-intro">
-              Lay out a venue, a festival field or a factory floor.{' '}
+              Bring your scanned rooms, garage or yard into the forge.{' '}
               <br />
-              Place stages, stalls, machines and barriers, start a virtual attendee, and see how the layout shapes the flow.
+              Align mesh sections, plan your layout and explore it in WebXR. Or start with a venue, festival or factory template.
             </p>
             <div className="rf-hero-actions">
               <a className="rf-button" href={editorHref(selected.id)}>
@@ -162,8 +163,8 @@ export default function LandingPage() {
               <button className="rf-button rf-button-ghost rf-demo-launch" onClick={openDemo}>
                 <i aria-hidden="true">▶</i> Watch the VR demo
               </button>
-              <a className="rf-text-link" href="#events">
-                Browse event venues <span aria-hidden="true">↓</span>
+              <a className="rf-text-link" href="#scans">
+                Explore the scanning workflow <span aria-hidden="true">↓</span>
               </a>
             </div>
             <div className="rf-compatibility">
@@ -172,7 +173,7 @@ export default function LandingPage() {
               </span>
               <span>
                 Start on desktop. Step into XR.
-                <small>Worlds, venues, and simulation in one forge.</small>
+                <small>Imported scans, editable worlds and shared spatial tools.</small>
               </span>
             </div>
           </div>
@@ -206,7 +207,7 @@ export default function LandingPage() {
         <div className="rf-capability-strip">
           <div className="rf-shell">
             <span>
-              <i>01</i> SPATIAL CREATION
+              <i>01</i> PROPERTY SCANS
             </span>
             <span>
               <i>02</i> EVENT VENUES
@@ -219,6 +220,41 @@ export default function LandingPage() {
             </span>
           </div>
         </div>
+
+        <section id="scans" className="rf-shell rf-events" aria-labelledby="scans-heading">
+          <div className="rf-section-heading">
+            <div>
+              <p className="rf-eyebrow">NEW / REAL-WORLD PROPERTY SCANS</p>
+              <h2 id="scans-heading">Your space.<br />A new perspective.</h2>
+            </div>
+            <p>Bring rooms, floors and outdoor areas together from separate mesh scans.<br />Arrange your property on screen, then explore the same world in immersive XR.</p>
+          </div>
+          <div className="rf-event-steps" aria-label="Property scan workflow">
+            <article>
+              <span>01 / CAPTURE</span>
+              <h3>Scan a section</h3>
+              <p>Capture overlapping rooms or outdoor areas in Scaniverse. Export polygon mesh GLB files; Gaussian splats are not supported.</p>
+            </article>
+            <article>
+              <span>02 / ASSEMBLE</span>
+              <h3>Make it your property</h3>
+              <p>Open Build → Property scans → Add scans (.glb). Name each section, align it manually and calibrate scale with a known distance. Set floor elevations and hide or solo sections.</p>
+            </article>
+            <article>
+              <span>03 / EXPLORE</span>
+              <h3>Take it into XR</h3>
+              <p>Use shared web and headset controls for alignment, opacity and ceiling cuts. Export a property bundle with the original meshes to open it on another device.</p>
+            </article>
+          </div>
+          <div className="rf-hero-actions">
+            <a className="rf-button" href={editorHref()}>Open editor to import scans <Arrow /></a>
+            <a className="rf-text-link" href="https://scaniverse.com" target="_blank" rel="noreferrer">Get Scaniverse <Arrow /></a>
+            <a className="rf-text-link" href={`${GITHUB}/blob/main/docs/property-scans.md`} target="_blank" rel="noreferrer">Read the scan guide <Arrow /></a>
+          </div>
+          <p className="rf-event-note">
+            Capture happens in Scaniverse; RealmForge imports the meshes. Alignment is manual. Files stay on your device unless you export and transfer them. Headset file import exits immersive mode. Scanned floors do not add stairs or terrain navigation to the flat-plane simulation. Physical Quest and real Scaniverse-file validation remain ongoing.
+          </p>
+        </section>
 
         <section id="events" className="rf-shell rf-events" aria-labelledby="events-heading">
           <div className="rf-section-heading">
@@ -317,7 +353,7 @@ export default function LandingPage() {
               <p>
                 Make a place, then put it to the test.
                 <br />
-                RealmForge connects creating with simulating — for worlds and events.
+                RealmForge connects imported spaces, worldbuilding and layout simulation.
               </p>
             </div>
             <div className="rf-feature-rows">
@@ -364,7 +400,7 @@ export default function LandingPage() {
                 <div>
                   <p>
                     Build with mouse and keyboard, or enter WebXR for spatial controls. Keep your worlds and venues in
-                    the local library and export them as portable JSON.
+                    the local library. Export world JSON, or transfer scans and world data together in a property bundle.
                   </p>
                   <span className="rf-feature-tags">
                     DESKTOP <b>·</b> VR / AR CONTROLS <b>·</b> WORLD LIBRARY
@@ -379,7 +415,7 @@ export default function LandingPage() {
           <img className="rf-final-mark rf-final-logo" src={BRAND.logoLarge} width="168" height="168" alt="" aria-hidden="true" />
           <p className="rf-eyebrow">SHAPE WORLDS. STAGE EVENTS. BRING THEM TO LIFE.</p>
           <h2>
-            Your next venue
+            Your next space
             <br />
             starts here.
           </h2>
@@ -411,7 +447,7 @@ export default function LandingPage() {
       <footer className="rf-footer rf-shell">
         <div>
           <Brand />
-          <p>A spatial worldbuilding, event venue & simulation project.</p>
+          <p>Real-world mesh scans, spatial worldbuilding & layout simulation.</p>
         </div>
         <div>
           <a href={GITHUB} target="_blank" rel="noreferrer">
