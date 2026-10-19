@@ -257,33 +257,11 @@ export default function LandingPage() {
           </div>
           <div className="rf-hero-actions">
             <a className="rf-button" href={editorHref()}>Open editor to import scans <Arrow /></a>
-            <a className="rf-text-link" href="https://scaniverse.com" target="_blank" rel="noreferrer">Get Scaniverse <Arrow /></a>
-            <a className="rf-text-link" href="https://apps.apple.com/us/app/scaniverse-3d-scanner/id1541433223" target="_blank" rel="noreferrer">Scaniverse for iPhone <Arrow /></a>
-            <a className="rf-text-link" href="https://www.nianticspatial.com/" target="_blank" rel="noreferrer">Niantic Spatial <Arrow /></a>
             <a className="rf-text-link" href={`${GITHUB}/blob/main/docs/property-scans.md`} target="_blank" rel="noreferrer">Read the scan guide <Arrow /></a>
           </div>
           <p className="rf-event-note">
             Capture happens in Scaniverse; RealmForge imports the meshes. Alignment is manual. Files stay on your device unless you export and transfer them. Headset file import exits immersive mode. Scanned floors do not add stairs or terrain navigation to the flat-plane simulation. Physical Quest and real Scaniverse-file validation remain ongoing.
           </p>
-        </section>
-
-        <section className="rf-shell rf-headset" aria-labelledby="headset-heading">
-          <figure>
-            <img src="/images/meta-quest-3s.webp" width="960" height="960" loading="lazy" alt="White Meta Quest 3S headset with two Touch Plus controllers" />
-            <figcaption>Meta Quest 3S · Product photo via <a href="https://www.jbhifi.co.nz/products/meta-quest-3s-256gb" target="_blank" rel="noreferrer">JB Hi-Fi</a></figcaption>
-          </figure>
-          <div>
-            <p className="rf-eyebrow">FROM THE BROWSER TO THE HEADSET</p>
-            <h2 id="headset-heading">Step inside<br />your next idea.</h2>
-            <p>Build on screen, then explore your world in immersive XR with a compatible headset browser. Use the floating palette to adjust your layout and imported scan sections.</p>
-            <div className="rf-hero-actions">
-              <a className="rf-button rf-button-ghost" href={editorHref()}>Open RealmForge XR <Arrow /></a>
-              <a className="rf-text-link" href="https://www.meta.com/quest/quest-3s/" target="_blank" rel="noreferrer">Official Meta Quest 3S <Arrow /></a>
-            </div>
-            <p><a className="rf-text-link" href="https://www.realsenseai.com/stereo-depth-cameras/" target="_blank" rel="noreferrer">Intel RealSense / RealSense depth cameras <Arrow /></a></p>
-            <p className="rf-headset-note">Explore depth-camera hardware on the official RealSense site. Direct RealSense capture is not currently integrated into RealmForge XR.</p>
-            <p className="rf-headset-note">Meta Quest 3S shown. Physical headset validation is ongoing. RealmForge XR is an independent project and is not affiliated with or endorsed by Meta.</p>
-          </div>
         </section>
 
         <section id="events" className="rf-shell rf-events" aria-labelledby="events-heading">
@@ -463,6 +441,7 @@ export default function LandingPage() {
               </a>
             ))}
           </div>
+          <p className="rf-credit-note">Quest 3S product photo via <a href="https://www.jbhifi.co.nz/products/meta-quest-3s-256gb" target="_blank" rel="noreferrer">JB Hi-Fi</a>.</p>
           <p className="rf-credit-note">Brand names and logos belong to their respective owners. Credits identify tools and hardware; they do not imply sponsorship, partnership or endorsement.</p>
         </section>
 
@@ -509,7 +488,6 @@ export default function LandingPage() {
             Explore the source <Arrow />
           </a>
           <p>Made for the MOLTEN Hackathon.</p>
-          <p>Voice command transcription powered by <a href="https://www.assemblyai.com/" target="_blank" rel="noreferrer">AssemblyAI <Arrow /></a>.</p>
         </div>
         <p className="rf-hardware-note">
           Immersive features require a compatible WebXR browser. Headset behavior varies; physical Quest validation is
