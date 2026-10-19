@@ -13,7 +13,7 @@ const entry = readEntry(window.location.search)
 if (entry.editor) {
   root.render(<div className="rf-loading" role="status"><p>Opening your world…</p></div>)
   void import('./editor/EditorEntry').then(async ({ default: App, initializeEditor }) => {
-    await initializeEditor(entry.world)
+    await initializeEditor(entry.world, entry.workflow)
     document.title = 'RealmForge XR — World editor'
     root.render(<StrictMode><App /></StrictMode>)
   }).catch((error: unknown) => {

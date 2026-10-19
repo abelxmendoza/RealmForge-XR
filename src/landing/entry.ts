@@ -83,8 +83,16 @@ export function editorHref(world?: LandingWorldId) {
   return world ? `?editor=1&world=${encodeURIComponent(world)}` : '?editor=1'
 }
 
-export function readEntry(search: string): { editor: boolean; world?: LandingWorldId } {
+export type EntryWorkflow = 'build' | 'scan'
+export function workflowHref(workflow: EntryWorkflow) {
+  return `?editor=1&workflow=${workflow}`
+}
+
+export function readEntry(search: string): { editor: boolean; world?: LandingWorldId; workflow?: EntryWorkflow } {
   const params = new URLSearchParams(search)
   const world = LANDING_TEMPLATES.find((item) => item.id === params.get('world'))?.id
-  return { editor: params.get('editor') === '1', ...(world ? { world } : {}) }
+  const editor = params.get('editor') === '1'
+  const value = params.get('workflow')
+  const workflow = editor && !world && (value === 'build' || value === 'scan') ? value : undefined
+  return { editor, ...(world ? { world } : {}), ...(workflow ? { workflow } : {}) }
 }

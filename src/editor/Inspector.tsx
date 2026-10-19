@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { ScanPanel } from '../scan/ScanPanel'
 import { openScanPanel, useScan } from '../scan/store'
 import { create } from 'zustand'
@@ -73,9 +73,13 @@ export function Inspector() {
   const scanOpen = useScan((s) => s.panelOpen)
   useEffect(() => { if (scanOpen) setCollapsed(false) }, [scanOpen, setCollapsed])
   const selectedId = selected?.id ?? null
+  const previousContext = useRef([tool, section, selectedId, selectedActorId])
+  // Preserve an explicitly opened scan panel on initial mount (including StrictMode).
   // Picking another tool, tab or object hands the side panel back to it.
   useEffect(() => {
-    if (useScan.getState().panelOpen) openScanPanel(false)
+    const next = [tool, section, selectedId, selectedActorId]
+    if (next.some((value, i) => value !== previousContext.current[i]) && useScan.getState().panelOpen) openScanPanel(false)
+    previousContext.current = next
   }, [tool, section, selectedId, selectedActorId])
 
   if (collapsed) {

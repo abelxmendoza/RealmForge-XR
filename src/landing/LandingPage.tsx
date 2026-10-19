@@ -1,6 +1,6 @@
 import { BRAND } from '../theme/brand'
 import { lazy, Suspense, useCallback, useEffect, useState, type CSSProperties } from 'react'
-import { editorHref, LANDING_TEMPLATES, LANDING_VENUES, LANDING_WORLDS, type LandingWorldId } from './entry'
+import { workflowHref, editorHref, LANDING_TEMPLATES, LANDING_VENUES, LANDING_WORLDS, type LandingWorldId } from './entry'
 import { WorldDiorama } from './WorldDiorama'
 import { manualInstallHint, promptInstall, useInstallState } from './install'
 
@@ -161,14 +161,13 @@ export default function LandingPage() {
               <span>Bring them to life.</span>
             </h1>
             <p className="rf-intro">
-              Build simulated workspaces for autonomous robot tasks.{' '}
+              Build the world you imagine—or bring the real one into simulation.{' '}
               <br />
-              Scan a real environment with Scaniverse and import its meshes, or build from a template. Edit the same world as a tabletop model or explore it at life size in VR.
+              Start from a blank world and build in desktop or VR, or scan a real environment and import it. Plan from the tabletop, step inside at life size, and edit the same world both ways.
             </p>
             <div className="rf-hero-actions">
-              <a className="rf-button" href={editorHref(selected.id)}>
-                {enterLabel(selected.id)} <Arrow />
-              </a>
+              <a className="rf-button" href={workflowHref('build')}>Build a world <Arrow /></a>
+              <a className="rf-button rf-button-ghost" href={workflowHref('scan')}>Import a real space <Arrow /></a>
               <button className="rf-button rf-button-ghost rf-demo-launch" onClick={openDemo}>
                 <i aria-hidden="true">▶</i> Watch the VR demo
               </button>
@@ -229,6 +228,28 @@ export default function LandingPage() {
             </span>
           </div>
         </div>
+
+        <section className="rf-shell rf-technology" aria-labelledby="starting-heading">
+          <div className="rf-section-heading">
+            <div><p className="rf-eyebrow">TWO STARTING POINTS. ONE EDITABLE WORLD.</p><h2 id="starting-heading">Imagine it.<br />Or bring it with you.</h2></div>
+            <p>Design a future workspace or recreate one that already exists.<br />Both paths lead to the same tabletop and immersive editor.</p>
+          </div>
+          <div className="rf-usecase-grid">
+            <a className="rf-credit-card" href={workflowHref('build')}>
+              <span className="rf-credit-label">01 / BUILD FROM YOUR IDEAS</span>
+              <h3>Build a realm.</h3>
+              <p>Open a blank world, arrange catalog objects, draw walls and plan routes. Use the desktop editor or enter VR to build from above and within.</p>
+              <span className="rf-credit-action">Start a blank world <Arrow /></span>
+            </a>
+            <a className="rf-credit-card" href={workflowHref('scan')}>
+              <span className="rf-credit-label">02 / REAL WORLD → SIMULATED WORLD</span>
+              <h3>Bring in a real space.</h3>
+              <p>Capture an environment in Scaniverse, export mesh GLB sections, then import and align them. Add editable objects, solid obstacles and task routes around the scan.</p>
+              <span className="rf-credit-action">Open scan import <Arrow /></span>
+            </a>
+          </div>
+          <p className="rf-credit-note">Scanning happens in Scaniverse. Imported geometry is a visual starting point; movable objects, navigation obstacles, physical properties and robot-learning tasks still need to be defined. Autonomous policy training is a future goal.</p>
+        </section>
 
         <section id="vision" className="rf-shell rf-technology" aria-labelledby="vision-heading">
           <div className="rf-section-heading">
@@ -331,7 +352,7 @@ export default function LandingPage() {
             </article>
           </div>
           <div className="rf-hero-actions">
-            <a className="rf-button" href={editorHref()}>Open editor to import scans <Arrow /></a>
+            <a className="rf-button" href={workflowHref('scan')}>Open scan import <Arrow /></a>
             <a className="rf-text-link" href={`${GITHUB}/blob/main/docs/property-scans.md`} target="_blank" rel="noreferrer">Read the scan guide <Arrow /></a>
           </div>
           <p className="rf-event-note">
