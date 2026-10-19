@@ -5,6 +5,7 @@
 
 import { startAssemblyAISession, type AssemblyAISession } from './assemblyAIClient'
 import { parseVoiceCommand } from './commandParser'
+import { askClaude } from './claudeFallback'
 import { executeVoiceCommand, type CommandExecutorOptions, type ExecuteResult } from './commandExecutor'
 import { emitVoiceEvent } from './events'
 import { addMockTranscriptHandler } from './mockProvider'
@@ -38,6 +39,11 @@ export type VoiceControllerOptions = {
    * Works on Chrome / Edge / Safari laptops without an AssemblyAI key.
    */
   fallbackToWebSpeech?: boolean
+  /**
+   * Ask Claude (POST /api/voice/plan) when the keyword parser can't read a sentence, or skipped part
+   * of one. Default: on in the browser, off elsewhere (tests). Turns itself off if the server has no key.
+   */
+  claudeFallback?: boolean
 }
 
 type Listener = (state: VoiceControllerState) => void
@@ -61,6 +67,7 @@ export class VoiceController {
   private tokenUrl: string | undefined
   private fallbackToMock: boolean
   private fallbackToWebSpeech: boolean
+  private claudeFallback: boolean
   private listeners = new Set<Listener>()
   /** Deduplicate identical final transcripts within a short window. */
   private lastFinalKey: string | null = null
@@ -77,6 +84,7 @@ export class VoiceController {
     this.tokenUrl = opts.tokenUrl
     this.fallbackToMock = opts.fallbackToMock ?? true
     this.fallbackToWebSpeech = opts.fallbackToWebSpeech ?? true
+    this.claudeFallback = opts.claudeFallback ?? typeof window !== 'undefined'
     if (opts.registerMock !== false) this.connectMock()
   }
 
@@ -309,14 +317,18 @@ export class VoiceController {
     this.lastPartial = this.utterance.join(' ')
     this.emit()
     this.clearFinishTimer()
+    // A sentence that trails off on "and" / "with" / a comma is still going: wait longer for the rest.
+    const unfinished = /(\b(and|with|then|plus|also|a|the|some|of)|,)\s*$/i.test(this.lastPartial ?? '')
     this.finishTimer = setTimeout(() => {
       this.finishTimer = null
       void this.stopListening()
-    }, VoiceController.FINISH_AFTER_MS)
+    }, unfinished ? VoiceController.FINISH_AFTER_UNFINISHED_MS : VoiceController.FINISH_AFTER_MS)
   }
 
   /** Pause after the last final piece before the command runs. */
   static FINISH_AFTER_MS = 700
+  /** Same, when the last piece ends mid-list ("a road and", "two houses with"). */
+  static FINISH_AFTER_UNFINISHED_MS = 2000
 
   private clearFinishTimer() {
     if (this.finishTimer) clearTimeout(this.finishTimer)
@@ -360,12 +372,27 @@ export class VoiceController {
       this.lastTranscript = text
       this.lastPartial = null
 
-      const parsed = parseVoiceCommand(text)
+      let parsed = parseVoiceCommand(text)
+      let note = ''
+      // Keywords first (instant, offline); Claude only for what they couldn't read.
+      const partial = parsed.ok && parsed.command.type === 'BATCH' && parsed.command.skipped.length > 0
+      if (this.claudeFallback && ((!parsed.ok && parsed.reason === 'unsupported') || partial)) {
+        this.lastPartial = 'Thinking…'
+        this.emit()
+        const plan = await askClaude(text)
+        this.lastPartial = null
+        if (plan?.command) {
+          parsed = { ok: true, command: plan.command }
+          note = plan.note
+        } else if (plan?.note && !parsed.ok) {
+          note = plan.note
+        }
+      }
       if (!parsed.ok) {
         const message =
           parsed.reason === 'empty'
             ? 'Empty transcript'
-            : `Unsupported command: "${text}"`
+            : note || `Unsupported command: "${text}"`
         this.lastCommand = null
         this.lastResult = { status: 'rejected', message }
         emitVoiceEvent({
@@ -388,7 +415,8 @@ export class VoiceController {
       })
 
       const execOpts: CommandExecutorOptions = { confirm: this.confirm }
-      const execResult = await executeVoiceCommand(parsed.command, execOpts)
+      let execResult = await executeVoiceCommand(parsed.command, execOpts)
+      if (note && 'message' in execResult) execResult = { ...execResult, message: `${execResult.message} ${note}`.trim() } as ExecuteResult
       this.lastResult = execResult
       if (execResult.status === 'needs_confirmation') {
         this.pendingConfirmation = execResult

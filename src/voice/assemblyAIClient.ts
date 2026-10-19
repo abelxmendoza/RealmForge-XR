@@ -10,6 +10,7 @@
 
 import type { TranscriptResult } from './types'
 import { LinearResampler, float32ToPcm16 } from './pcmResampler'
+import { VOICE_KEYTERMS } from './vocabulary'
 
 const WS_BASE = 'wss://streaming.assemblyai.com/v3/ws'
 const SAMPLE_RATE = 16_000
@@ -165,6 +166,8 @@ export async function startAssemblyAISession(
       // Wait a little longer before ending a turn, so a short command isn't split into pieces.
       min_end_of_turn_silence_when_confident: '800',
       max_turn_silence: '1800',
+      // Scene words it otherwise mishears ("lamppost", "asphalt", "pitched roofs").
+      keyterms_prompt: JSON.stringify(VOICE_KEYTERMS.slice(0, 100)),
       token,
     })
     const endpoint = `${WS_BASE}?${params.toString()}`

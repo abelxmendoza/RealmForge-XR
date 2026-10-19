@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useVoiceCommands } from '../voice/useVoiceCommands'
+import { parseVoiceCommand } from '../voice/commandParser'
+import { previewCommand } from '../voice/sceneExecutor'
 import { VOICE_OPTIONS } from '../voice/sharedConfirm'
 import { getConfirmation, subscribeConfirmation } from '../world/confirmation'
 
@@ -54,6 +56,12 @@ export function VoicePanel() {
   }, [voice.controller])
 
   const heard = voice.isListening ? voice.lastPartial : voice.lastTranscript
+  // While talking, show what the sentence will build so far ("3 streetlights · road · 2 houses").
+  const plan = useMemo(() => {
+    if (!voice.isListening || !heard) return null
+    const parsed = parseVoiceCommand(heard)
+    return parsed.ok ? previewCommand(parsed.command) : null
+  }, [voice.isListening, heard])
   const result = voice.lastResult && 'message' in voice.lastResult ? voice.lastResult.message : null
   const ok = voice.lastResult?.status === 'executed'
   const label = starting ? 'Starting mic…' : voice.isListening ? 'Listening… pause to run' : confirmation ? 'Confirm on screen' : 'Voice command'
@@ -61,8 +69,8 @@ export function VoicePanel() {
     ? voice.lastError
     : voice.isListening
       ? heard
-        ? `“${heard}”`
-        : 'Speak now, e.g. “add three trees near the robot”'
+        ? `“${heard}”${plan ? ` → ${plan}` : ''}`
+        : 'Speak now, e.g. “add a road and two houses with a few people walking around”'
       : result
         ? `${heard ? `“${heard}” · ` : ''}${result}`
         : IDLE_HINT
@@ -96,7 +104,7 @@ export function VoicePanel() {
             setText('')
           }}
         >
-          <input autoFocus value={text} placeholder="add three trees near the robot" onChange={(e) => setText(e.target.value)} />
+          <input autoFocus value={text} placeholder="add a road and two houses with a few people walking around" onChange={(e) => setText(e.target.value)} />
           <button type="submit">Run</button>
         </form>
       )}

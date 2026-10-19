@@ -1,14 +1,16 @@
 import type { EnvironmentId } from '../world/environment'
 import type { Tool } from '../world/store'
 import type { ParseResult, VoiceCommand } from './types'
-import { parseObjectCommand } from './objectCommands'
+import { parseScene } from './sceneCommands'
 import { parseOpenSaved, parseWorldCommand } from './worldCommands'
 
 /** Normalize spoken text for keyword matching. */
-export function normalizeTranscript(raw: string): string {
+export function normalizeTranscript(raw: string, opts: { keepCommas?: boolean } = {}): string {
   return raw
     .toLowerCase()
-    .replace(/[^\w\s-]/g, ' ')
+    .replace(/'/g, '')
+    .replace(opts.keepCommas ? /[^\w\s,;-]/g : /[^\w\s-]/g, ' ')
+    .replace(/\s*([,;])\s*/g, opts.keepCommas ? ' $1 ' : ' ')
     .replace(/\s+/g, ' ')
     .trim()
 }
@@ -187,9 +189,10 @@ export function parseVoiceCommand(transcript: string): ParseResult {
   const openSaved = parseOpenSaved(t)
   if (openSaved) return { ok: true, command: openSaved }
 
-  // Make, place, move, rotate, resize and copy objects ("add three trees near the robot").
-  const objectCommand = parseObjectCommand(t)
-  if (objectCommand) return { ok: true, command: objectCommand }
+  // Make, place, move, rotate, resize, copy, restyle and delete things, people included; several in
+  // one sentence become a BATCH ("add 3 lampposts, a road and two houses with a few people walking around").
+  const sceneCommand = parseScene(normalizeTranscript(transcript, { keepCommas: true }))
+  if (sceneCommand) return { ok: true, command: sceneCommand }
 
   for (const { phrases, tool } of TOOL_RULES) {
     if (phrases.some((p) => t.includes(p))) {

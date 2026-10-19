@@ -2,6 +2,10 @@ import type { EnvironmentId } from '../world/environment'
 import type { Tool } from '../world/store'
 import type { AnchorName, Direction, Placement, SpawnSpec } from '../world/spawn'
 import type { TemplateId } from '../world/library'
+import type { Target } from '../world/targets'
+import type { ObjectPatch, SizeAxis } from '../world/edit'
+import type { ActorKind } from '../actors/types'
+import type { ActorBehaviour } from '../world/compose'
 
 /** Deterministic voice intents — executed only after validation. */
 export type VoiceCommand =
@@ -25,13 +29,28 @@ export type VoiceCommand =
    * `force: true` skips the unsaved-changes confirm — escape hatch for stuck UI ("go home now").
    */
   | { type: 'GO_HOME'; force?: boolean }
-  /** "add three trees near the robot" */
-  | { type: 'SPAWN_OBJECTS'; spec: SpawnSpec; label: string; count: number; placement: Placement }
-  /** "move it 10 meters north", "move them to the goal" ("it" = selection, "them" = last batch) */
-  | { type: 'MOVE_OBJECTS'; which: 'selected' | 'last'; direction?: Direction; distance?: number; to?: Exclude<AnchorName, 'auto' | 'selected'> }
-  | { type: 'ROTATE_OBJECTS'; which: 'selected' | 'last'; degrees: number }
-  | { type: 'RESIZE_OBJECTS'; which: 'selected' | 'last'; factor: number; axis: 'all' | 'height' | 'footprint' }
-  | { type: 'DUPLICATE_OBJECTS'; which: 'selected' | 'last'; count: number }
+  /** "add three trees near the robot"; `alongRoad` lines them up along the latest road */
+  | { type: 'SPAWN_OBJECTS'; spec: SpawnSpec; label: string; count: number; placement: Placement; alongRoad?: boolean }
+  /** "a few people walking around" */
+  | { type: 'SPAWN_ACTORS'; actorKind: ActorKind; label: string; count: number; placement: Placement; behaviour?: ActorBehaviour }
+  /** "move it 10 meters north", "move them to the goal" ("it" = selection, "them" = last batch); `target` names things ("the houses") */
+  | { type: 'MOVE_OBJECTS'; which: 'selected' | 'last'; direction?: Direction; distance?: number; to?: Exclude<AnchorName, 'auto' | 'selected'>; target?: Target }
+  | { type: 'ROTATE_OBJECTS'; which: 'selected' | 'last'; degrees: number; target?: Target }
+  | { type: 'RESIZE_OBJECTS'; which: 'selected' | 'last'; factor: number; axis: 'all' | 'height' | 'footprint'; target?: Target }
+  | { type: 'DUPLICATE_OBJECTS'; which: 'selected' | 'last'; count: number; target?: Target }
+  /** "make the road 20 meters long", "make the tower 3 times taller" */
+  | { type: 'SIZE_OBJECTS'; target: Target; axis: SizeAxis; factor?: number; metres?: number }
+  /** "make the houses brick", "pitched roofs", "paint it red" */
+  | { type: 'EDIT_OBJECTS'; target: Target; patch: ObjectPatch }
+  /** "remove the trees", "delete the people" (asks first when it is more than a few) */
+  | { type: 'DELETE_OBJECTS'; target: Target }
+  /** "have the people walk around", "send the workers to the goal", "make them stop" */
+  | { type: 'ACTOR_BEHAVIOUR'; target: Target; behaviour: 'wander' | 'goal' | 'stop' | 'faster' | 'slower' }
+  /**
+   * Several commands from one sentence ("add 3 lampposts, a road and two houses"), run as one undo
+   * step. Spawns next to each other are laid out together as a scene. `skipped` = pieces not understood.
+   */
+  | { type: 'BATCH'; commands: VoiceCommand[]; skipped: string[]; summary?: string }
   /** RealmForge Flow — spatial path planning (pointer supplies coordinates). */
   | { type: 'FLOW_CREATE_ROUTE' }
   | { type: 'FLOW_ADD_WAYPOINT' }

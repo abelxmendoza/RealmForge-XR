@@ -54,6 +54,7 @@ export function parseActors(input: unknown, usedIds: Set<string>, freshId: () =>
       position: [...(raw.position as Vec2)],
       goal,
       route,
+      ...(raw.loop === true && route.length > 1 ? { loop: true } : {}),
     })
   }
   return { ok: true, actors, warnings }

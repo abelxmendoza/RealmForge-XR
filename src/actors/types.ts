@@ -16,6 +16,8 @@ export interface Actor {
   goal: Vec2 | null
   /** Remaining planned stops in order; every actor kind can hold a multi-stop route. */
   route: Vec2[]
+  /** Walk the route forever: each stop reached goes back on the end ("walking around"). */
+  loop?: boolean
 }
 export const MAX_ACTORS = 32
 export const ACTOR_CATALOG: Record<ActorKind, { name: string; color: string; size: Vec3; speed: number; turnRate: number }> = {
