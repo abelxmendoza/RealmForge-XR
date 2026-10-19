@@ -1,5 +1,5 @@
 import { BRAND } from '../theme/brand'
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { editorHref, LANDING_TEMPLATES, LANDING_VENUES, LANDING_WORLDS, type LandingWorldId } from './entry'
 import { WorldDiorama } from './WorldDiorama'
 import { manualInstallHint, promptInstall, useInstallState } from './install'
@@ -8,6 +8,15 @@ const VrDemoReplay = lazy(() => import('./VrDemoReplay'))
 const DEMO_HASH = '#vr-demo'
 
 const GITHUB = 'https://github.com/abelxmendoza/RealmForge-XR'
+
+const TECHNOLOGY_CREDITS = [
+  { name: 'Meta Quest 3S', label: 'IMMERSIVE HARDWARE', detail: 'Explore the headset for browser-based XR. Physical headset validation is ongoing.', href: 'https://www.meta.com/quest/quest-3s/', logo: 'meta.svg', action: 'Explore Quest 3S', color: '#5b9dff' },
+  { name: 'Scaniverse', label: 'REAL-WORLD CAPTURE', detail: 'Capture your space, export mesh GLB sections and bring them into the forge.', href: 'https://scaniverse.com', logo: 'scaniverse.webp', action: 'Discover Scaniverse', color: '#ee866b' },
+  { name: 'Niantic Spatial', label: 'SPATIAL TECHNOLOGY', detail: 'The team behind Scaniverse and its spatial mapping tools.', href: 'https://www.nianticspatial.com/', logo: 'niantic.webp', action: 'Explore Niantic Spatial', color: '#7fa1ff' },
+  { name: 'Scaniverse for iPhone', label: 'CAPTURE ON iOS', detail: 'Get the Scaniverse iPhone app directly from the Apple App Store.', href: 'https://apps.apple.com/us/app/scaniverse-3d-scanner/id1541433223', logo: 'apple.webp', action: 'View on the App Store', color: '#d7dce6' },
+  { name: 'AssemblyAI', label: 'VOICE COMMAND TRANSCRIPTION', detail: 'Streaming speech-to-text powers the voice command transcription in RealmForge XR.', href: 'https://www.assemblyai.com/', logo: 'assemblyai.svg', action: 'Meet AssemblyAI', color: '#a496ff' },
+  { name: 'Intel RealSense / RealSense', label: 'DEPTH CAMERA HARDWARE', detail: 'Explore depth cameras for spatial sensing. Direct capture is not currently integrated.', href: 'https://www.realsenseai.com/stereo-depth-cameras/', logo: 'realsense.webp', action: 'Explore depth cameras', color: '#62c8d0' },
+] as const
 
 function Arrow() {
   return <span aria-hidden="true">↗</span>
@@ -124,7 +133,7 @@ export default function LandingPage() {
             <a href="#scans">Real-world scans</a>
             <a href="#worlds">The worlds</a>
             <a href="#events">Events & venues</a>
-            <a href="#possibilities">The possibilities</a>
+            <a href="#technology">Technology & credits</a>
             <a href={GITHUB} target="_blank" rel="noreferrer">
               GitHub <Arrow />
             </a>
@@ -430,6 +439,28 @@ export default function LandingPage() {
               </article>
             </div>
           </div>
+        </section>
+
+        <section id="technology" className="rf-shell rf-technology" aria-labelledby="technology-heading">
+          <div className="rf-section-heading">
+            <div>
+              <p className="rf-eyebrow">HARDWARE / TOOLS / ACKNOWLEDGMENTS</p>
+              <h2 id="technology-heading">Good tools.<br />Bigger possibilities.</h2>
+            </div>
+            <p>The technology behind the workflow, and the hardware worth exploring.<br />Meet the builders behind the tools.</p>
+          </div>
+          <div className="rf-credit-grid">
+            {TECHNOLOGY_CREDITS.map((credit) => (
+              <a key={credit.name} className="rf-credit-card" href={credit.href} target="_blank" rel="noreferrer" style={{ '--credit-accent': credit.color } as CSSProperties}>
+                <div className="rf-credit-top"><span className={`rf-credit-logo ${credit.logo === 'realsense.webp' ? 'rf-credit-logo-dark' : ''}`}><img src={`/credits/${credit.logo}`} alt="" loading="lazy" width="140" height="44" /></span><Arrow /></div>
+                <span className="rf-credit-label">{credit.label}</span>
+                <h3>{credit.name}</h3>
+                <p>{credit.detail}</p>
+                <span className="rf-credit-action">{credit.action} <Arrow /></span>
+              </a>
+            ))}
+          </div>
+          <p className="rf-credit-note">Brand names and logos belong to their respective owners. Credits identify tools and hardware; they do not imply sponsorship, partnership or endorsement.</p>
         </section>
 
         <section className="rf-shell rf-final">

@@ -312,3 +312,24 @@ body { margin: 0; background: #0c1018; }
 .rf-headset .rf-button { margin-top: 12px; }
 .rf-headset .rf-headset-note { font-size: 11px !important; margin-top: 22px; }
 @media (max-width: 760px) { .rf-headset { grid-template-columns: 1fr; padding-block: 28px 48px; } .rf-headset figure { max-width: 480px; width: 100%; margin-inline: auto; } }
+
+/* Technology credits: linked brand cards */
+.rf-technology { padding-block: 80px; scroll-margin-top: 24px; }
+.rf-credit-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.rf-credit-card { --credit-accent: #e07845; display: flex; flex-direction: column; min-width: 0; padding: 28px; border: 1px solid var(--rf-line); border-radius: 18px; background: linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.012)); transition: transform .2s, border-color .2s, box-shadow .2s; }
+.rf-credit-card:hover, .rf-credit-card:focus-visible { transform: translateY(-5px); border-color: var(--credit-accent); box-shadow: 0 16px 40px #0004; }
+.rf-credit-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; color: var(--credit-accent); font-size: 24px; }
+.rf-credit-logo { display: flex; align-items: center; justify-content: center; width: 166px; height: 72px; padding: 14px; border-radius: 12px; background: #fff; }
+.rf-credit-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.rf-credit-label { color: var(--credit-accent); font: 9px ui-monospace, monospace; letter-spacing: 1.4px; }
+.rf-credit-card h3 { font-size: 21px; line-height: 1.25; margin: 12px 0; letter-spacing: -.5px; }
+.rf-credit-card p { color: var(--rf-muted); font-size: 13px; line-height: 1.8; margin: 0 0 26px; }
+.rf-credit-action { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--credit-accent); font-size: 12px; font-weight: 600; }
+.rf-credit-note { color: var(--rf-muted); font-size: 11px; line-height: 1.8; margin: 24px 0 0; max-width: 740px; }
+.rf-landing .rf-text-link { text-decoration: underline; text-decoration-color: var(--rf-orange); text-underline-offset: 5px; }
+.rf-landing .rf-text-link:hover { color: var(--rf-ember-hot); }
+@media (max-width: 1000px) { .rf-credit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .rf-technology { padding-block: 48px; } .rf-credit-grid { grid-template-columns: 1fr; } .rf-credit-card { padding: 24px; } }
+@media (prefers-reduced-motion: reduce) { .rf-credit-card { transition: none; } .rf-credit-card:hover, .rf-credit-card:focus-visible { transform: none; } }
+
+.rf-credit-logo-dark { background: #161b26; }
