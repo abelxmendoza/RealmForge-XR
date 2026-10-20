@@ -15,7 +15,7 @@ export function roboticDishroom(): WorldSnapshot {
   const machine = (catalogId: string, x: number, z: number, rotationY = 0): boolean => {
     const asset = propFromCatalog(catalogId, [x,0,z], rotationY)
     if (!asset) return false
-    objects.push({ ...asset, id: idFor('prop'), solid: true })
+    objects.push({ ...asset, id: idFor('prop'), size: catalogId === 'assembly-conveyor' ? [3, 0.9, 1] : asset.size, solid: true })
     return true
   }
   // Room 16 × 12 m, with a 2.4 m entry opening on the south side.
@@ -31,9 +31,9 @@ export function roboticDishroom(): WorldSnapshot {
   if (!machine('assembly-conveyor',3.8,0)) box('platform',3.8,0,3,0.9,1,'#9aaab2')
   // Dishwasher is an independent module (placeholder geometry).
   box('platform',0,0,3.1,1.8,1.6,'#8798a5')
-  // Four generic robotic workcells; these are NOT animated articulated arms yet.
+  // Four small editable pedestals. A non-interactive articulated-arm visual follows each pedestal.
   for (const [x,z] of [[-5,-2.4],[-2.2,-2.4],[2.2,2.4],[5,2.4]] as const) {
-    if (!machine('robot-cell',x,z)) box('platform',x,z,1.1,1.4,1.1,'#e7a75c')
+    box('platform',x,z,0.65,0.8,0.65,'#e7a75c')
   }
   // Racks and service stations. Keep a central access lane and clear entrance.
   for (const [x,z] of [[-6.5,-4.2],[-4,-4.2],[4,4.2],[6.5,4.2]] as const) {
