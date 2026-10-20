@@ -1,3 +1,4 @@
+import { readPerceptionScan, type ScanFile } from '../scans/perceptionScan'
 import {
   deleteSavedWorld,
   downloadWorld,
@@ -122,3 +123,13 @@ export async function menuDownloadWorld(name?: string) {
 
 /** Test helpers — produce typed failures without touching storage. */
 export const __test = { fail, failResult, failSave }
+
+/** Uses the same busy lock and replace confirmation as normal world imports. */
+export async function menuImportScan(files: readonly ScanFile[], confirmReplace?: ConfirmReplace) {
+  return withBusy('Import scan', async () => {
+    const scan = await readPerceptionScan(files)
+    const result = await importWorld(JSON.stringify(scan.world), { confirmReplace })
+    if (result.ok) result.warnings.push(...scan.warnings)
+    return { result, feedback: feedbackFromReplace(result, 'Imported scan map') }
+  })
+}
