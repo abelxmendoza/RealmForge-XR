@@ -7,6 +7,7 @@ import {
   menuDeleteSavedWorld,
   menuDownloadWorld,
   menuImportWorld,
+  menuImportScan,
   menuLoadSavedWorld,
   menuQuickSave,
   menuRenameSavedWorld,
@@ -30,6 +31,7 @@ export function WorldsPanel() {
   const [dropHover, setDropHover] = useState(false)
   const [hist, setHist] = useState({ canUndo: false, canRedo: false })
   const fileInput = useRef<HTMLInputElement>(null)
+  const scanInput = useRef<HTMLInputElement>(null)
   const busy = feedback.kind === 'busy' || isWorldsMenuBusy()
 
   useEffect(() => void listSavedWorlds(), [])
@@ -152,6 +154,16 @@ export function WorldsPanel() {
         <button type="button" className="ghost" disabled={busy} onClick={() => fileInput.current?.click()}>
           Import JSON
         </button>
+        <button type="button" className="ghost" disabled={busy} onClick={() => scanInput.current?.click()}>
+          Import scan map
+        </button>
+        <input ref={scanInput} type="file" multiple accept=".json,.yaml,.pgm" hidden onChange={async (e) => {
+          const files = Array.from(e.target.files ?? [])
+          e.target.value = ''
+          if (!files.length || busy) return
+          setFeedback({ kind: 'busy', action: 'Import scan' })
+          apply((await menuImportScan(files, confirmReplace)).feedback)
+        }} />
         <button type="button" disabled={!hist.canUndo || busy} onClick={() => undo()} title="Ctrl+Z">
           Undo
         </button>
@@ -171,6 +183,7 @@ export function WorldsPanel() {
         />
       </div>
       <p className="hint">{dropHover ? 'Drop JSON to import…' : 'Drop a .json world here, or Ctrl+S to save.'}</p>
+      <p className="hint">Scan map: select manifest.json, map.yaml and map.pgm together. Imports navigation blocks; 3D visuals are a separate layer.</p>
       {worlds.length > 0 && (
         <ul className="worlds">
           {worlds.map((w) => (

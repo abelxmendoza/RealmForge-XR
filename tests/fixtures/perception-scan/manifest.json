@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "package_type": "perception_scan",
+  "source": "synthetic",
+  "pose_source": "ground_truth",
+  "units": "metres",
+  "frame": "map",
+  "axes": {
+    "x": "forward",
+    "y": "left",
+    "z": "up"
+  },
+  "T_realmforge_map": [
+    [
+      0,
+      -1,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      0
+    ],
+    [
+      -1,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      1
+    ]
+  ],
+  "files": {
+    "point_cloud": "cloud.ply",
+    "occupancy": "map.yaml",
+    "trajectory": "poses.json",
+    "depth_sequence": "rgbd.npz",
+    "calibration": "camera.json",
+    "mesh": "mesh.obj"
+  },
+  "frames": 12,
+  "mapping": "known-pose fusion; not SLAM",
+  "occupancy": {
+    "resolution_m": 0.1,
+    "origin_xy": [
+      -3.5,
+      -3.5
+    ],
+    "height_band_m": [
+      0.15,
+      1.5
+    ],
+    "unknown_preserved": true
+  },
+  "limitations": [
+    "static geometry",
+    "no robot footprint inflation",
+    "no localization or navigation validation",
+    "no inferred object semantics"
+  ]
+}
