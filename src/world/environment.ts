@@ -1,4 +1,5 @@
 import { worldContentCount } from './content'
+import { roboticDishroom } from './roboticDishroom'
 import { create } from 'zustand'
 import type { BuildingStyle, MaterialId } from './types'
 import type { WorldSnapshot } from './store'
@@ -22,6 +23,7 @@ export type EnvironmentId =
   | 'empty-event-venue'
   | 'job-fair'
   | 'factory-floor'
+  | 'robotic-dishroom'
   | 'music-festival'
 
 export interface EnvironmentLighting {
@@ -192,6 +194,14 @@ export const ENVIRONMENTS: Record<EnvironmentId, EnvironmentConfig> = {
     appearance: DEFAULT_APPEARANCE,
     defaults: { buildingStyle: 'industrial', wallMaterial: 'metal', platformMaterial: 'concrete' },
     buildWorld: jobFair,
+  },
+  'robotic-dishroom': {
+    id: 'robotic-dishroom',
+    name: 'Robotic Dishroom',
+    description: 'Generic four-arm modular dishwashing workcell for XR layout exploration.',
+    appearance: FACTORY_APPEARANCE,
+    defaults: { buildingStyle: 'industrial', wallMaterial: 'metal', platformMaterial: 'concrete' },
+    buildWorld: roboticDishroom,
   },
   'factory-floor': {
     id: 'factory-floor',
