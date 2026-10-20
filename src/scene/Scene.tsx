@@ -1,4 +1,5 @@
 import { WarehouseInterior } from './WarehouseInterior'
+import { DishroomArms } from './DishroomArms'
 import { Actors } from '../actors/Actors'
 import { ControlPalette } from '../xr/ControlPalette'
 import { ControlsGuidePanel } from '../xr/ControlsGuidePanel'
@@ -117,6 +118,7 @@ export function Scene() {
           <Ground />
           <ScanLayer />
           <WarehouseInterior />
+          <DishroomArms />
           <Obstacles />
           <Route />
           <FlowOverlay />
