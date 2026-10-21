@@ -33,7 +33,21 @@ How it is enforced (`supabase/migrations/20261021170000_users_and_roles.sql`):
 Email magic link (no passwords). The link returns to the page you were on. On a headset, the email can
 be opened on a phone and the **code** typed into the headset instead (needs the template step below).
 
-## Setup steps only the account owner can do (Supabase dashboard)
+## Applying the Auth settings from the terminal
+
+Steps 1 and 3 below are kept in the repo (`supabase/auth-config.json`, `supabase/templates/magic_link.html`)
+and pushed with the Management API:
+
+```
+npx supabase@2.120.0 login                     # once; opens your browser, saves ~/.supabase/access-token
+node tools/auth/push-auth-config.mjs           # dry run: shows the diff
+node tools/auth/push-auth-config.mjs --apply   # applies and re-reads to verify
+```
+
+Vercel env vars (step 4) were added on 2026-10-21 for production, preview and development; they apply on
+the next deploy.
+
+## Setup steps (manual equivalents)
 
 1. **URL configuration**: Authentication → URL Configuration
    * Site URL: `https://realmforge-xr.vercel.app`

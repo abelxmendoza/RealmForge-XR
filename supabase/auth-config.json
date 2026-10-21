@@ -1,0 +1,13 @@
+{
+  "comment": "Applied by tools/auth/push-auth-config.mjs (docs/auth.md). Public settings only; no secrets here.",
+  "site_url": "https://realmforge-xr.vercel.app",
+  "uri_allow_list": [
+    "https://realmforge-xr.vercel.app/**",
+    "https://localhost:5173/**",
+    "http://localhost:5173/**",
+    "https://192.168.1.224:5173/**",
+    "https://100.67.88.80:5173/**"
+  ],
+  "mailer_subjects_magic_link": "Your RealmForge XR sign-in link",
+  "mailer_templates_magic_link_content_file": "templates/magic_link.html"
+}
