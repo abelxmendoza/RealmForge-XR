@@ -8,6 +8,7 @@ Dates are UTC.
 
 ### Added
 
+- **Accounts and roles**: optional email magic-link sign-in (Supabase). One Admin (Abel); Founder and Developer granted by the admin from `?admin=1` (team list, role switches, change log); Members for everyone else. Enforced by row-level security and admin-only database functions. Guest mode is unchanged. Docs: `docs/auth.md`.
 - **Creative Studio** (`?studio=1`, local dev server only): personal image-to-3D library. Import artwork (originals kept read-only), non-destructive prep (crop, plain-background removal, trim/pad, downsize) with server-side subject checks, a ProjectSim Standard dry run with cost/budget preview, typed human approval plus a server spend switch, a GLB conversion gate, a model viewer (orbit/zoom/pan/reset, wireframe, grid, lighting, background, bounds, screenshot) and a gallery of CC-BY-4.0 projectsim samples. No credits spent. Docs: `docs/creative-studio/`.
 
 ### Fixed

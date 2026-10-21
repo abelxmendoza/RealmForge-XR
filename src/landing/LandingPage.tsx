@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { editorHref, LANDING_TEMPLATES, LANDING_VENUES, LANDING_WORLDS, type LandingWorldId } from './entry'
 import { WorldDiorama } from './WorldDiorama'
 import { manualInstallHint, promptInstall, useInstallState } from './install'
+import { AccountMenu } from '../auth/ui/AuthUI'
 
 const GITHUB = 'https://github.com/abelxmendoza/RealmForge-XR'
 
@@ -107,6 +108,7 @@ export default function LandingPage() {
             </a>
           </nav>
           <div className="rf-nav-actions">
+            <AccountMenu />
             <InstallButton className="rf-button rf-button-small rf-button-ghost rf-nav-install" />
             <a className="rf-button rf-button-small" href={editorHref()}>
               Launch editor <Arrow />

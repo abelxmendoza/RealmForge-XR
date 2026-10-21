@@ -93,6 +93,16 @@ Owned by Emiliano’s page; **not** wired to Zustand.
 See `src/world/types.ts`. Kinds: `wall` | `building` | `platform` | `tree` | `streetlight` | `crate`.
 Nav helpers: `blocksNavigation`, `navObstacles`. Breaking kind/field changes must bump a note here and add/adjust `world.test.ts`.
 
+## Accounts (`src/auth/store.ts`)
+
+| Field | Meaning |
+| --- | --- |
+| `status` | `disabled` (no Supabase config: guest mode) \| `loading` \| `signed-out` \| `signed-in` |
+| `user` / `profile` | Supabase auth user / `public.profiles` row |
+| `roles` | `admin` (one account) \| `founder` \| `developer` \| `member`, from `public.user_roles` (RLS) |
+
+Env: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (public). Routes: `?admin=1` (team & roles). See `docs/auth.md`.
+
 ## Creative Studio (`?studio=1`)
 
 Not part of the world store. File-backed, dev server only: `creative-library/assets/<id>/manifest.json`
@@ -100,6 +110,11 @@ Not part of the world store. File-backed, dev server only: `creative-library/ass
 Generation status: `validated | rejected → approved → submitted → complete | failed`. See `docs/creative-studio/`.
 
 ## State change log
+
+### 2026-10-21 (Accounts)
+
+- Supabase project `realmforge-xr`; tables `profiles`, `user_roles`, `role_audit`; single-admin index; admin-only `grant_role` / `revoke_role`.
+- New `useAuth` store (not part of the world schema); Creative Studio now needs the Developer (or Admin) role when sign-in is configured.
 
 ### 2026-10-21 (Creative Studio)
 

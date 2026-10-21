@@ -11,7 +11,16 @@ setupInstall()
 const root = createRoot(document.getElementById('root')!)
 const entry = readEntry(window.location.search)
 
-if (isStudioEntry(window.location.search)) {
+if (new URLSearchParams(window.location.search).get('admin') === '1') {
+  root.render(<div className="rf-loading" role="status"><p>Opening team & roles…</p></div>)
+  void import('./auth/ui/AdminApp').then(({ default: AdminApp }) => {
+    document.title = 'RealmForge XR — Team & roles'
+    root.render(<StrictMode><AdminApp /></StrictMode>)
+  }).catch((error: unknown) => {
+    console.error('[RealmForge] Admin page failed to load', error)
+    root.render(<div className="rf-loading" role="alert"><h1>Admin page couldn’t open.</h1><a href="?">Back to RealmForge XR</a></div>)
+  })
+} else if (isStudioEntry(window.location.search)) {
   root.render(<div className="rf-loading" role="status"><p>Opening Creative Studio…</p></div>)
   void import('./creative/ui/StudioApp').then(({ default: StudioApp }) => {
     document.title = 'RealmForge XR — Creative Studio'

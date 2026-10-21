@@ -18,6 +18,16 @@ Pair each entry with CHANGELOG (user-facing) and STATE (runtime) updates when st
 
 ---
 
+### 2026-10-21 — Accounts, roles and sign-in
+
+- **Who:** Claude Code (with Abel)
+- **Phase:** 3
+- **Did:** Created Supabase project `realmforge-xr` ($0/month, us-west-1); migration `supabase/migrations/20261021170000_users_and_roles.sql` (profiles, user_roles with a single-admin index, role_audit, RLS, admin-only grant/revoke, admin bootstrap only for the confirmed owner email); `src/auth/*` store + lazy Supabase adapter; AccountMenu in the landing and studio headers; `?admin=1` team page; Creative Studio gated to Developer/Admin.
+- **Why:** Users and authentication, with founder/developer privileges for Abel and Emiliano and Abel as the only admin.
+- **Commit / PR:** branch `feat/creative-studio` (local, not pushed)
+- **Verified:** live-DB role tests in a rolled-back transaction; anonymous API probes; unit tests; browser signed-out states. Real magic-link sign-in not yet done (needs dashboard URL + SMTP steps in docs/auth.md).
+- **Follow-ups:** dashboard steps 1–3 in docs/auth.md; Emiliano signs in, then the admin grants Founder + Developer; Vercel env vars when deploying.
+
 ### 2026-10-21 — Creative Studio (image-to-3D library)
 
 - **Who:** Claude Code (session started from the px4-autonomous-mission robotics session)

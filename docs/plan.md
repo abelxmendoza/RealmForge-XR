@@ -31,7 +31,7 @@ Branch context: merge PR [#2](https://github.com/abelxmendoza/RealmForge-XR/pull
 | P1.2 | Validate ray-drag vs grab for selected objects on Quest 2 | xr-test grab | Keep ray-drag unless grab wins in tests | Decision recorded in BUILD_LOG + STATE |
 | P1.3 | Keep `/xr-test/` checklist green as manual gate | Emiliano checklist | Pre-demo ritual | Every demo day runs the checklist |
 | P2.1 | World export / import persistence | store `WorldSnapshot` | JSON download + load | Demo can restore a built city |
-| P2.2 | Kaedim token usage or remove | `.env` `KAEDIM_API_TOKEN` | Integrate or drop from env docs | No dead secrets |
+| P2.2 | Kaedim token usage or remove (**done 2026-10-21: Creative Studio**) | `.env` `KAEDIM_API_TOKEN` | Integrate or drop from env docs | No dead secrets |
 | P2.3 | Quest 3S mesh snap + depth occlusion polish | xr-test mesh/depth | Optional after Quest 2 path is solid | Demo looks correct on 3S |
 | P3.1 | In-XR capability / fps strip | xr-test HUD | Optional debug overlay on `/` | Diagnose venue issues without leaving AR |
 

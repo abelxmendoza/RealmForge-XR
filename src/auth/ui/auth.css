@@ -1,0 +1,65 @@
+/* Accounts UI — forge palette, shared by the landing header, studio and admin page. */
+:root {
+  --au-bg: #15110e;
+  --au-panel: #1f1915;
+  --au-ink: #f3ebe0;
+  --au-muted: rgba(243, 235, 224, 0.62);
+  --au-line: rgba(232, 196, 150, 0.16);
+  --au-orange: #e07845;
+  --au-ember: #f0a46a;
+  --au-err: #ff8a7a;
+}
+.au-menu { position: relative; font-family: 'Sora', 'Segoe UI', sans-serif; }
+.au-trigger, .au-form button, .au-pop > button, .au-page button {
+  background: #2a221c; color: var(--au-ink); border: 1px solid var(--au-line); border-radius: 8px; padding: 8px 14px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.au-trigger { display: inline-flex; gap: 8px; align-items: center; min-height: 40px; white-space: nowrap; }
+.au-trigger:hover, .au-page button:hover { border-color: var(--au-orange); }
+.au-pop {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; width: min(320px, calc(100vw - 32px));
+  background: var(--au-panel); color: var(--au-ink); border: 1px solid var(--au-line); border-radius: 10px; padding: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 10px; font-size: 13px;
+}
+.au-who { margin: 0; overflow-wrap: anywhere; }
+.au-who span { color: var(--au-muted); font-size: 12px; }
+.au-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.au-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--au-line); }
+.au-admin { color: #1a100c; background: linear-gradient(180deg, var(--au-ember), var(--au-orange)); border-color: transparent; }
+.au-founder { color: var(--au-ember); border-color: rgba(240, 164, 106, 0.5); }
+.au-developer { color: #8fd1c6; border-color: rgba(143, 209, 198, 0.45); }
+.au-links { display: flex; flex-direction: column; gap: 6px; }
+.au-links a, .au-card a, .au-brand { color: var(--au-ember); text-decoration: none; }
+.au-links a:hover { text-decoration: underline; }
+.au-form { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.au-form label { display: flex; flex-direction: column; gap: 4px; }
+.au-form input, .au-page input[type='search'] {
+  background: #120e0b; color: var(--au-ink); border: 1px solid var(--au-line); border-radius: 6px; padding: 8px 10px; font: inherit;
+}
+.au-form button[type='submit'] { background: linear-gradient(180deg, var(--au-ember), var(--au-orange)); color: #1a100c; font-weight: 700; border-color: transparent; }
+.au-form small, .au-note { color: var(--au-muted); font-size: 12px; margin: 0; }
+.au-error { color: var(--au-err); margin: 0; font-size: 13px; }
+:is(.au-menu, .au-page, .au-gate) :is(button, input, a):focus-visible { outline: 2px solid var(--au-ember); outline-offset: 2px; }
+
+.au-gate { min-height: 100vh; display: grid; place-items: center; background: var(--au-bg); color: var(--au-ink); font-family: 'Sora', sans-serif; padding: 16px; }
+.au-card { width: min(420px, 100%); background: var(--au-panel); border: 1px solid var(--au-line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 12px; }
+.au-card h1 { margin: 0; font-size: 22px; }
+
+.au-page { min-height: 100vh; background: var(--au-bg); color: var(--au-ink); font: 14px/1.5 'Sora', 'Segoe UI', sans-serif; padding: 0 20px 60px; }
+.au-head { display: flex; align-items: center; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--au-line); flex-wrap: wrap; }
+.au-head h1 { font-size: 18px; margin: 0; flex: 1; }
+.au-brand { font-weight: 800; }
+.au-section { max-width: 1000px; margin-top: 22px; display: flex; flex-direction: column; gap: 10px; }
+.au-section h2 { font-size: 15px; margin: 0; }
+.au-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.au-row h2 { flex: 1; }
+.au-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.au-table th, .au-table td { text-align: left; padding: 8px; border-bottom: 1px solid var(--au-line); vertical-align: top; }
+.au-table small { color: var(--au-muted); overflow-wrap: anywhere; }
+.au-switch { display: inline-flex; gap: 6px; align-items: center; }
+.au-switch input { width: 18px; height: 18px; accent-color: var(--au-orange); }
+@media (max-width: 700px) {
+  .au-table thead { display: none; }
+  .au-table tr { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--au-line); padding: 6px 0; }
+  .au-table td { border: 0; padding: 4px 8px; }
+  .au-table td:first-child { grid-column: 1 / -1; }
+}

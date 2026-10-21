@@ -18,6 +18,7 @@
     "@react-three/fiber": "^9.8.2",
     "@react-three/handle": "^6.6.32",
     "@react-three/xr": "^6.6.32",
+    "@supabase/supabase-js": "2.117.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "three": "^0.186.1",

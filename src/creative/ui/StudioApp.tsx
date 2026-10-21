@@ -7,12 +7,24 @@ import { PreparePanel } from './PreparePanel'
 import { GeneratePanel } from './GeneratePanel'
 import { Gallery, type GalleryItem } from './Gallery'
 import { IssueList } from './IssueList'
+import { AccountMenu, RequireCapability } from '../../auth/ui/AuthUI'
 import './studio.css'
 
 type Tab = 'library' | 'gallery'
 
-/** RealmForge Creative Studio (?studio=1): personal image-to-3D asset library. Local dev server only. */
+/**
+ * RealmForge Creative Studio (?studio=1): personal image-to-3D asset library. Local dev server only.
+ * Developer (or admin) accounts only when sign-in is configured; the API itself is loopback-only.
+ */
 export default function StudioApp() {
+  return (
+    <RequireCapability cap="creative-studio" title="Creative Studio">
+      <Studio />
+    </RequireCapability>
+  )
+}
+
+function Studio() {
   const params = new URLSearchParams(window.location.search) // deep links: &tab=gallery, &asset=<id>
   const [tab, setTab] = useState<Tab>(params.get('tab') === 'gallery' ? 'gallery' : 'library')
   const [status, setStatus] = useState<StudioStatus | null>(null)
@@ -48,6 +60,7 @@ export default function StudioApp() {
           <button role="tab" aria-selected={tab === 'gallery'} onClick={() => setTab('gallery')}>Gallery</button>
         </nav>
         {status && <BudgetChip status={status} />}
+        <AccountMenu />
       </header>
       {offline && <p className="cs-banner cs-error" role="alert">The studio API is unavailable. It runs only on the local dev server (<code>npm run dev</code>), opened from this machine as https://localhost.</p>}
       {error && <p className="cs-banner cs-error" role="alert">{error}</p>}
