@@ -6,3 +6,6 @@ dist
 client-errors.log
 .claude/
 *.tsbuildinfo
+
+# Creative Studio library: personal artwork + provider outputs + spend ledger (docs/creative-studio/)
+creative-library/
