@@ -2,9 +2,11 @@
 // Push supabase/auth-config.json to the realmforge-xr project's Auth settings via the Supabase
 // Management API (docs/auth.md). Dry run by default: prints a diff; `--apply` sends the PATCH.
 //
-// Token: SUPABASE_ACCESS_TOKEN, or the file written by `npx supabase login` (~/.supabase/access-token).
+// Token: SUPABASE_ACCESS_TOKEN, the file written by `npx supabase login` (~/.supabase/access-token),
+// or the OS keyring entry newer CLIs use.
 // The token is never printed.
 import { readFileSync, existsSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -14,7 +16,13 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const apply = process.argv.includes('--apply')
 
 const tokenFile = path.join(os.homedir(), '.supabase', 'access-token')
-const token = process.env.SUPABASE_ACCESS_TOKEN?.trim() || (existsSync(tokenFile) ? readFileSync(tokenFile, 'utf8').trim() : '')
+// Newer CLIs keep the token in the OS keyring (go-keyring: service "Supabase CLI", user = profile).
+function keyringToken() {
+  try {
+    return execFileSync('secret-tool', ['lookup', 'service', 'Supabase CLI', 'username', 'supabase'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+  } catch { return '' }
+}
+const token = process.env.SUPABASE_ACCESS_TOKEN?.trim() || (existsSync(tokenFile) ? readFileSync(tokenFile, 'utf8').trim() : '') || keyringToken()
 if (!token) {
   console.error('No Supabase access token. Run `npx supabase@2.120.0 login` once (opens your browser), then re-run.')
   process.exit(2)
