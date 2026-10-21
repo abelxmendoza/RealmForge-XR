@@ -1,0 +1,84 @@
+{
+  "format": "realmforge-creative-gallery",
+  "version": 1,
+  "assets": [
+    {
+      "id": "desk-0001",
+      "name": "articulated desk with drawers",
+      "file": "desk_0001.glb",
+      "sha256": "b6f6ea3bcd9f06137ca94873e862303811b7c76e815fdfa1965f08a3f5ecab65",
+      "bytes": 1444544,
+      "triangles": 14092,
+      "extents_m": [
+        1.5,
+        0.75,
+        0.65
+      ],
+      "max_texture_px": 512,
+      "licence": {
+        "id": "CC-BY-4.0",
+        "attribution": "projectsim by Kaedim",
+        "source": "https://huggingface.co/datasets/projectsim/articulated-desks",
+        "revision": "6f0cd4c73515c03b790a1d1bff888d1640fb8da6",
+        "source_sha256": {
+          "desk_0001_usd.zip": "79af33c6f8689fda4af9295d14ef3e1591b0f6092207dcfa563b6605e69fffb9",
+          "manifest.json": "cb10d9b979c7e3e3e7eeae9c66c1fbe3cb2378c645293f54d24cb7239a0fea71"
+        },
+        "changes": "USD converted to GLB, articulation and physics dropped, textures resized to 512px"
+      },
+      "warnings": []
+    },
+    {
+      "id": "cage-0001",
+      "name": "wire logistics roll cage",
+      "file": "cage_0001.glb",
+      "sha256": "a07b66c7096232ad76e9123434f6b688adef77080d9791bfc145c4b85363c127",
+      "bytes": 1704096,
+      "triangles": 18907,
+      "extents_m": [
+        0.8,
+        1.7,
+        0.72
+      ],
+      "max_texture_px": 512,
+      "licence": {
+        "id": "CC-BY-4.0",
+        "attribution": "projectsim by Kaedim",
+        "source": "https://huggingface.co/datasets/projectsim/articulated-logistics-cages",
+        "revision": "0b0dc223228ca51b92dad7ca8aa2db16c5d15b66",
+        "source_sha256": {
+          "cage_0001_usd.zip": "6fca6a60be875f55310d3da82566e241170fb267e4e1e5371d5e041baf354147",
+          "manifest.json": "92d2f8db59cd59d2f2e4a8c7319ffd15d8d5d4c25fa995a0fe49b75d2e88514b"
+        },
+        "changes": "USD converted to GLB, articulation and physics dropped, textures resized to 512px"
+      },
+      "warnings": []
+    },
+    {
+      "id": "desk-0003",
+      "name": "articulated desk with drawers",
+      "file": "desk_0003.glb",
+      "sha256": "0303f5528403f88dfb73d6b9856015c45eede452622affb5ab6eeed7a0e1e44f",
+      "bytes": 1072912,
+      "triangles": 7700,
+      "extents_m": [
+        1.4893,
+        0.7074,
+        0.6475
+      ],
+      "max_texture_px": 512,
+      "licence": {
+        "id": "CC-BY-4.0",
+        "attribution": "projectsim by Kaedim",
+        "source": "https://huggingface.co/datasets/projectsim/articulated-desks",
+        "revision": "6f0cd4c73515c03b790a1d1bff888d1640fb8da6",
+        "source_sha256": {
+          "desk_0003_usd.zip": "8205fc49452664235360ac6f58827a36b884f48dc2ff1336572e805a79fab92c",
+          "manifest.json": "c4a0cce003bf82a1e4ce8777093cf7a2180431d07f910214626afe12d20689be"
+        },
+        "changes": "USD converted to GLB, articulation and physics dropped, textures resized to 512px"
+      },
+      "warnings": []
+    }
+  ]
+}

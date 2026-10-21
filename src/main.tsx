@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import LandingPage from './landing/LandingPage'
 import { readEntry } from './landing/entry'
 import { setupInstall } from './landing/install'
+import { isStudioEntry } from './creative/entry'
 import './landing/landing.css'
 
 setupInstall()
@@ -10,7 +11,16 @@ setupInstall()
 const root = createRoot(document.getElementById('root')!)
 const entry = readEntry(window.location.search)
 
-if (entry.editor) {
+if (isStudioEntry(window.location.search)) {
+  root.render(<div className="rf-loading" role="status"><p>Opening Creative Studio…</p></div>)
+  void import('./creative/ui/StudioApp').then(({ default: StudioApp }) => {
+    document.title = 'RealmForge XR — Creative Studio'
+    root.render(<StrictMode><StudioApp /></StrictMode>)
+  }).catch((error: unknown) => {
+    console.error('[RealmForge] Creative Studio failed to load', error)
+    root.render(<div className="rf-loading" role="alert"><h1>Creative Studio couldn’t open.</h1><a href="?">Back to RealmForge XR</a></div>)
+  })
+} else if (entry.editor) {
   root.render(<div className="rf-loading" role="status"><p>Opening your world…</p></div>)
   void import('./editor/EditorEntry').then(async ({ default: App, initializeEditor }) => {
     await initializeEditor(entry.world)
