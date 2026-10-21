@@ -6,6 +6,10 @@ Dates are UTC.
 
 ## [Unreleased]
 
+### Added
+
+- **Creative Studio** (`?studio=1`, local dev server only): personal image-to-3D library. Import artwork (originals kept read-only), non-destructive prep (crop, plain-background removal, trim/pad, downsize) with server-side subject checks, a ProjectSim Standard dry run with cost/budget preview, typed human approval plus a server spend switch, a GLB conversion gate, a model viewer (orbit/zoom/pan/reset, wireframe, grid, lighting, background, bounds, screenshot) and a gallery of CC-BY-4.0 projectsim samples. No credits spent. Docs: `docs/creative-studio/`.
+
 ### Fixed
 
 - Docs/examples cleanup: demo readiness reflects `main`; stale “do not merge Quest” / missing XR confirm notes removed; XR menu example points at production palette + confirmation.

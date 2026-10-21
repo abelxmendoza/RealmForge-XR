@@ -71,7 +71,9 @@ Replans when `geometryVersion` or goal/robot placement changes (see nav module).
 
 | Var | Status |
 | --- | --- |
-| `KAEDIM_API_TOKEN` | In encrypted `.env`; unused in app code |
+| `KAEDIM_API_TOKEN` | In encrypted `.env`; read server-side only by the Creative Studio (`tools/creative/projectsim.ts`, also `PROJECTSIM_TOKEN` or `~/.config/projectsim/token`) |
+| `CREATIVE_ALLOW_SPEND` | Unset by default. `1` lets the dev server submit an **approved** ProjectSim generation (4 credits). Set it by hand only when you intend to spend |
+| `CREATIVE_LIBRARY_DIR` / `CREATIVE_EXTERNAL_LEDGERS` | Studio library location (default `creative-library/`, gitignored) / extra read-only ledgers (default: the PX4 ledger if present) |
 | AssemblyAI key | Encrypted `.env`; needs `.env.keys` / `DOTENV_PRIVATE_KEY` for live mic |
 
 ## Current harness state (`/xr-test/` — vanilla)
@@ -91,7 +93,19 @@ Owned by Emiliano’s page; **not** wired to Zustand.
 See `src/world/types.ts`. Kinds: `wall` | `building` | `platform` | `tree` | `streetlight` | `crate`.
 Nav helpers: `blocksNavigation`, `navObstacles`. Breaking kind/field changes must bump a note here and add/adjust `world.test.ts`.
 
+## Creative Studio (`?studio=1`)
+
+Not part of the world store. File-backed, dev server only: `creative-library/assets/<id>/manifest.json`
+(schema `realmforge-creative-asset` v1, `revision` bumps per write, history kept) + `creative-library/ledger.jsonl`.
+Generation status: `validated | rejected → approved → submitted → complete | failed`. See `docs/creative-studio/`.
+
 ## State change log
+
+### 2026-10-21 (Creative Studio)
+
+- New `?studio=1` entry; `/api/creative/*` dev middleware (loopback + localhost Host only).
+- New manifest schema `realmforge-creative-asset` v1; spend ledger shares the PX4 `projectsim_ledger.jsonl` event format.
+- `KAEDIM_API_TOKEN` now used server-side by the studio (plan.md P2.2: integrated).
 
 ### 2026-10-17 (cleanup)
 

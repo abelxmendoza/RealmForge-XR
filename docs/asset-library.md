@@ -55,6 +55,12 @@ All sizes are real metres (1 unit = 1 m), so assets are true size at the 1:1 sca
 - **Saved worlds** store the asset `id`. If an id is no longer in the manifest, the object still loads as
   a plain crate of the same size.
 
+## Generated and imported models
+
+The Creative Studio (`?studio=1`, see `docs/creative-studio/README.md`) keeps a separate, gitignored library of
+artwork-to-3D assets with versioned manifests. Its converted GLBs pass a validation gate and can be copied into
+`public/assets/models/` + `library.json` to place them in worlds.
+
 ## Code map
 
 ```

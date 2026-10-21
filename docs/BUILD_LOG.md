@@ -18,6 +18,16 @@ Pair each entry with CHANGELOG (user-facing) and STATE (runtime) updates when st
 
 ---
 
+### 2026-10-21 — Creative Studio (image-to-3D library)
+
+- **Who:** Claude Code (session started from the px4-autonomous-mission robotics session)
+- **Phase:** 3 (plan.md P2.2 Kaedim decision: integrate)
+- **Did:** Audit (`docs/creative-studio/AUDIT.md`); `src/creative/*` pure core (image header/pixel checks, prep ops, manifest v1, credit accounting compatible with the PX4 ledger, Standard request validation, approval gate, GLB inspector); `tools/creative/*` Node library store, ProjectSim client (TypeScript port of the PX4 `projectsim.py` protocol), service and loopback-only HTTP routes via `vite/creativeStudioPlugin.ts`; Studio UI (`src/creative/ui/*`), viewer and gallery; gallery GLBs built from CC-BY-4.0 projectsim samples via PX4 `usd_import.read_stage` (imported read-only).
+- **Why:** Personal artwork → 3D assets with strict credit control (gift credits, no balance API, $1,200/month overage risk) and visible licensing (Kaedim terms 4.2).
+- **Commit / PR:** branch `feat/creative-studio` (local, not pushed)
+- **Verified:** `npm test` 66 files / 468 tests; `tsc -b`; `vite build`; browser pane import → prepare → dry run on a scratch library; headless Chrome (SwiftShader) for viewer controls and gallery. **No real generation submitted.**
+- **Follow-ups:** pick the first six artworks (cost table in `docs/creative-studio/CREDITS.md`); confirm gift-credit outputs count as "paid" (terms 3.1); propose a shared `projectsim-guard` package (AUDIT.md).
+
 ### 2026-10-17 — Tie up loose ends (prop spawn + docs)
 
 - **Who:** Cursor agent
