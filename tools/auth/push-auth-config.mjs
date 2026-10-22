@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Push supabase/auth-config.json to the realmforge-xr project's Auth settings via the Supabase
 // Management API (docs/auth.md). Dry run by default: prints a diff; `--apply` sends the PATCH.
+// `--include-email` also pushes the magic-link subject/template (needs custom SMTP on the free tier).
 //
 // Token: SUPABASE_ACCESS_TOKEN, the file written by `npx supabase login` (~/.supabase/access-token),
 // or the OS keyring entry newer CLIs use.
@@ -14,12 +15,19 @@ import { fileURLToPath } from 'node:url'
 const REF = 'dtuozjfuiykxwsymjhcm'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const apply = process.argv.includes('--apply')
+// Email subject/template changes are refused on the free tier until custom SMTP is configured.
+const includeEmail = process.argv.includes('--include-email')
 
 const tokenFile = path.join(os.homedir(), '.supabase', 'access-token')
 // Newer CLIs keep the token in the OS keyring (go-keyring: service "Supabase CLI", user = profile).
 function keyringToken() {
+  const quiet = { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
   try {
-    return execFileSync('secret-tool', ['lookup', 'service', 'Supabase CLI', 'username', 'supabase'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+    return execFileSync('secret-tool', ['lookup', 'service', 'Supabase CLI', 'username', 'supabase'], quiet).trim()
+  } catch {}
+  try { // no secret-tool: Python's secretstorage talks to the same Secret Service
+    const py = "import secretstorage as s;c=s.get_default_collection(s.dbus_init());i=next(iter(c.search_items({'service':'Supabase CLI','username':'supabase'})),None);print(i.get_secret().decode() if i else '')"
+    return execFileSync('python3', ['-c', py], quiet).trim()
   } catch { return '' }
 }
 const token = process.env.SUPABASE_ACCESS_TOKEN?.trim() || (existsSync(tokenFile) ? readFileSync(tokenFile, 'utf8').trim() : '') || keyringToken()
@@ -32,8 +40,10 @@ const cfg = JSON.parse(readFileSync(path.join(root, 'supabase', 'auth-config.jso
 const desired = {
   site_url: cfg.site_url,
   uri_allow_list: cfg.uri_allow_list.join(','),
-  mailer_subjects_magic_link: cfg.mailer_subjects_magic_link,
-  mailer_templates_magic_link_content: readFileSync(path.join(root, 'supabase', cfg.mailer_templates_magic_link_content_file), 'utf8'),
+  ...(includeEmail ? {
+    mailer_subjects_magic_link: cfg.mailer_subjects_magic_link,
+    mailer_templates_magic_link_content: readFileSync(path.join(root, 'supabase', cfg.mailer_templates_magic_link_content_file), 'utf8'),
+  } : {}),
 }
 
 const api = (method, body) => fetch(`https://api.supabase.com/v1/projects/${REF}/config/auth`, {

@@ -42,7 +42,10 @@ and pushed with the Management API:
 npx supabase@2.120.0 login                     # once; opens your browser, saves ~/.supabase/access-token
 node tools/auth/push-auth-config.mjs           # dry run: shows the diff
 node tools/auth/push-auth-config.mjs --apply   # applies and re-reads to verify
+node tools/auth/push-auth-config.mjs --apply --include-email   # also the email subject/template: only after custom SMTP (free tier refuses it otherwise)
 ```
+
+Applied 2026-10-21: site URL and redirect allow-list. The email template is NOT applied yet (free tier + default mailer).
 
 Vercel env vars (step 4) were added on 2026-10-21 for production, preview and development; they apply on
 the next deploy.

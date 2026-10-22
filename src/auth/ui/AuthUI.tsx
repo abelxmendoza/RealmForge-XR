@@ -4,6 +4,10 @@ import { useAuth } from '../store'
 import { ROLE_LABEL, roleTitle, type Capability } from '../roles'
 import './auth.css'
 
+// The sign-in email only contains a code once the custom template is applied (needs custom SMTP on the
+// free tier; docs/auth.md). Until then the code field would mislead, so it is opt-in.
+const EMAIL_CODE = import.meta.env.VITE_AUTH_EMAIL_CODE === '1'
+
 let started = false
 /** Start auth once per page (also completes a magic-link sign-in: ?code=… in the URL). */
 export function useAuthInit() {
@@ -39,10 +43,12 @@ export function SignInForm({ onDone }: { onDone?: () => void }) {
     return (
       <form className="au-form" onSubmit={async (e) => { e.preventDefault(); setBusy(true); await verifyCode(code); setBusy(false) }}>
         <p>Check <strong>{linkSentTo}</strong> for a sign-in link. Open it on this device.</p>
-        <label>On a headset or another device? Enter the code from the email instead
-          <input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" />
-        </label>
-        <button type="submit" disabled={busy || !code}>Verify code</button>
+        {EMAIL_CODE && <>
+          <label>On a headset or another device? Enter the code from the email instead
+            <input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" />
+          </label>
+          <button type="submit" disabled={busy || !code}>Verify code</button>
+        </>}
         {error && <p className="au-error" role="alert">{error}</p>}
       </form>
     )
